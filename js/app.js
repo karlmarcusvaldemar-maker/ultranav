@@ -12,7 +12,7 @@ import { initWxOverlay, fetchMetarTaf, metarHtml, fetchForecast, hourIndex, surf
 import { elevationFt } from './terrain.js';
 import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
 import { sunInfo } from './sun.js';
-import { testOpenAip, testProxy } from './diag.js';
+import { testOpenAip, testProxy, testWeather } from './diag.js';
 import { oaipStatus, resetOpenAip } from './openaip.js';
 import { applyIcons, icon, ic } from './icons.js';
 
@@ -336,8 +336,9 @@ function renderSettingsTab(el) {
 
   <h3>Felsökning</h3>
   <div class="muted" id="oaipStat"></div>
-  <div class="btnrow"><button class="btn" id="tOaip">${ic('search')}Testa OpenAIP</button><button class="btn" id="tBase">${ic('search')}Testa vald baskarta</button></div>
-  <div id="tOaipRes"></div><div id="tBaseRes"></div>
+  <div class="btnrow"><button class="btn" id="tOaip">${ic('search')}Testa OpenAIP</button><button class="btn" id="tBase">${ic('search')}Testa vald baskarta</button>
+  <button class="btn" id="tWx">${ic('cloud')}Testa väder</button></div>
+  <div id="tOaipRes"></div><div id="tBaseRes"></div><div id="tWxRes"></div>
 
   <h3>Om & licenser</h3>
   <div class="field"><span>Version<small>Uppdateras automatiskt när du är online</small></span><b>${APP_VERSION}</b></div>
@@ -369,6 +370,7 @@ function renderSettingsTab(el) {
   runTest('#tOaip', '#tOaipRes', async () => { const r = await testOpenAip(); map.fire('moveend'); setTimeout(showStat, 4000); showStat(); return r; });
   runTest('#tBase', '#tBaseRes', testCurrentBase);
   runTest('#tProxy', '#tProxyRes', testProxy);
+  runTest('#tWx', '#tWxRes', testWeather);
   const showStat = () => { const st = oaipStatus(); $('#oaipStat', el).textContent = settings.openaipKey
     ? `OpenAIP inläst: ${st.airspaces} luftrum, ${st.airports} flygfält, ${st.rp} rapportpunkter (${st.cells} områden). Hämtning: ${settings.openaipQuery === 'country' ? 'per land' : 'per område (' + settings.openaipQuery + ')'}.`
     : 'OpenAIP: ingen nyckel angiven.'; };
@@ -398,7 +400,7 @@ window.addEventListener('online', () => toast('Online igen'));
 window.addEventListener('offline', () => toast('Offline — använder sparade data', 4000));
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-14.11';
+export const APP_VERSION = '2026-10-14.12';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {

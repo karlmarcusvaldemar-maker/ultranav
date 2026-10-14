@@ -115,3 +115,32 @@ export async function testProxy() {
   if (r.kind === 'network') return box('badbox', 'Adressen går inte att nå. Kontrollera stavningen — den ska se ut som https://namn.konto.workers.dev');
   return box('badbox', `Proxyn svarade med ett fel: ${esc(r.msg)}`);
 }
+
+// ---------- väderkällor ----------
+export async function testWeather() {
+  const proxy = settings.corsProxy?.trim();
+  const rows = [];
+  const check = async (name, url, validate = () => true) => {
+    const d = await probe(url);
+    let okData = d.ok; try { if (d.ok) okData = validate(d.text); } catch { okData = false; }
+    let via = null;
+    if (!okData && proxy) { const v = await probe(withProxy(url, proxy)); try { via = v.ok && validate(v.text); } catch { via = false; } }
+    rows.push({ name, direct: okData, via, msg: d.ok ? '' : d.kind === 'cors' ? 'blockerad (CORS)' : d.msg });
+  };
+  await check('Vind/prognos (Open-Meteo)', 'https://api.open-meteo.com/v1/forecast?latitude=59.3&longitude=18&hourly=wind_speed_10m&forecast_days=1', (t) => !!JSON.parse(t).hourly);
+  let radarTile = null;
+  await check('Radarlista (RainViewer)', 'https://api.rainviewer.com/public/weather-maps.json', (t) => {
+    const j = JSON.parse(t); const f = j.radar?.past?.at(-1); if (f) radarTile = `${j.host}${f.path}/256/5/17/9/2/1_1.png`; return !!f;
+  });
+  if (radarTile) {
+    const ok = await new Promise((res) => { const i = new Image(); i.onload = () => res(true); i.onerror = () => res(false); i.src = radarTile; });
+    rows.push({ name: 'Radarbilder (RainViewer)', direct: ok, via: null, msg: ok ? '' : 'bilden kunde inte hämtas' });
+  }
+  await check('METAR/TAF (aviationweather.gov)', 'https://aviationweather.gov/api/data/metar?ids=ESSA&format=json', (t) => Array.isArray(JSON.parse(t)));
+  const line = (r) => `<b>${esc(r.name)}</b>: ${r.direct ? 'fungerar' : r.via ? 'fungerar via proxyn' : `fungerar inte${r.msg ? ' – ' + esc(r.msg) : ''}${proxy && r.via === false ? ' (inte heller via proxyn)' : ''}`}`;
+  const bad = rows.filter((r) => !r.direct && !r.via);
+  const needsProxy = bad.some((r) => /METAR/.test(r.name)) && !proxy;
+  return box(bad.length ? 'warnbox' : 'okbox', rows.map(line).join('<br>') +
+    (needsProxy ? '<br>METAR kräver troligen en CORS-proxy — se README.' : '') +
+    (bad.length && proxy ? '<br>Tryck även "Testa CORS-proxy".' : ''));
+}

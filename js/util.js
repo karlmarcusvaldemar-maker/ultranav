@@ -130,16 +130,25 @@ export function withProxy(url, proxy) {
   if (/[=?]$/.test(proxy)) return proxy + encodeURIComponent(url);
   return proxy.replace(/\/?$/, '/') + '?url=' + encodeURIComponent(url); // bara grundadressen angiven
 }
-/** fetch med timeout; valfri CORS-proxy för källor som saknar CORS */
+/** fetch med timeout. Med proxy: prova direkt först och gå via proxyn bara om direktanropet misslyckas,
+ *  så att en felkonfigurerad proxy inte slår ut källor som klarar sig utan den. */
 export async function fetchX(url, { timeout = 20000, proxy = '', headers, as = 'json' } = {}) {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), timeout);
-  try {
-    const u = withProxy(url, proxy);
-    const r = await fetch(u, { signal: ctl.signal, headers });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return as === 'json' ? await r.json() : as === 'blob' ? await r.blob() : await r.text();
-  } finally { clearTimeout(t); }
+  const once = async (u) => {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), timeout);
+    try {
+      const r = await fetch(u, { signal: ctl.signal, headers });
+      if (!r.ok) { const e = new Error(`HTTP ${r.status}`); e.http = true; throw e; }
+      return as === 'json' ? await r.json() : as === 'blob' ? await r.blob() : await r.text();
+    } finally { clearTimeout(t); }
+  };
+  if (!proxy) return once(url);
+  try { return await once(url); }
+  catch (e) {
+    if (e.http && !/HTTP (0|403|429)/.test(e.message)) throw e; // servern svarade med ett riktigt fel — proxyn hjälper inte
+    try { return await once(withProxy(url, proxy)); }
+    catch (e2) { throw new Error(`${e.message === 'Failed to fetch' || e.message === 'Load failed' ? 'blockerad' : e.message}; via proxy: ${e2.message}`); }
+  }
 }
 
 // ---------- UI ----------
