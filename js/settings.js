@@ -26,6 +26,7 @@ const DEFAULTS = {
   openaipKey: '',
   vectorHillshade: true,  // terrängskuggning i vektorkartor
   openaipAuth: 'query',
+  openaipLimit: 50,       // sidstorlek som servern godtar (testas)
   openaipQuery: 'pos',    // områdesfilter: 'pos' (dist i meter), 'poskm' eller 'bbox' — väljs av testknappen   // 'query' (apiKey i adressen, ingen CORS-förfrågan) eller 'header'
   corsProxy: '',
   oaCountries: 'SE,NO,DK,FI',

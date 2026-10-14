@@ -41,30 +41,40 @@ export async function testOpenAip() {
     return box('badbox', `Nyckeln fungerar inte: ${esc(r.msg)}<br>${hint}`);
   }
   saveSettings({ openaipAuth: auth });
-  // 2) områdessökning: vilket filter ger fält nära Stockholm (59,33 N 18,06 E)?
+  // 2) Vilka frågor godtar servern? Varje parameter provas för sig så att felet kan lokaliseras.
+  //    (Avvisade frågor saknar CORS-huvud och syns därför som "blockerad" i webbläsaren.)
   const ref = { lat: 59.33, lon: 18.06 };
-  const near = (j, maxNM) => {
-    const pts = (j?.items || []).map((i) => i.geometry?.coordinates).filter(Boolean);
-    return pts.length > 0 && pts.every(([lon, lat]) => Math.hypot((lat - ref.lat) * 60, (lon - ref.lon) * 60 * Math.cos(ref.lat * Math.PI / 180)) <= maxNM);
-  };
-  const tries = [
-    ['pos', 'pos=59.33,18.06&dist=40000'],      // dist i meter
-    ['poskm', 'pos=59.33,18.06&dist=40'],       // dist i km
-    ['bbox', 'bbox=17.4,59.0,18.7,59.7'],
+  const coords = (j) => (j?.items || []).map((i) => i.geometry?.coordinates).filter(Boolean);
+  const within = (j, test) => { const c = coords(j); return c.length > 0 && c.every(test); };
+  const nearRef = (maxNM) => ([lon, lat]) => Math.hypot((lat - ref.lat) * 60, (lon - ref.lon) * 60 * Math.cos(ref.lat * Math.PI / 180)) <= maxNM;
+  const inSweden = ([lon, lat]) => lat > 55 && lat < 69.5 && lon > 10.5 && lon < 24.5;
+  const tests = [
+    { mode: null, label: 'limit50', q: 'limit=50&page=1' },
+    { mode: null, label: 'limit100', q: 'limit=100&page=1', after: (ok) => saveSettings({ openaipLimit: ok ? 100 : 50 }) },
+    { mode: 'pos', label: 'pos+dist(m)', q: 'pos=59.33,18.06&dist=40000&limit=50&page=1', ok: (j) => within(j, nearRef(30)) },
+    { mode: 'poskm', label: 'pos+dist(km)', q: 'pos=59.33,18.06&dist=40&limit=50&page=1', ok: (j) => within(j, nearRef(30)) },
+    { mode: null, label: 'pos', q: 'pos=59.33,18.06&limit=50&page=1' },
+    { mode: 'bbox', label: 'bbox', q: 'bbox=17.4,59.0,18.7,59.7&limit=50&page=1', ok: (j) => within(j, nearRef(40)) },
+    { mode: 'country', label: 'country', q: 'country=SE&limit=50&page=1', ok: (j) => within(j, inSweden) },
   ];
-  const tried = [];
-  for (const [mode, q] of tries) {
-    const t = await probe(oaipUrl('airports', `${q}&limit=50&page=1`), auth === 'header' ? H : undefined);
-    let j = null; try { j = JSON.parse(t.text || 'null'); } catch { /* ej JSON */ }
-    tried.push(`${mode}: ${t.ok ? (j?.items?.length ?? 0) + ' fält' : 'HTTP ' + (t.status || t.kind)}`);
-    if (t.ok && near(j, mode === 'bbox' ? 40 : 30)) {
-      const changed = settings.openaipQuery !== mode;
-      saveSettings({ openaipQuery: mode });
-      if (changed) resetOpenAip();
-      return box('okbox', `OpenAIP fungerar: ${j.items.length} fält hittade runt Stockholm (områdesfilter: ${mode}).<br>Slå på Luftrum, Flygfält och Rapportpunkter under Kartor och zooma in till minst zoomnivå 7.`);
-    }
+  const lines = [];
+  let chosen = null, chosenCount = 0;
+  for (const t of tests) {
+    const res = await probe(oaipUrl('airports', t.q), auth === 'header' ? H : undefined);
+    let j = null; try { j = JSON.parse(res.text || 'null'); } catch { /* ej JSON */ }
+    const good = res.ok && (!t.ok || t.ok(j));
+    t.after?.(res.ok);
+    lines.push(`${t.label}: ${res.ok ? `${j?.items?.length ?? 0} st${t.ok ? (good ? ' rätt plats' : ' fel plats') : ''}` : res.status ? 'HTTP ' + res.status : 'avvisad'}`);
+    if (good && t.mode && !chosen) { chosen = t.mode; chosenCount = j.items.length; }
   }
-  return box('warnbox', `Nyckeln fungerar, men ingen områdessökning gav fält på rätt plats (${esc(tried.join(' · '))}). Skicka gärna den här texten till utvecklaren.`);
+  if (chosen) {
+    const changed = settings.openaipQuery !== chosen;
+    saveSettings({ openaipQuery: chosen });
+    if (changed) resetOpenAip();
+    const how = chosen === 'country' ? `per land (${esc(settings.oaCountries)})` : `per område (${chosen})`;
+    return box('okbox', `OpenAIP fungerar. Data hämtas ${how}.<br><span class="muted">${esc(lines.join(' · '))}</span><br>Luftrum, flygfält och rapportpunkter visas från zoomnivå 7.`);
+  }
+  return box('warnbox', `Nyckeln fungerar, men ingen fråga gav data på rätt plats.<br><span class="muted">${esc(lines.join(' · '))}</span><br>Skicka gärna den här texten till utvecklaren.`);
 }
 
 /** Testa att en kartbild (eller stil) går att hämta och visa. Bilder testas som <img> (kräver inte CORS). */

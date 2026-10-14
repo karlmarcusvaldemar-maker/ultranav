@@ -113,7 +113,7 @@ function inArea(item, [w, s, e, n]) {
 
 async function getAll(path, bbox) {
   const items = [];
-  let limit = 200;
+  let limit = settings.openaipLimit || 50;
   for (let page = 1; page <= 25; page++) {
     let j;
     try { j = await fetchX(oaipUrl(path, `${areaQuery(bbox)}&limit=${limit}&page=${page}`), { headers: oaipHeaders() }); }
@@ -162,7 +162,50 @@ function reportErr(e) {
 }
 
 /** Ladda alla celler inom bounds (L.LatLngBounds). Max 12 celler per anrop. */
+// ---------- hämtning per land (reserv när områdessökning inte godtas av servern) ----------
+const loadedCountries = new Set();
+const pendingCountries = new Map();
+async function getCountry(path, cc) {
+  const items = [];
+  for (let page = 1; page <= 80; page++) {
+    const j = await fetchX(oaipUrl(path, `country=${cc}&limit=${settings.openaipLimit || 50}&page=${page}`), { headers: oaipHeaders() });
+    items.push(...(j.items || []));
+    if (!j.totalPages || page >= j.totalPages) break;
+  }
+  return items;
+}
+function loadCountry(cc) {
+  if (loadedCountries.has(cc)) return;
+  if (pendingCountries.has(cc)) return pendingCountries.get(cc);
+  const p = (async () => {
+    let data = await idb.get(KEY + 'cc:' + cc);
+    if (!data || Date.now() - data.t > MAX_AGE) {
+      if (settings.openaipKey && navigator.onLine) {
+        try {
+          const [as, ap, rp] = await Promise.all([getCountry('airspaces', cc), getCountry('airports', cc), getCountry('reporting-points', cc)]);
+          data = { t: Date.now(), as, ap, rp };
+          idb.set(KEY + 'cc:' + cc, data);
+        } catch (e) { if (!data) { reportErr(e); return; } }
+      }
+    }
+    if (!data) return;
+    for (const a of data.as) airspaces.set(a._id, a);
+    for (const a of data.ap) oaipAirports.set(a._id, normAirport(a));
+    for (const r of data.rp) reportingPoints.set(r._id, r);
+    loadedCountries.add(cc);
+  })().finally(() => pendingCountries.delete(cc));
+  pendingCountries.set(cc, p);
+  return p;
+}
+async function loadCountries() {
+  const list = settings.oaCountries.toUpperCase().split(/[,\s]+/).filter(Boolean);
+  const before = airspaces.size + oaipAirports.size;
+  for (const cc of list) await loadCountry(cc); // ett land i taget — skonsamt mot servern
+  if (airspaces.size + oaipAirports.size !== before) emit();
+}
+
 export async function loadBounds(bounds) {
+  if (settings.openaipQuery === 'country') return loadCountries();
   const cells = cellsFor(bounds);
   if (cells.length > 20) return; // mycket utzoomat: hämta inte (luftrum visas från zoom 7)
   const before = airspaces.size + oaipAirports.size;
@@ -173,6 +216,7 @@ export async function loadBounds(bounds) {
 /** Ladda alla celler längs en rutt (för luftrumskontroll och offline) */
 export async function loadRoute(points) {
   if (points.length < 1) return;
+  if (settings.openaipQuery === 'country') return loadCountries();
   const set = new Map();
   for (let i = 0; i < points.length; i++) {
     const a = points[i], b = points[i + 1] || a;
@@ -209,6 +253,6 @@ export function airspacesAt(lat, lon) {
 }
 
 /** Status för felsökning */
-export const oaipStatus = () => ({ airspaces: airspaces.size, airports: oaipAirports.size, rp: reportingPoints.size, cells: loadedCells.size });
+export const oaipStatus = () => ({ airspaces: airspaces.size, airports: oaipAirports.size, rp: reportingPoints.size, cells: loadedCells.size + loadedCountries.size });
 /** Glöm inläst data (efter ny nyckel eller nytt frågesätt) */
-export function resetOpenAip() { airspaces.clear(); oaipAirports.clear(); reportingPoints.clear(); loadedCells.clear(); emit(); }
+export function resetOpenAip() { airspaces.clear(); oaipAirports.clear(); reportingPoints.clear(); loadedCells.clear(); loadedCountries.clear(); emit(); }

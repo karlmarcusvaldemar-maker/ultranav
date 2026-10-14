@@ -368,7 +368,7 @@ function renderSettingsTab(el) {
   runTest('#tOaip', '#tOaipRes', async () => { const r = await testOpenAip(); map.fire('moveend'); setTimeout(showStat, 4000); showStat(); return r; });
   runTest('#tBase', '#tBaseRes', testCurrentBase);
   const showStat = () => { const st = oaipStatus(); $('#oaipStat', el).textContent = settings.openaipKey
-    ? `OpenAIP inläst: ${st.airspaces} luftrum, ${st.airports} flygfält, ${st.rp} rapportpunkter (${st.cells} områden). Områdesfilter: ${settings.openaipQuery}.`
+    ? `OpenAIP inläst: ${st.airspaces} luftrum, ${st.airports} flygfält, ${st.rp} rapportpunkter (${st.cells} områden). Hämtning: ${settings.openaipQuery === 'country' ? 'per land' : 'per område (' + settings.openaipQuery + ')'}.`
     : 'OpenAIP: ingen nyckel angiven.'; };
   showStat();
   $('#forceUpd', el).onclick = async () => {
@@ -396,7 +396,7 @@ window.addEventListener('online', () => toast('Online igen'));
 window.addEventListener('offline', () => toast('Offline — använder sparade data', 4000));
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-14.9';
+export const APP_VERSION = '2026-10-14.10';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
