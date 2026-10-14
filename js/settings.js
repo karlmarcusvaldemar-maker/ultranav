@@ -25,7 +25,8 @@ const DEFAULTS = {
   theme: 'dark',          // 'dark' | 'day' | 'night'
   openaipKey: '',
   vectorHillshade: true,  // terrängskuggning i vektorkartor
-  openaipAuth: 'query',   // 'query' (apiKey i adressen, ingen CORS-förfrågan) eller 'header'
+  openaipAuth: 'query',
+  openaipQuery: 'pos',    // områdesfilter: 'pos' (dist i meter), 'poskm' eller 'bbox' — väljs av testknappen   // 'query' (apiKey i adressen, ingen CORS-förfrågan) eller 'header'
   corsProxy: '',
   oaCountries: 'SE,NO,DK,FI',
   oaIncludeHeli: false,

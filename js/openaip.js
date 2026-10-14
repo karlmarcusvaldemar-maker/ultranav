@@ -1,9 +1,10 @@
 // OpenAIP: luftrum, flygfält och rapportpunkter (vektor). Kräver gratis API-nyckel från openaip.net.
 import { settings } from './settings.js';
-import { idb, fetchX, toast, pointInGeometry, FT_PER_M } from './util.js';
+import { idb, fetchX, toast, pointInGeometry, FT_PER_M, distNM } from './util.js';
 
 const API = 'https://api.core.openaip.net/api';
-const CELL = 1;                 // cellstorlek i grader (lat) — lon 2°
+const CELL = 2;                 // cellstorlek: 2° latitud × 4° longitud
+const KEY = 'oaip2:';           // ny cachenyckel — äldre cache kan innehålla data från fel område
 const MAX_AGE = 7 * 864e5;      // cache 7 dygn
 
 export const airspaces = new Map();   // _id → airspace
@@ -87,16 +88,43 @@ function cellsFor(bounds) {
   return out;
 }
 
+/** Bygg områdesfilter. OpenAIP stöder bevisligen pos (lat,lon) + dist; bbox används bara om testet visat att det fungerar. */
+function areaQuery(bbox) {
+  const [w, sLat, e, n] = bbox;
+  if (settings.openaipQuery === 'bbox') return `bbox=${bbox.join(',')}`;
+  const c = { lat: (sLat + n) / 2, lon: (w + e) / 2 };
+  const m = Math.ceil(distNM(c, { lat: n, lon: e }) * 1852); // halva diagonalen
+  return `pos=${c.lat.toFixed(4)},${c.lon.toFixed(4)}&dist=${settings.openaipQuery === 'poskm' ? Math.ceil(m / 1000) : m}`;
+}
+export function oaipUrl(path, query) {
+  const q = settings.openaipAuth === 'header' ? '' : `&apiKey=${encodeURIComponent(settings.openaipKey)}`;
+  return `${API}/${path}?${query}${q}`;
+}
+export const oaipHeaders = () => (settings.openaipAuth === 'header' ? { 'x-openaip-api-key': settings.openaipKey } : undefined);
+
+/** Ligger objektet inom området? (filtrerar bort data från fel plats om servern skulle ignorera filtret) */
+function inArea(item, [w, s, e, n]) {
+  const g = item.geometry;
+  if (!g) return false;
+  if (g.type === 'Point') { const [lon, lat] = g.coordinates; return lon >= w && lon <= e && lat >= s && lat <= n; }
+  const bb = item._bb || (item._bb = geomBBox(g));
+  return !(bb[2] < w || bb[0] > e || bb[3] < s || bb[1] > n);
+}
+
 async function getAll(path, bbox) {
   const items = [];
-  for (let page = 1; page <= 10; page++) {
-    const q = settings.openaipAuth === 'header' ? '' : `&apiKey=${encodeURIComponent(settings.openaipKey)}`;
-    const url = `${API}/${path}?bbox=${bbox.join(',')}&limit=1000&page=${page}${q}`;
-    const j = await fetchX(url, { headers: settings.openaipAuth === 'header' ? { 'x-openaip-api-key': settings.openaipKey } : undefined });
+  let limit = 200;
+  for (let page = 1; page <= 25; page++) {
+    let j;
+    try { j = await fetchX(oaipUrl(path, `${areaQuery(bbox)}&limit=${limit}&page=${page}`), { headers: oaipHeaders() }); }
+    catch (e) {
+      if (/HTTP 4\d\d/.test(e.message) && !/40[13]/.test(e.message) && limit > 50) { limit = 50; page--; continue; } // för stort limit?
+      throw e;
+    }
     items.push(...(j.items || []));
     if (!j.totalPages || page >= j.totalPages) break;
   }
-  return items;
+  return items.filter((it) => inArea(it, bbox));
 }
 
 async function loadCell(x, y) {
@@ -104,7 +132,7 @@ async function loadCell(x, y) {
   if (loadedCells.has(k)) return;
   if (pending.has(k)) return pending.get(k);
   const p = (async () => {
-    let data = await idb.get('oaip:' + k);
+    let data = await idb.get(KEY + k);
     if (!data || Date.now() - data.t > MAX_AGE) {
       if (!settings.openaipKey || !navigator.onLine) { if (!data) return; }
       else {
@@ -112,7 +140,7 @@ async function loadCell(x, y) {
         try {
           const [as, ap, rp] = await Promise.all([getAll('airspaces', bbox), getAll('airports', bbox), getAll('reporting-points', bbox)]);
           data = { t: Date.now(), as, ap, rp };
-          idb.set('oaip:' + k, data);
+          idb.set(KEY + k, data);
         } catch (e) {
           if (!data) { reportErr(e); return; }
         }
@@ -130,13 +158,13 @@ let errShown = 0;
 function reportErr(e) {
   if (Date.now() - errShown < 30000) return;
   errShown = Date.now();
-  toast(`OpenAIP: ${e.message}. Tryck "Testa nyckel" under Inställningar för att se orsaken.`, 6000);
+  toast(`OpenAIP: ${e.message}. Tryck "Testa OpenAIP" under Inställningar för att se orsaken.`, 6000);
 }
 
 /** Ladda alla celler inom bounds (L.LatLngBounds). Max 12 celler per anrop. */
 export async function loadBounds(bounds) {
   const cells = cellsFor(bounds);
-  if (cells.length > 12) return;
+  if (cells.length > 20) return; // mycket utzoomat: hämta inte (luftrum visas från zoom 7)
   const before = airspaces.size + oaipAirports.size;
   await Promise.all(cells.map(([x, y]) => loadCell(x, y)));
   if (airspaces.size + oaipAirports.size !== before) emit();
@@ -179,3 +207,8 @@ export function airspacesAt(lat, lon) {
   }
   return out.sort((x, y) => limitFt(x.lowerLimit).ft - limitFt(y.lowerLimit).ft);
 }
+
+/** Status för felsökning */
+export const oaipStatus = () => ({ airspaces: airspaces.size, airports: oaipAirports.size, rp: reportingPoints.size, cells: loadedCells.size });
+/** Glöm inläst data (efter ny nyckel eller nytt frågesätt) */
+export function resetOpenAip() { airspaces.clear(); oaipAirports.clear(); reportingPoints.clear(); loadedCells.clear(); emit(); }

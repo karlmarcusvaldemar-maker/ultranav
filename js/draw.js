@@ -12,7 +12,8 @@ export const onDrawings = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f(drawings));
 
 /** Åtgärder från app.js (rutt, direkt till, egen position) */
-export const drawActions = { addWaypoint() {}, directTo() {}, setRoute() {}, ownPos: () => null, onModeChange() {} };
+export const drawActions = { addWaypoint() {}, directTo() {}, setRoute() {}, ownPos: () => null, onModeChange() {},
+  routeUndo() {}, routeSummary: () => '', toggleProfile() {}, profileOn: () => false };
 
 const COLORS = { line: '#0a84ff', polygon: '#ff9f0a', point: '#30d158', measure: '#ff375f' };
 const savedLayer = L.layerGroup();
@@ -50,19 +51,37 @@ export function describe(f) {
 // ---------- init ----------
 export function initDraw() {
   liveLayer.addTo(map);
-  registerOverlay('drawings', 'Mina ritningar', 'Sparade linjer, ytor och punkter', (v) => { savedOn = v; if (v) { savedLayer.addTo(map); drawSaved(); } else map.removeLayer(savedLayer); });
+  registerOverlay('drawings', 'Mina ritningar', '', (v) => { savedOn = v; if (v) { savedLayer.addTo(map); drawSaved(); } else map.removeLayer(savedLayer); });
   buildToolbar();
 }
 
-export const drawActive = () => mode !== null;
-export function setMode(m) {
-  if (mode && pts.length && mode !== 'measure' && mode !== m && !confirm('Avbryta pågående ritning?')) return;
+// Ritverktyget är ett verktygsfält som kan vara öppet utan valt verktyg.
+// Läget 'route' låter kartklick gå till ruttplaneringen (app.js) i stället för till ritningen.
+let barOpen = false;
+export const drawActive = () => mode !== null && mode !== 'route';
+export const drawBarOpen = () => barOpen;
+export function openDrawBar(m = null) { barOpen = true; setMode(m); }
+export function closeDrawBar() {
+  if (pts.length > 1 && mode !== 'measure' && mode !== 'route' && !confirm('Stänga utan att spara?')) return;
+  pts = []; barOpen = false; setMode(null, true);
+}
+export function setMode(m, force = false) {
+  if (!force && mode && pts.length && mode !== 'measure' && mode !== m && !confirm('Avbryta pågående ritning?')) return;
   mode = m; pts = [];
-  if (m) map.doubleClickZoom.disable(); else map.doubleClickZoom.enable();
-  $('#drawBar').classList.toggle('hidden', !m);
-  $('#drawBar').querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === m));
+  if (m && m !== 'route') map.doubleClickZoom.disable(); else map.doubleClickZoom.enable();
+  $('#drawBar').classList.toggle('hidden', !barOpen);
+  syncBar();
   drawLive();
   drawActions.onModeChange(m);
+}
+export function syncBar() {
+  const bar = $('#drawBar');
+  if (!bar) return;
+  bar.querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === mode));
+  $('#dProfile')?.classList.toggle('on', drawActions.profileOn());
+  const edit = mode !== null;
+  for (const id of ['#dOwn', '#dUndo', '#dDone']) $(id)?.classList.toggle('hidden', !edit);
+  $('#dSep2')?.classList.toggle('hidden', !edit);
 }
 
 /** Tryck på kartan när ritverktyget är aktivt */
@@ -77,27 +96,28 @@ function buildToolbar() {
   const bar = document.createElement('div');
   bar.id = 'drawBar'; bar.className = 'hidden';
   bar.innerHTML = `<div class="dbtns">
+      <button data-mode="route">${icon('route')}<small>Rutt</small></button>
       <button data-mode="measure">${icon('measure')}<small>Mät</small></button><button data-mode="line">${icon('polyline')}<small>Linje</small></button>
       <button data-mode="polygon">${icon('polygon')}<small>Yta</small></button><button data-mode="point">${icon('pin')}<small>Punkt</small></button>
-      <span class="sep"></span>
+      <button id="dProfile">${icon('mountain')}<small>Profil</small></button>
+      <span class="sep" id="dSep2"></span>
       <button id="dOwn" title="Börja från min position">${icon('crosshair')}<small>Min pos</small></button>
       <button id="dUndo">${icon('undo')}<small>Ångra</small></button><button id="dDone" class="primary">${icon('check')}<small>Spara</small></button>
       <button id="dClose">${icon('close')}<small>Stäng</small></button></div>
     <div id="drawReadout"></div>`;
   $('#mapwrap').appendChild(bar);
   bar.querySelectorAll('[data-mode]').forEach((b) => b.onclick = () => setMode(b.dataset.mode));
-  $('#dUndo').onclick = () => { pts.pop(); drawLive(); };
+  $('#dProfile').onclick = () => { drawActions.toggleProfile(); syncBar(); };
+  $('#dUndo').onclick = () => { if (mode === 'route') { drawActions.routeUndo(); readout(); return; } pts.pop(); drawLive(); };
   $('#dOwn').onclick = () => {
     const o = drawActions.ownPos();
     if (!o) { toast('Ingen GPS-position — starta GPS först'); return; }
+    if (mode === 'route') { drawActions.addWaypoint({ lat: o.lat, lon: o.lon, name: 'Min pos' }); readout(); return; }
     if (mode === 'point') { savePoint({ lat: o.lat, lon: o.lon }); return; }
     pts.unshift({ lat: o.lat, lon: o.lon }); drawLive();
   };
   $('#dDone').onclick = finish;
-  $('#dClose').onclick = () => {
-    if (pts.length > 1 && mode !== 'measure' && !confirm('Stänga utan att spara?')) return;
-    setMode(null);
-  };
+  $('#dClose').onclick = closeDrawBar;
   L.DomEvent.disableClickPropagation(bar);
 }
 
@@ -129,9 +149,11 @@ function drawLive() {
   readout();
 }
 
-function readout() {
+export function readout() {
   const el = $('#drawReadout');
   if (!el) return;
+  if (!mode) { el.innerHTML = '<span class="muted">Välj ett verktyg ovan.</span>'; return; }
+  if (mode === 'route') { el.innerHTML = drawActions.routeSummary() || '<span class="muted">Tryck på kartan för att lägga till brytpunkter. Tryck nära ett fält för att fästa vid det.</span>'; return; }
   const hint = { measure: 'Tryck på kartan för att mäta. Dra punkterna för att justera.', line: 'Tryck för att lägga till punkter i linjen.',
     polygon: 'Tryck för att lägga till hörn. Tryck på punkt 1 eller Spara för att avsluta.', point: 'Tryck på kartan för att placera en punkt.' }[mode] || '';
   if (pts.length < 2) { el.innerHTML = `<span class="muted">${hint}</span>`; return; }
@@ -146,6 +168,7 @@ function readout() {
 const fmtTime = (h) => { const m = Math.round(h * 60); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`; };
 
 function finish() {
+  if (mode === 'route') { toast('Rutten är sparad'); setMode(null); return; }
   if (mode === 'point') { setMode(null); return; }
   const min = mode === 'polygon' ? 3 : 2;
   if (pts.length < min) { toast(mode === 'polygon' ? 'En yta behöver minst tre hörn' : 'Lägg till minst två punkter'); return; }
@@ -154,7 +177,7 @@ function finish() {
   const name = prompt('Namn:', `${type === 'polygon' ? 'Yta' : 'Linje'} ${n}`);
   if (name === null) return;
   addDrawing({ type, name: name || `${type} ${n}`, coords: pts.map((p) => ({ lat: p.lat, lon: p.lon })) });
-  setMode(null);
+  setMode(null, true);
 }
 function savePoint(p) {
   const n = drawings.filter((f) => f.type === 'point').length + 1;
@@ -237,7 +260,7 @@ export function renderDrawTab(el) {
       : `<div class="empty">${ic('ruler', 34)}<b>Inget sparat ännu</b><span>Mät en sträcka eller rita en linje, yta eller punkt — de sparas här.</span></div>`}
     <div class="btnrow"><button class="btn" id="dExp">${ic('download')}Exportera GeoJSON</button>
     <label class="btn">${ic('upload')}Importera GeoJSON<input type="file" id="dImp" accept=".geojson,.json,application/geo+json,application/json" hidden></label></div>`;
-  el.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { drawActions.closeSide?.(); setMode(b.dataset.m); });
+  el.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { drawActions.closeSide?.(); openDrawBar(b.dataset.m); });
   $('#dExp', el).onclick = () => { if (!drawings.length) return toast('Inget att exportera'); download('ritningar.geojson', JSON.stringify(toGeoJSON(), null, 1), 'application/geo+json'); };
   $('#dImp', el).onchange = async (e) => {
     const file = e.target.files[0]; if (!file) return;

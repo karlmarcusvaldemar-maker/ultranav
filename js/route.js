@@ -236,7 +236,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
   let h = `<div class="field"><span>Namn</span><input type="text" id="rName" value="${esc(route.name)}"></div>
     <div class="field"><span>Avgång <small>lokal tid — styr vindprognosen</small></span><input type="datetime-local" id="rDep" value="${depLocal}"></div>`;
   h += `<h3>Brytpunkter</h3>`;
-  if (!route.wps.length) h += `<div class="empty">${ic('route', 34)}<b>Ingen rutt ännu</b><span>Tryck på <b>Rutt</b> i kontrollerna till höger och sedan på kartan, eller lägg till fält från fliken <b>Fält</b>. Tryck nära ett fält eller en rapportpunkt för att fästa vid den.</span></div>`;
+  if (!route.wps.length) h += `<div class="empty">${ic('route', 34)}<b>Ingen rutt ännu</b><span>Tryck på <b>Rita</b> och sedan <b>Rutt</b>, och tryck på kartan, eller lägg till fält från fliken <b>Fält</b>. Tryck nära ett fält eller en rapportpunkt för att fästa vid den.</span></div>`;
   h += '<ul class="wplist">' + route.wps.map((w, i) => `<li class="${i === activeLeg + 1 ? 'active' : ''}"><span class="num">${i + 1}</span>
     <span class="nm"><input data-name="${i}" value="${esc(w.name)}"></span>
     ${i > 0 ? `<input class="alt" type="number" inputmode="numeric" step="100" data-alt="${i}" value="${w.alt}" title="Höjd ft MSL på sträckan hit">` : '<span style="width:76px" class="muted">start</span>'}

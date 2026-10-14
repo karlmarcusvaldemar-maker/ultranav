@@ -24,6 +24,8 @@ const P = {
   crosshair: '<circle cx="12" cy="12" r="7.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',
   undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
   // allmänt
+  road: '<path d="M9 3L5 21M15 3l4 18"/><path d="M12 4v2.5M12 10.5v3M12 17.5V20"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/>',
   chevronDown: '<path d="M6 9l6 6 6-6"/>',
   arrowRight: '<path d="M4 12h15M13 6l6 6-6 6"/>',
   arrowUp: '<path d="M12 19V5M6 11l6-6 6 6"/>',

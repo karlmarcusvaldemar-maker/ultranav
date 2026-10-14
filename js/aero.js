@@ -18,9 +18,9 @@ const on = { airspace: false, fields: false, rp: false };
 const renderer = L.canvas({ padding: 0.3, tolerance: 10 }); // större träffyta för fingrar
 
 export function initAero() {
-  registerOverlay('airspace', 'Luftrum (OpenAIP)', 'CTR, TMA, R/D/P, ATZ … tryck på kartan för info', (v) => toggle('airspace', asLayer, v));
-  registerOverlay('fields', 'Flygfält', 'OpenAIP + OurAirports, UL-fält i grönt', (v) => toggle('fields', apLayer, v));
-  registerOverlay('rp', 'Rapportpunkter (OpenAIP)', 'VFR-rapportpunkter', (v) => toggle('rp', rpLayer, v));
+  registerOverlay('airspace', 'Luftrum', '', (v) => toggle('airspace', asLayer, v));
+  registerOverlay('fields', 'Flygfält', '', (v) => toggle('fields', apLayer, v));
+  registerOverlay('rp', 'Rapportpunkter', '', (v) => toggle('rp', rpLayer, v));
   const refresh = debounce(() => { fetchView(); drawAll(); }, 250);
   map.on('moveend zoomend', refresh);
   onOpenAipData(() => { drawAirspace(); drawAll(); });

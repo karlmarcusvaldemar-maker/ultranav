@@ -23,21 +23,49 @@ export async function probe(url, headers) {
 const box = (cls, html) => note(cls.replace('box', ''), html, cls === 'okbox' ? 'ok' : cls === 'badbox' ? 'fail' : 'alert');
 
 // ---------- OpenAIP ----------
+/** Testar nyckel OCH områdessökning: hämtar fält runt Stockholm och kontrollerar att de faktiskt ligger där. */
 export async function testOpenAip() {
   const key = settings.openaipKey;
   if (!key) return box('warnbox', 'Ange en API-nyckel först.');
+  const { oaipUrl, resetOpenAip } = await import('./openaip.js');
+  const H = { 'x-openaip-api-key': key };
+  // 1) nyckel: i adressen eller i huvud
   const base = 'https://api.core.openaip.net/api/airports?limit=1&page=1';
-  const q = await probe(`${base}&apiKey=${encodeURIComponent(key)}`);
-  if (q.ok) { saveSettings({ openaipAuth: 'query' }); return box('okbox', 'OpenAIP fungerar (nyckel i adressen).'); }
-  const h = await probe(base, { 'x-openaip-api-key': key });
-  if (h.ok) { saveSettings({ openaipAuth: 'header' }); return box('okbox', 'OpenAIP fungerar (nyckel i huvud).'); }
-  const r = [q, h].find((x) => x.kind === 'auth' || x.kind === 'forbidden') || q;
-  const hint = { auth: 'Nyckeln godtas inte. Kontrollera att du kopierat hela nyckeln utan mellanslag, och att API-klienten är aktiv på openaip.net.',
-    forbidden: 'Nyckeln saknar behörighet. Kontrollera API-klienten på openaip.net.',
-    cors: 'OpenAIP blockerar anrop från den här webbadressen.', offline: '', network: 'Kontrollera nätverket.', notfound: 'Adressen hittades inte.' }[r.kind] || '';
-  return box('badbox', `${esc(r.msg)}<br>${hint}`);
+  let auth = null, r = await probe(`${base}&apiKey=${encodeURIComponent(key)}`);
+  if (r.ok) auth = 'query';
+  else { const h = await probe(base, H); if (h.ok) auth = 'header'; else r = [r, h].find((x) => x.kind === 'auth' || x.kind === 'forbidden') || r; }
+  if (!auth) {
+    const hint = { auth: 'Nyckeln godtas inte. Kontrollera att hela nyckeln är kopierad utan mellanslag och att API-klienten är aktiv på openaip.net.',
+      forbidden: 'Nyckeln saknar behörighet. Kontrollera API-klienten på openaip.net.', cors: 'OpenAIP blockerar anrop från den här webbadressen.',
+      network: 'Kontrollera nätverket.' }[r.kind] || '';
+    return box('badbox', `Nyckeln fungerar inte: ${esc(r.msg)}<br>${hint}`);
+  }
+  saveSettings({ openaipAuth: auth });
+  // 2) områdessökning: vilket filter ger fält nära Stockholm (59,33 N 18,06 E)?
+  const ref = { lat: 59.33, lon: 18.06 };
+  const near = (j, maxNM) => {
+    const pts = (j?.items || []).map((i) => i.geometry?.coordinates).filter(Boolean);
+    return pts.length > 0 && pts.every(([lon, lat]) => Math.hypot((lat - ref.lat) * 60, (lon - ref.lon) * 60 * Math.cos(ref.lat * Math.PI / 180)) <= maxNM);
+  };
+  const tries = [
+    ['pos', 'pos=59.33,18.06&dist=40000'],      // dist i meter
+    ['poskm', 'pos=59.33,18.06&dist=40'],       // dist i km
+    ['bbox', 'bbox=17.4,59.0,18.7,59.7'],
+  ];
+  const tried = [];
+  for (const [mode, q] of tries) {
+    const t = await probe(oaipUrl('airports', `${q}&limit=50&page=1`), auth === 'header' ? H : undefined);
+    let j = null; try { j = JSON.parse(t.text || 'null'); } catch { /* ej JSON */ }
+    tried.push(`${mode}: ${t.ok ? (j?.items?.length ?? 0) + ' fält' : 'HTTP ' + (t.status || t.kind)}`);
+    if (t.ok && near(j, mode === 'bbox' ? 40 : 30)) {
+      const changed = settings.openaipQuery !== mode;
+      saveSettings({ openaipQuery: mode });
+      if (changed) resetOpenAip();
+      return box('okbox', `OpenAIP fungerar: ${j.items.length} fält hittade runt Stockholm (områdesfilter: ${mode}).<br>Slå på Luftrum, Flygfält och Rapportpunkter under Kartor och zooma in till minst zoomnivå 7.`);
+    }
+  }
+  return box('warnbox', `Nyckeln fungerar, men ingen områdessökning gav fält på rätt plats (${esc(tried.join(' · '))}). Skicka gärna den här texten till utvecklaren.`);
 }
-
 
 /** Testa att en kartbild (eller stil) går att hämta och visa. Bilder testas som <img> (kräver inte CORS). */
 export async function testTile(url, name, isJson = false) {

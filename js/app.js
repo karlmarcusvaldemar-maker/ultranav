@@ -1,9 +1,9 @@
 // Ultranav — huvudmodul
 import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES } from './settings.js';
 import { $, $$, esc, toast, modal, note, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store } from './util.js';
-import { initMap, map, renderLayerPanel } from './map.js';
+import { initMap, map, renderLayerPanel, testCurrentBase } from './map.js';
 import { initAero, actions, airportHtml, mapInfoPopup, openAirport, airportNear } from './aero.js';
-import { initDraw, drawActive, drawTap, setMode as setDrawMode, renderDrawTab, drawActions, onDrawings } from './draw.js';
+import { initDraw, drawActive, drawTap, renderDrawTab, drawActions, onDrawings, openDrawBar, closeDrawBar, drawBarOpen, syncBar, readout } from './draw.js';
 import { loadOurAirports, nearestAirports, searchAirports, oaInfo, longestRwy, onAirports } from './airports.js';
 import { initRoute, route, addWaypoint, removeWp, handleEditTap, setEditing, renderRouteTab, onRouteChange, getLegs, fitRoute, depDate, recompute, setRoute } from './route.js';
 import { initNav, nav, startGps, stopGps, directTo, cancelDto, setFollow, setTrackUp, instrumentData, onNav, renderLogTab, setActiveLeg } from './nav.js';
@@ -13,6 +13,7 @@ import { elevationFt } from './terrain.js';
 import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
 import { sunInfo } from './sun.js';
 import { testOpenAip } from './diag.js';
+import { oaipStatus, resetOpenAip } from './openaip.js';
 import { applyIcons, icon, ic } from './icons.js';
 
 let editing = false;
@@ -51,7 +52,19 @@ Object.assign(drawActions, {
   setRoute: (r) => { setRoute(r); fitRoute(); },
   ownPos: () => nav.pos,
   closeSide: () => toggleSide(false),
-  onModeChange: (m) => { if (m && editing) setEdit(false); if (m) { map.closePopup(); setFollow(false); } syncFab(); },
+  onModeChange: (m) => {
+    if (m === 'route') setEdit(true); else if (editing) setEdit(false);
+    if (m) { map.closePopup(); setFollow(false); }
+    syncFab();
+  },
+  toggleProfile: () => { $('#profilePanel').classList.toggle('hidden'); drawProfile(); },
+  profileOn: () => !$('#profilePanel').classList.contains('hidden'),
+  routeUndo: () => { if (route.wps.length) removeWp(route.wps.length - 1); },
+  routeSummary: () => {
+    if (route.wps.length < 2) return '';
+    const legs = getLegs(), d = legs.reduce((s, l) => s + l.d, 0), t = legs.reduce((s, l) => s + l.ete, 0);
+    return `<b>${route.wps.length} punkter · ${d.toFixed(1)} NM</b> · ${fmtHM(t)} · fortsätt trycka för fler punkter, dra för att flytta`;
+  },
 });
 onDrawings(() => { if (currentTab === 'draw') renderTab(); });
 // globalt för knappar i popup-fönster
@@ -77,12 +90,10 @@ fab('#btnOrient', () => {
   setTrackUp(!nav.trackUp);
   if (nav.trackUp && !nav.pos) toast('Kurs-upp aktiveras när GPS har position');
 });
-fab('#btnEdit', () => setEdit(!editing));
-fab('#btnDraw', () => setDrawMode(drawActive() ? null : 'measure'));
+fab('#btnDraw', () => (drawBarOpen() ? closeDrawBar() : openDrawBar()));
 fab('#btnEditDone', () => setEdit(false));
 fab('#btnNearest', showNearest);
 fab('#btnLayers', () => { const p = $('#layerPanel'); p.classList.toggle('hidden'); if (!p.classList.contains('hidden')) renderLayerPanel(); syncFab(); });
-fab('#btnProfile', () => { $('#profilePanel').classList.toggle('hidden'); drawProfile(); syncFab(); });
 fab('#btnZoomIn', () => map.zoomIn());
 fab('#btnZoomOut', () => map.zoomOut());
 fab('#btnMenu', () => toggleSide());
@@ -92,9 +103,8 @@ $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') $('#
 map.on('click', () => { $('#layerPanel').classList.add('hidden'); syncFab(); });
 
 function setEdit(v) {
-  if (v && drawActive()) setDrawMode(null);
   editing = v; setEditing(v);
-  $('#editBanner').classList.toggle('hidden', !v);
+  $('#editBanner').classList.add('hidden'); // ruttläget visas nu i ritverktyget
   if (v) { map.closePopup(); setFollow(false); }
   syncFab();
 }
@@ -104,10 +114,8 @@ function syncFab() {
   $('#btnFollow').classList.toggle('on', nav.follow && nav.tracking);
   $('#btnOrient').innerHTML = nav.trackUp ? icon('heading') + '<small>Kurs</small>' : icon('north') + '<small>Norr</small>';
   $('#btnOrient').classList.toggle('on', nav.trackUp);
-  $('#btnEdit').classList.toggle('on', editing);
-  $('#btnDraw').classList.toggle('on', drawActive());
+  $('#btnDraw').classList.toggle('on', drawBarOpen());
   $('#btnLayers').classList.toggle('on', !$('#layerPanel').classList.contains('hidden'));
-  $('#btnProfile').classList.toggle('on', !$('#profilePanel').classList.contains('hidden'));
 }
 onNav(() => { syncFab(); updateInstruments(); });
 
@@ -137,6 +145,7 @@ function renderTab() {
   if (currentTab === 'settings') renderSettingsTab(el);
 }
 onRouteChange(() => {
+  if (editing) readout();
   if (currentTab === 'route' && !document.activeElement?.closest?.('#tab-route')) renderTab();
   drawProfile();
 });
@@ -230,7 +239,7 @@ function renderWxTab(el) {
     ${routeIcaos().length ? `<div class="btnrow"><button class="btn small" id="wxRoute">Fält i rutten (${routeIcaos().join(', ')})</button></div>` : ''}
     <div id="wxRes"></div>
     <h3>Prognos för rutten <span class="muted">(Open-Meteo)</span></h3><div id="wxRoute2" class="muted">${route.wps.length < 2 ? 'Skapa en rutt för vindprognos.' : 'Hämtar…'}</div>
-    <div class="muted" style="margin-top:12px">Lägg till <b>METAR-stationer</b> och <b>Nederbördsradar</b> som lager via <b>Lager</b>. Officiell briefing (LFV/AIM) ska alltid användas före flygning.</div>`;
+    <div class="muted" style="margin-top:12px">Lägg till <b>METAR-stationer</b> och <b>Nederbördsradar</b> som lager via <b>Kartor</b>. Officiell briefing (LFV/AIM) ska alltid användas före flygning.</div>`;
   const go = async () => {
     const v = $('#wxIds', el).value; store.set('ulnav.wxids', v);
     $('#wxRes', el).innerHTML = '<div class="muted">Hämtar…</div>';
@@ -306,7 +315,7 @@ function renderSettingsTab(el) {
   <h3>Datakällor</h3>
   <div class="field"><span>OpenAIP API-nyckel<small>Gratis på <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a> › konto › API-klienter</small></span>
     <input type="password" data-k="openaipKey" value="${esc(s.openaipKey)}" autocomplete="off"></div>
-  <div class="btnrow"><button class="btn" id="tOaip">Testa OpenAIP-nyckel</button></div><div id="tOaipRes"></div>
+
   <div class="field"><span>OurAirports länder<small>ISO-koder, t.ex. SE,NO,DK,FI</small></span><input type="text" data-k="oaCountries" value="${esc(s.oaCountries)}"></div>
   <div class="field"><span>Ta med helikopterplatser</span><input type="checkbox" data-k="oaIncludeHeli" ${s.oaIncludeHeli ? 'checked' : ''}></div>
   <div class="btnrow"><button class="btn" id="oaReload">${ic('refresh')}Ladda om OurAirports</button></div>
@@ -324,6 +333,11 @@ function renderSettingsTab(el) {
     <div class="btnrow"><button class="btn" id="tilesReset">Återställ standard</button></div>
   </details>
 
+  <h3>Felsökning</h3>
+  <div class="muted" id="oaipStat"></div>
+  <div class="btnrow"><button class="btn" id="tOaip">${ic('search')}Testa OpenAIP</button><button class="btn" id="tBase">${ic('search')}Testa vald baskarta</button></div>
+  <div id="tOaipRes"></div><div id="tBaseRes"></div>
+
   <h3>Om & licenser</h3>
   <div class="field"><span>Version<small>Uppdateras automatiskt när du är online</small></span><b>${APP_VERSION}</b></div>
   <div class="btnrow"><button class="btn" id="forceUpd">${ic('refresh')}Tvinga uppdatering</button></div>
@@ -340,6 +354,7 @@ function renderSettingsTab(el) {
     if (k === 'tas') v = spdIn(v);
     saveSettings({ [k]: v });
     if (k === 'theme') applyTheme();
+    if (k === 'openaipKey') { resetOpenAip(); map.fire('moveend'); }
     if (['tas', 'fuelBurn', 'variation', 'speedUnit', 'minClearance'].includes(k)) recompute();
     if (k === 'speedUnit') renderSettingsTab(el);
     updateInstruments();
@@ -350,7 +365,12 @@ function renderSettingsTab(el) {
   const runTest = (btn, res, fn) => { $(btn, el).onclick = async () => {
     el.querySelectorAll('[data-k=openaipKey]').forEach((i) => i.dispatchEvent(new Event('change'))); // spara ev. osparade fält först
     $(res, el).innerHTML = '<div class="muted">Testar…</div>'; $(res, el).innerHTML = await fn(); }; };
-  runTest('#tOaip', '#tOaipRes', testOpenAip);
+  runTest('#tOaip', '#tOaipRes', async () => { const r = await testOpenAip(); map.fire('moveend'); setTimeout(showStat, 4000); showStat(); return r; });
+  runTest('#tBase', '#tBaseRes', testCurrentBase);
+  const showStat = () => { const st = oaipStatus(); $('#oaipStat', el).textContent = settings.openaipKey
+    ? `OpenAIP inläst: ${st.airspaces} luftrum, ${st.airports} flygfält, ${st.rp} rapportpunkter (${st.cells} områden). Områdesfilter: ${settings.openaipQuery}.`
+    : 'OpenAIP: ingen nyckel angiven.'; };
+  showStat();
   $('#forceUpd', el).onclick = async () => {
     // Töm appens programcache (inte kartor eller dina data) och ladda om från servern
     const keys = await caches.keys();
@@ -376,7 +396,7 @@ window.addEventListener('online', () => toast('Online igen'));
 window.addEventListener('offline', () => toast('Offline — använder sparade data', 4000));
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-14.8';
+export const APP_VERSION = '2026-10-14.9';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
@@ -398,8 +418,8 @@ if (!store.get('ulnav.welcomed', false)) {
   modal(`<h3>Välkommen till Ultranav</h3>
   <ol style="line-height:1.6;padding-left:20px">
    <li>Öppna <b>Meny › Inställningar</b> och ange din gratis <b>OpenAIP-nyckel</b> (luftrum, UL-fält, rapportpunkter), samt flygplanets fart och förbrukning.</li>
-   <li>Tryck på <b>Rutt</b> och sedan på kartan för att lägga ut brytpunkter. Tryck nära ett fält för att fästa vid det.</li>
-   <li>Navloggen med vindkorrektion, bränsle, solnedgång och luftrum längs rutten finns under <b>Meny › Rutt</b>. Terrängprofilen öppnas med <b>Profil</b>.</li>
+   <li>Tryck på <b>Rita › Rutt</b> och sedan på kartan för att lägga ut brytpunkter. Tryck nära ett fält för att fästa vid det.</li>
+   <li>Navloggen med vindkorrektion, bränsle, solnedgång och luftrum längs rutten finns under <b>Meny › Rutt</b>. Terrängprofilen öppnas med <b>Rita › Profil</b>.</li>
    <li>Före start: <b>Spara rutten offline</b> under Inställningar. Lägg sedan till appen på hemskärmen via Safari › Dela › Lägg till på hemskärmen.</li>
    <li>I luften: <b>GPS</b>, sedan <b>Följ</b> och <b>Norr/Kurs</b> för norr upp eller kurs upp. <b>Närmast</b> visar närmaste fält för nödlandning.</li>
   </ol>

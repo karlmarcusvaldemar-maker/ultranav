@@ -96,7 +96,7 @@ let wxOn = false, lastKey = '';
 const CAT_COL = { VFR: '#2d9d4f', MVFR: '#1f6fd0', IFR: '#d33', LIFR: '#a020c0' };
 
 export function initWxOverlay() {
-  registerOverlay('metar', 'METAR-stationer', 'Färg = VFR/MVFR/IFR, tryck för METAR/TAF', (v) => {
+  registerOverlay('metar', 'METAR-stationer', '', (v) => {
     wxOn = v; if (v) { wxLayer.addTo(map); loadStations(); } else map.removeLayer(wxLayer);
   });
   map.on('moveend', debounce(() => wxOn && loadStations(), 800));
