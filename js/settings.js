@@ -7,6 +7,8 @@ export const DEFAULT_TILES = {
   esri: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   // Topografisk webbkarta Visning, översiktlig (öppna data). Nyckeln läggs i URL:en. Lager: topowebb eller topowebb_nedtonad.
   lm: 'https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/{key}/1.0.0/topowebb/default/3857/{z}/{y}/{x}.png',
+  // Geotorget-åtkomst (Basic-inloggning). Uppdateras automatiskt av "Testa anslutning" från tjänstens GetCapabilities.
+  lmBasic: 'https://maps.lantmateriet.se/open/topowebb-ccby/v1/wmts/1.0.0/topowebb/default/3857/{z}/{y}/{x}.png',
   ofmAero: 'https://nwy-tiles-api.prod.newaydata.com/tiles/{z}/{x}/{y}.png?path=latest/aero/latest',
   ofmBase: 'https://nwy-tiles-api.prod.newaydata.com/tiles/{z}/{x}/{y}.png?path=latest/base/latest',
   openaip: 'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey={key}',
@@ -27,7 +29,9 @@ const DEFAULTS = {
   theme: 'dark',          // 'dark' | 'day' | 'night'
   openaipKey: '',
   vectorHillshade: true,  // terrängskuggning i vektorkartor
-  lmKey: '',              // API-nyckel från Lantmäteriet (gratis)
+  lmUser: '', lmPass: '', // Geotorget-inloggning (Basic) för maps.lantmateriet.se
+  lmKey: '',              // äldre API-nyckel (api.lantmateriet.se/…/token/…)
+  openaipAuth: 'query',   // 'query' (apiKey i adressen, ingen CORS-förfrågan) eller 'header'
   corsProxy: '',
   oaCountries: 'SE,NO,DK,FI',
   oaIncludeHeli: false,
@@ -40,7 +44,6 @@ const saved = store.get('ulnav.settings', {});
 export const settings = { ...DEFAULTS, ...saved, tiles: { ...DEFAULT_TILES, ...(saved.tiles || {}) } };
 // Migrering: tidigare version använde fel adress och användarnamn/lösenord för Lantmäteriet
 if (!settings.tiles.lm.includes('{key}')) settings.tiles.lm = DEFAULT_TILES.lm;
-delete settings.lmUser; delete settings.lmPass;
 
 const listeners = new Set();
 export function onSettings(fn) { listeners.add(fn); }

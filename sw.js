@@ -1,12 +1,12 @@
 // Service worker: appskal offline, kartbilder cache-först, API-data nätverk-först
-const APP = 'ulnav-app-v2';
+const APP = 'ulnav-app-v4';
 const TILES = 'ulnav-tiles-v1';
 const DATA = 'ulnav-data-v1';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'vendor/leaflet/leaflet-rotate.js',
   'js/app.js', 'js/util.js', 'js/settings.js', 'js/map.js', 'js/openaip.js', 'js/airports.js', 'js/aero.js',
-  'js/terrain.js', 'js/vector.js', 'js/draw.js',
+  'js/terrain.js', 'js/vector.js', 'js/draw.js', 'js/diag.js',
   'vendor/maplibre/maplibre-gl.js', 'vendor/maplibre/maplibre-gl.css', 'vendor/maplibre/leaflet-maplibre-gl.js', 'js/sun.js', 'js/wx.js', 'js/route.js', 'js/profile.js', 'js/nav.js', 'js/offline.js',
   'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
@@ -26,8 +26,9 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin) {
-    // appskal: nätverk först (så uppdateringar slår igenom), annars cache
-    e.respondWith(fetch(req).then((r) => { if (r.ok) { const c = r.clone(); caches.open(APP).then((ca) => ca.put(req, c)); } return r; })
+    // appskal: nätverk först (så uppdateringar slår igenom), annars cache.
+    // cache: 'no-cache' gör att webbläsarens HTTP-cache (GitHub Pages: 10 min) alltid valideras mot servern.
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then((r) => { if (r.ok) { const c = r.clone(); caches.open(APP).then((ca) => ca.put(req, c)); } return r; })
       .catch(() => caches.match(req, { ignoreSearch: true })));
     return;
   }

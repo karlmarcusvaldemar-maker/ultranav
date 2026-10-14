@@ -7,6 +7,24 @@ export let map;
 const state = store.get('ulnav.layers', { base: 'otm', overlays: ['openaipVec', 'oa', 'route'], opacity: {} });
 const save = () => store.set('ulnav.layers', state);
 
+// Tile-lager som hämtar med Basic-inloggning (Geotorget). Kräver att servern tillåter CORS.
+export const basicAuth = () => 'Basic ' + btoa(unescape(encodeURIComponent(`${settings.lmUser}:${settings.lmPass}`)));
+let lmErrShown = false;
+const AuthTileLayer = L.TileLayer.extend({
+  createTile(coords, done) {
+    const img = document.createElement('img');
+    img.alt = ''; img.setAttribute('role', 'presentation');
+    fetch(this.getTileUrl(coords), { headers: { Authorization: basicAuth() } })
+      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+      .then((b) => { img.onload = () => { URL.revokeObjectURL(img.src); done(null, img); }; img.src = URL.createObjectURL(b); })
+      .catch((e) => {
+        if (!lmErrShown && navigator.onLine) { lmErrShown = true; toast('Lantmäteriet: ' + e.message + ' — använd "Testa anslutning" under Inställningar', 7000); }
+        done(e, img);
+      });
+    return img;
+  },
+});
+
 const tileOpts = (extra) => ({ maxZoom: 19, crossOrigin: true, className: 'basemap', ...extra });
 
 export const BASES = {
@@ -14,9 +32,11 @@ export const BASES = {
   vecLiberty: { name: 'Vektorkarta (MapLibre)', note: 'OpenFreeMap/OSM, skarp i alla zoomnivåer, terrängskuggning', make: () => vectorLayer('liberty', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
   vecPositron: { name: 'Vektorkarta ljus (MapLibre)', note: 'Nedtonad – flygdata syns tydligt', make: () => vectorLayer('positron', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
   osm: { name: 'OpenStreetMap', note: 'Gatukarta', make: () => L.tileLayer(settings.tiles.osm, tileOpts({ maxNativeZoom: 19, attribution: '© OpenStreetMap-bidragsgivare' })) },
-  lm: { name: 'Lantmäteriet Topowebb', note: 'Sverige, officiell topo (kräver API-nyckel)', needsLmKey: true,
+  lm: { name: 'Lantmäteriet Topowebb', note: 'Sverige, officiell topo (kräver Geotorget-inloggning)', needsLmKey: true,
     // crossOrigin av: tjänsten behöver inte skicka CORS-huvuden för att bilderna ska visas
-    make: () => L.tileLayer(settings.tiles.lm.replace('{key}', encodeURIComponent(settings.lmKey)), tileOpts({ maxNativeZoom: 14, crossOrigin: false, attribution: '© Lantmäteriet' })) },
+    make: () => settings.lmUser
+      ? new AuthTileLayer(settings.tiles.lmBasic, tileOpts({ maxNativeZoom: 14, crossOrigin: false, attribution: '© Lantmäteriet' }))
+      : L.tileLayer(settings.tiles.lm.replace('{key}', encodeURIComponent(settings.lmKey)), tileOpts({ maxNativeZoom: 14, crossOrigin: false, attribution: '© Lantmäteriet' })) },
   esri: { name: 'Satellit (Esri)', note: 'Flyg-/satellitbild', make: () => L.tileLayer(settings.tiles.esri, tileOpts({ maxNativeZoom: 18, attribution: 'Bild © Esri, Maxar, Earthstar Geographics' })) },
   ofmBase: { name: 'OpenFlightMaps bas', note: 'Där OFM har täckning', make: () => L.tileLayer(settings.tiles.ofmBase, tileOpts({ maxNativeZoom: 12, attribution: '© open flightmaps' })) },
 };
@@ -55,7 +75,7 @@ export function initMap() {
   setBase(state.base);
   for (const id of state.overlays) if (OVERLAYS[id]) enableOverlay(id, true);
   onSettings((s, patch) => {
-    if (patch.tiles || 'lmKey' in patch || 'vectorHillshade' in patch) setBase(state.base);
+    if (patch.tiles || 'lmKey' in patch || 'lmUser' in patch || 'lmPass' in patch || 'vectorHillshade' in patch) { lmErrShown = false; setBase(state.base); }
     if ('openaipKey' in patch || patch.tiles) for (const id of Object.keys(OVERLAYS)) if (overlayLayers[id]) { enableOverlay(id, false); enableOverlay(id, true); }
   });
   return map;
@@ -63,7 +83,7 @@ export function initMap() {
 
 export function setBase(id) {
   if (!BASES[id]) id = 'otm';
-  if (BASES[id].needsLmKey && !settings.lmKey) toast('Ange Lantmäteriets API-nyckel under Inställningar', 5000);
+  if (BASES[id].needsLmKey && !settings.lmKey && !settings.lmUser) toast('Ange inloggning för Lantmäteriet under Inställningar', 5000);
   if (baseLayer) map.removeLayer(baseLayer);
   baseLayer = BASES[id].make().addTo(map);
   baseLayer.on('tileerror', tileErr(BASES[id].name));

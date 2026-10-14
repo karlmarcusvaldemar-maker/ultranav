@@ -90,8 +90,9 @@ function cellsFor(bounds) {
 async function getAll(path, bbox) {
   const items = [];
   for (let page = 1; page <= 10; page++) {
-    const url = `${API}/${path}?bbox=${bbox.join(',')}&limit=1000&page=${page}`;
-    const j = await fetchX(url, { headers: { 'x-openaip-api-key': settings.openaipKey }, proxy: '' });
+    const q = settings.openaipAuth === 'header' ? '' : `&apiKey=${encodeURIComponent(settings.openaipKey)}`;
+    const url = `${API}/${path}?bbox=${bbox.join(',')}&limit=1000&page=${page}${q}`;
+    const j = await fetchX(url, { headers: settings.openaipAuth === 'header' ? { 'x-openaip-api-key': settings.openaipKey } : undefined });
     items.push(...(j.items || []));
     if (!j.totalPages || page >= j.totalPages) break;
   }
@@ -129,7 +130,7 @@ let errShown = 0;
 function reportErr(e) {
   if (Date.now() - errShown < 30000) return;
   errShown = Date.now();
-  toast(`OpenAIP: ${e.message}. Kontrollera API-nyckeln.`, 5000);
+  toast(`OpenAIP: ${e.message}. Tryck "Testa nyckel" under Inställningar för att se orsaken.`, 6000);
 }
 
 /** Ladda alla celler inom bounds (L.LatLngBounds). Max 12 celler per anrop. */

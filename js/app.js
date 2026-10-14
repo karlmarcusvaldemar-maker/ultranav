@@ -12,6 +12,7 @@ import { initWxOverlay, fetchMetarTaf, metarHtml, fetchForecast, hourIndex, surf
 import { elevationFt } from './terrain.js';
 import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
 import { sunInfo } from './sun.js';
+import { testOpenAip, testLantmateriet } from './diag.js';
 
 let editing = false;
 let currentTab = 'route';
@@ -303,8 +304,13 @@ function renderSettingsTab(el) {
   <h3>Datakällor</h3>
   <div class="field"><span>OpenAIP API-nyckel<small>Gratis på <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a> › konto › API-klienter</small></span>
     <input type="password" data-k="openaipKey" value="${esc(s.openaipKey)}" autocomplete="off"></div>
-  <div class="field"><span>Lantmäteriet API-nyckel<small>Gratis via <a href="https://geotorget.lantmateriet.se" target="_blank" rel="noopener">Geotorget</a> – produkten "Topografisk webbkarta Visning, översiktlig"</small></span>
+  <div class="btnrow"><button class="btn" id="tOaip">Testa OpenAIP-nyckel</button></div><div id="tOaipRes"></div>
+  <div class="field"><span>Lantmäteriet användarnamn<small>Inloggningen för API-åtkomsten på <a href="https://geotorget.lantmateriet.se" target="_blank" rel="noopener">Geotorget</a></small></span>
+    <input type="text" data-k="lmUser" value="${esc(s.lmUser)}" autocomplete="off" autocapitalize="off"></div>
+  <div class="field"><span>Lantmäteriet lösenord</span><input type="password" data-k="lmPass" value="${esc(s.lmPass)}" autocomplete="off"></div>
+  <div class="field"><span>…eller äldre API-nyckel<small>Endast om du har en nyckel för api.lantmateriet.se</small></span>
     <input type="password" data-k="lmKey" value="${esc(s.lmKey)}" autocomplete="off"></div>
+  <div class="btnrow"><button class="btn" id="tLm">Testa Lantmäteriet</button></div><div id="tLmRes"></div>
   <div class="field"><span>OurAirports länder<small>ISO-koder, t.ex. SE,NO,DK,FI</small></span><input type="text" data-k="oaCountries" value="${esc(s.oaCountries)}"></div>
   <div class="field"><span>Ta med helikopterplatser</span><input type="checkbox" data-k="oaIncludeHeli" ${s.oaIncludeHeli ? 'checked' : ''}></div>
   <div class="btnrow"><button class="btn" id="oaReload">↻ Ladda om OurAirports</button></div>
@@ -323,6 +329,8 @@ function renderSettingsTab(el) {
   </details>
 
   <h3>Om & licenser</h3>
+  <div class="field"><span>Version<small>Uppdateras automatiskt när du är online</small></span><b>${APP_VERSION}</b></div>
+  <div class="btnrow"><button class="btn" id="forceUpd">↻ Tvinga uppdatering</button></div>
   <div class="muted" style="line-height:1.5">
   Kartdata © OpenStreetMap-bidragsgivare (ODbL) · OpenFreeMap/OpenMapTiles · MapLibre GL (BSD-3) · OpenTopoMap (CC-BY-SA) · Lantmäteriet (CC-BY) · Esri World Imagery ·
   open flightmaps · OpenAIP (CC BY-NC 4.0) · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
@@ -343,6 +351,19 @@ function renderSettingsTab(el) {
   el.querySelectorAll('[data-tile]').forEach((inp) => inp.addEventListener('change', () => saveSettings({ tiles: { ...settings.tiles, [inp.dataset.tile]: inp.value.trim() } })));
   $('#tilesReset', el).onclick = () => { saveSettings({ tiles: { ...DEFAULT_TILES } }); renderSettingsTab(el); };
   $('#oaReload', el).onclick = () => loadOurAirports(true);
+  const runTest = (btn, res, fn) => { $(btn, el).onclick = async () => {
+    el.querySelectorAll('[data-k=openaipKey],[data-k=lmUser],[data-k=lmPass],[data-k=lmKey]').forEach((i) => i.dispatchEvent(new Event('change'))); // spara ev. osparade fält först
+    $(res, el).innerHTML = '<div class="muted">Testar…</div>'; $(res, el).innerHTML = await fn(); }; };
+  runTest('#tOaip', '#tOaipRes', testOpenAip);
+  runTest('#tLm', '#tLmRes', testLantmateriet);
+  $('#forceUpd', el).onclick = async () => {
+    // Töm appens programcache (inte kartor eller dina data) och ladda om från servern
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((k) => k.startsWith('ulnav-app')).map((k) => caches.delete(k)));
+    const regs = await navigator.serviceWorker?.getRegistrations?.() || [];
+    await Promise.all(regs.map((r) => r.unregister()));
+    location.reload();
+  };
   const showInfo = async () => { const i = await cacheInfo(); if (i) $('#offInfo', el).textContent = `${i.n} kartbilder i cache${i.usedMB != null ? ` · ${i.usedMB.toFixed(0)} MB använt av ${(i.quotaMB / 1000).toFixed(1)} GB` : ''}`; };
   showInfo();
   $('#offDl', el).onclick = async () => {
@@ -360,8 +381,20 @@ window.addEventListener('online', () => toast('Online igen'));
 window.addEventListener('offline', () => toast('Offline — använder sparade data', 4000));
 
 // ---------- service worker ----------
+export const APP_VERSION = '2026-10-14.4';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW', e));
+  // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+    reg.update();
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update(); });
+  }).catch((e) => console.warn('SW', e));
+  // När en ny version tagit över: ladda om en gång så att alla filer kommer från samma version
+  let reloaded = false;
+  const hadController = !!navigator.serviceWorker.controller; // första besöket: ingen omladdning
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded || !hadController) return;
+    reloaded = true; toast('Ny version installerad — laddar om…'); setTimeout(() => location.reload(), 600);
+  });
 }
 
 // Första start: visa tips
