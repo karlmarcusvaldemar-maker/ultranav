@@ -1,0 +1,356 @@
+// Ultranav — huvudmodul
+import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES } from './settings.js';
+import { $, $$, esc, toast, modal, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store } from './util.js';
+import { initMap, map, renderLayerPanel } from './map.js';
+import { initAero, actions, airportHtml, mapInfoPopup } from './aero.js';
+import { loadOurAirports, nearestAirports, searchAirports, oaInfo, longestRwy, onAirports } from './airports.js';
+import { initRoute, route, addWaypoint, removeWp, handleEditTap, setEditing, renderRouteTab, onRouteChange, getLegs, fitRoute, depDate, recompute } from './route.js';
+import { initNav, nav, startGps, stopGps, directTo, cancelDto, setFollow, setTrackUp, instrumentData, onNav, renderLogTab, setActiveLeg } from './nav.js';
+import { drawProfile } from './profile.js';
+import { initWxOverlay, fetchMetarTaf, metarHtml, fetchForecast, hourIndex, surfaceWx, windAt } from './wx.js';
+import { elevationFt } from './terrain.js';
+import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
+import { sunInfo } from './sun.js';
+
+let editing = false;
+let currentTab = 'route';
+
+// ---------- tema ----------
+function applyTheme() {
+  document.body.classList.remove('day', 'night', 'dark');
+  document.body.classList.add(settings.theme);
+  document.querySelector('meta[name=theme-color]').content = settings.theme === 'day' ? '#ffffff' : settings.theme === 'night' ? '#050505' : '#0f1720';
+}
+applyTheme();
+
+// ---------- start ----------
+initMap();
+initAero();
+initWxOverlay();
+initRoute();
+initNav();
+loadOurAirports();
+
+Object.assign(actions, {
+  editMode: () => editing,
+  addWaypoint: (p) => { addWaypoint(p); toast(`+ ${p.name || 'punkt'}`, 1500); },
+  directTo: (p) => directTo(p),
+  showWx: (icao) => showWx(icao),
+  ownPos: () => nav.pos,
+});
+// globalt för knappar i popup-fönster
+window.ulnav = { directTo, removeWp: (i) => { map.closePopup(); removeWp(i); }, showWx: (i) => showWx(i), setActiveLeg };
+
+// ---------- kartinteraktion ----------
+map.on('click', async (e) => {
+  if (editing) { handleEditTap(e.latlng); return; }
+  const el = await elevationFt(e.latlng.lat, e.latlng.lng).catch(() => null);
+  mapInfoPopup(e.latlng, el);
+});
+
+// ---------- snabbknappar ----------
+const fab = (id, fn) => $(id).addEventListener('click', fn);
+fab('#btnGps', () => (nav.tracking && !nav.simulating ? stopGps() : startGps()));
+fab('#btnFollow', () => setFollow(!nav.follow));
+fab('#btnOrient', () => {
+  if (!map.setBearing) return toast('Rotation stöds inte');
+  setTrackUp(!nav.trackUp);
+  if (nav.trackUp && !nav.pos) toast('Kurs-upp aktiveras när GPS har position');
+});
+fab('#btnEdit', () => setEdit(!editing));
+fab('#btnEditDone', () => setEdit(false));
+fab('#btnNearest', showNearest);
+fab('#btnLayers', () => { const p = $('#layerPanel'); p.classList.toggle('hidden'); if (!p.classList.contains('hidden')) renderLayerPanel(); syncFab(); });
+fab('#btnProfile', () => { $('#profilePanel').classList.toggle('hidden'); drawProfile(); syncFab(); });
+fab('#btnZoomIn', () => map.zoomIn());
+fab('#btnZoomOut', () => map.zoomOut());
+fab('#btnMenu', () => toggleSide());
+fab('#btnCloseSide', () => toggleSide(false));
+fab('#modalClose', () => $('#modal').classList.add('hidden'));
+$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') $('#modal').classList.add('hidden'); });
+map.on('click', () => { $('#layerPanel').classList.add('hidden'); syncFab(); });
+
+function setEdit(v) {
+  editing = v; setEditing(v);
+  $('#editBanner').classList.toggle('hidden', !v);
+  if (v) { map.closePopup(); setFollow(false); }
+  syncFab();
+}
+function syncFab() {
+  $('#btnGps').classList.toggle('on', nav.tracking);
+  $('#btnGps small').textContent = nav.simulating ? 'SIM' : 'GPS';
+  $('#btnFollow').classList.toggle('on', nav.follow && nav.tracking);
+  $('#btnOrient').innerHTML = nav.trackUp ? '▲<small>Kurs</small>' : 'N<small>Norr</small>';
+  $('#btnOrient').classList.toggle('on', nav.trackUp);
+  $('#btnEdit').classList.toggle('on', editing);
+  $('#btnLayers').classList.toggle('on', !$('#layerPanel').classList.contains('hidden'));
+  $('#btnProfile').classList.toggle('on', !$('#profilePanel').classList.contains('hidden'));
+}
+onNav(() => { syncFab(); updateInstruments(); });
+
+// ---------- sidopanel ----------
+function toggleSide(force) {
+  const s = $('#side');
+  const show = force ?? s.classList.contains('hidden');
+  s.classList.toggle('hidden', !show);
+  document.body.classList.toggle('side-open', show);
+  setTimeout(drawProfile, 50);
+  if (show) renderTab();
+}
+$$('.tabs button[data-tab]').forEach((b) => b.addEventListener('click', () => {
+  currentTab = b.dataset.tab;
+  $$('.tabs button[data-tab]').forEach((x) => x.classList.toggle('active', x === b));
+  $$('.tabbody').forEach((t) => t.classList.toggle('hidden', t.id !== 'tab-' + currentTab));
+  renderTab();
+}));
+function renderTab() {
+  if ($('#side').classList.contains('hidden')) return;
+  const el = $('#tab-' + currentTab);
+  if (currentTab === 'route') renderRouteTab(el, { activeLeg: nav.tracking ? nav.activeLeg : -1 });
+  if (currentTab === 'wx') renderWxTab(el);
+  if (currentTab === 'fields') renderFieldsTab(el);
+  if (currentTab === 'track') renderLogTab(el);
+  if (currentTab === 'settings') renderSettingsTab(el);
+}
+onRouteChange(() => {
+  if (currentTab === 'route' && !document.activeElement?.closest?.('#tab-route')) renderTab();
+  drawProfile();
+});
+onAirports(() => { if (currentTab === 'fields') renderTab(); });
+
+// ---------- instrumentlist ----------
+function setI(id, v, alert = false) { const e = $(id); e.textContent = v; e.parentElement.classList.toggle('alert', alert); }
+function updateInstruments() {
+  const o = instrumentData();
+  setI('#iGS', o.gs != null ? Math.round(spdOut(o.gs)) : '--');
+  $('#iGSu').textContent = spdUnit();
+  setI('#iTRK', o.trk != null ? fmtDeg(o.trk - settings.variation) : '---');
+  setI('#iALT', o.alt != null ? Math.round(o.alt) : '----');
+  setI('#iAGL', o.agl != null ? Math.round(o.agl) : '----', o.agl != null && o.agl < 300 && (o.gs || 0) > 30);
+  setI('#iWP', o.wp ? (nav.dto ? '→ ' : '') + o.wp : '—');
+  setI('#iBRG', o.brg != null ? fmtDeg(o.brg) : '---');
+  setI('#iDIST', o.dist != null ? (o.dist < 10 ? o.dist.toFixed(1) : Math.round(o.dist)) : '--');
+  setI('#iETE', fmtHM(o.ete));
+  setI('#iETA', fmtUTC(o.eta));
+}
+setInterval(() => { $('#iUTC').textContent = fmtUTC(new Date()); }, 1000);
+$('#iUTC').textContent = fmtUTC(new Date());
+updateInstruments();
+syncFab();
+// Tryck på NÄSTA = avbryt direkt-till / välj sträcka
+$('#iWP').parentElement.addEventListener('click', () => {
+  if (nav.dto) { if (confirm('Avbryt Direkt till?')) cancelDto(); return; }
+  if (route.wps.length < 2) return;
+  modal(`<h3>Välj aktiv sträcka</h3><ul class="aplist">${route.wps.slice(1).map((w, i) => `<li><div class="info"><b>${i + 1}→${i + 2} ${esc(w.name)}</b></div>
+    <button class="btn small ${i === nav.activeLeg ? 'primary' : ''}" onclick="window.ulnav.setActiveLeg(${i});document.getElementById('modal').classList.add('hidden')">Aktivera</button></li>`).join('')}</ul>`);
+});
+
+// ---------- närmaste fält (nödläge) ----------
+function showNearest() {
+  const ref = nav.pos || { lat: map.getCenter().lat, lon: map.getCenter().lng };
+  const list = nearestAirports(ref, 12);
+  window.ulnav._near = list.map((x) => x.a);
+  modal(`<h3>Närmaste fält ${nav.pos ? 'från din position' : '<span class="muted">(från kartans mitt — GPS av)</span>'}</h3>
+    ${nav.pos && nav.aglFt ? `<div class="okbox">Glidräckvidd ≈ <b>${(nav.aglFt * settings.glideRatio / 6076).toFixed(1)} NM</b> (1:${settings.glideRatio}, ${Math.round(nav.aglFt)} ft AGL)</div>` : ''}
+    ${list.length ? `<ul class="aplist">${list.map(({ a, d }, i) => apRow(a, d, bearing(ref, a), i, true)).join('')}</ul>` : '<div class="muted">Inga fält inlästa ännu.</div>'}`);
+}
+function apRow(a, d, brg, i, big) {
+  const r = longestRwy(a);
+  return `<li><div class="info"><b>${a.ul ? '<span class="tag ul">UL</span>' : ''}${esc(a.name)}</b>
+    <span>${esc(a.icao || '')} ${esc(a.type)}${r ? ` · ${esc(r.des)} ${r.lenM ? r.lenM + ' m' : ''} ${esc(r.surf)}` : ''}${a.freqs[0] ? ' · ' + esc(a.freqs[0].mhz) : ''}</span></div>
+    <div class="dist">${d.toFixed(1)}<small>NM · ${fmtDeg(brg - settings.variation)}°M</small></div>
+    <button class="btn small ${big ? 'primary' : ''}" onclick="window.ulnav.dtoNear(${i})">→</button>
+    <button class="btn small" onclick="window.ulnav.showNear(${i})">ⓘ</button></li>`;
+}
+window.ulnav.dtoNear = (i) => { const a = window.ulnav._near[i]; $('#modal').classList.add('hidden'); directTo({ lat: a.lat, lon: a.lon, name: a.icao || a.name }); };
+window.ulnav.showNear = (i) => {
+  const a = window.ulnav._near[i]; $('#modal').classList.add('hidden');
+  if (window.innerWidth < 1000) toggleSide(false);
+  map.setView([a.lat, a.lon], Math.max(map.getZoom(), 11));
+  L.popup({ maxWidth: 340 }).setLatLng([a.lat, a.lon]).setContent(airportHtml(a)).openOn(map);
+};
+window.ulnav.addNear = (i) => { const a = window.ulnav._near[i]; addWaypoint({ lat: a.lat, lon: a.lon, name: a.icao || a.name, elevFt: a.elevFt }); toast('+ ' + (a.icao || a.name)); };
+
+// ---------- flik: fält ----------
+let fieldQuery = '';
+function renderFieldsTab(el) {
+  const ref = nav.pos || { lat: map.getCenter().lat, lon: map.getCenter().lng };
+  const info = oaInfo();
+  el.innerHTML = `<input class="search" type="search" id="fq" placeholder="Sök namn eller ICAO (t.ex. ESSB, Långtora)…" value="${esc(fieldQuery)}" autocomplete="off">
+    <div id="fres"></div>
+    <div class="muted" style="margin-top:10px">${info ? `OurAirports: ${info.n} fält (${esc(settings.oaCountries)}), hämtat ${info.t.toLocaleDateString('sv-SE')}` : 'OurAirports ej inläst'}${settings.openaipKey ? ' · OpenAIP: fält laddas för kartvyn' : ' · Ange OpenAIP-nyckel för UL-fält och frekvenser'}</div>`;
+  const draw = () => {
+    const q = $('#fq', el).value;
+    fieldQuery = q;
+    const list = q.trim() ? searchAirports(q).map((a) => ({ a, d: distNM(ref, a) })) : nearestAirports(ref, 30);
+    window.ulnav._near = list.map((x) => x.a);
+    $('#fres', el).innerHTML = `<h3>${q.trim() ? 'Sökresultat' : 'Närmast ' + (nav.pos ? 'din position' : 'kartans mitt')}</h3>
+      <ul class="aplist">${list.map(({ a, d }, i) => apRow(a, d, bearing(ref, a), i, false).replace('</li>', `<button class="btn small" onclick="window.ulnav.addNear(${i})">+</button></li>`)).join('') || '<li class="muted">Inga träffar</li>'}</ul>`;
+  };
+  $('#fq', el).addEventListener('input', debounce(draw, 200));
+  draw();
+}
+
+// ---------- flik: väder ----------
+async function showWx(icao) {
+  toggleSide(true);
+  $$('.tabs button[data-tab]').find((b) => b.dataset.tab === 'wx').click();
+  if (icao) { const inp = $('#wxIds'); inp.value = icao; $('#wxGo').click(); }
+}
+function routeIcaos() { return [...new Set(route.wps.map((w) => w.name).filter((n) => /^[A-Z]{4}$/.test(n)))]; }
+function renderWxTab(el) {
+  const ids = store.get('ulnav.wxids', '') || routeIcaos().join(' ');
+  el.innerHTML = `<h3>METAR / TAF</h3>
+    <div style="display:flex;gap:8px"><input class="search" id="wxIds" placeholder="ICAO, t.ex. ESSA ESOW" value="${esc(ids || routeIcaos().join(' '))}" style="margin:0">
+    <button class="btn primary" id="wxGo">Hämta</button></div>
+    ${routeIcaos().length ? `<div class="btnrow"><button class="btn small" id="wxRoute">Fält i rutten (${routeIcaos().join(', ')})</button></div>` : ''}
+    <div id="wxRes"></div>
+    <h3>Prognos för rutten <span class="muted">(Open-Meteo)</span></h3><div id="wxRoute2" class="muted">${route.wps.length < 2 ? 'Skapa en rutt för vindprognos.' : 'Hämtar…'}</div>
+    <div class="muted" style="margin-top:12px">Lägg till <b>METAR-stationer</b> och <b>Nederbördsradar</b> som lager via ▤. Officiell briefing (LFV/AIM) ska alltid användas före flygning.</div>`;
+  const go = async () => {
+    const v = $('#wxIds', el).value; store.set('ulnav.wxids', v);
+    $('#wxRes', el).innerHTML = '<div class="muted">Hämtar…</div>';
+    try {
+      const r = await fetchMetarTaf(v.split(/[\s,]+/));
+      $('#wxRes', el).innerHTML = r.map(metarHtml).join('') || '<div class="muted">Ange minst en ICAO-kod.</div>';
+    } catch (e) {
+      $('#wxRes', el).innerHTML = `<div class="badbox">${esc(e.message)}<br>aviationweather.gov kan blockera direktanrop från webbläsare. Ange en CORS-proxy under Inställningar.</div>`;
+    }
+  };
+  $('#wxGo', el).onclick = go;
+  $('#wxRoute', el)?.addEventListener('click', () => { $('#wxIds', el).value = routeIcaos().join(' '); go(); });
+  if ($('#wxIds', el).value.trim()) go();
+  if (route.wps.length >= 2) routeForecast($('#wxRoute2', el));
+}
+async function routeForecast(box) {
+  const w = route.wps, dep = depDate();
+  const legs = getLegs();
+  const eta = legs.length ? legs[legs.length - 1].eta : dep;
+  try {
+    const [a, b] = await fetchForecast([w[0], w[w.length - 1]]);
+    const row = (name, fc, t) => {
+      const i = hourIndex(fc, t), s = surfaceWx(fc, i);
+      const wa = windAt(fc, i, settings.cruiseAlt);
+      const sun = sunInfo(t, fc.latitude, fc.longitude);
+      return `<div class="metar" style="font-family:inherit;font-size:14px;white-space:normal"><div class="st"><span>${esc(name)}</span><span class="muted">${fmtUTC(t)}Z</span></div>
+        <div class="kv"><span>Vind 10 m</span><b>${fmtDeg(s.wdir)}° / ${Math.round(s.wspd)} kt${s.gust > s.wspd + 5 ? ' (byar ' + Math.round(s.gust) + ')' : ''}</b>
+        <span>Vind ${settings.cruiseAlt} ft</span><b>${fmtDeg(wa.dir)}° / ${Math.round(wa.spd)} kt</b>
+        <span>Temp / dagg</span><b>${s.temp?.toFixed(0)}° / ${s.dew?.toFixed(0)}°</b>
+        <span>Molnbas (uppsk.)</span><b>${s.baseFt != null ? '≈ ' + s.baseFt + ' ft AGL' : '—'}</b>
+        <span>Låga moln</span><b>${s.low ?? '—'} %</b>
+        <span>Sikt</span><b>${s.visKm != null ? (s.visKm >= 10 ? '≥ 10 km' : s.visKm.toFixed(1) + ' km') : '—'}</b>
+        <span>Nederbörd</span><b>${s.precip ?? 0} mm/h</b>
+        <span>QNH (≈)</span><b>${s.qnh != null ? Math.round(s.qnh) + ' hPa' : '—'}</b>
+        <span>Nollgradersgräns</span><b>${s.frzFt != null ? Math.round(s.frzFt / 100) * 100 + ' ft' : '—'}</b>
+        <span>Solnedgång</span><b>${fmtUTC(sun.sunset)}Z</b></div></div>`;
+    };
+    box.classList.remove('muted');
+    box.innerHTML = row('Avgång: ' + w[0].name, a, dep) + row('Ankomst: ' + w[w.length - 1].name, b, eta) +
+      '<div class="muted">Molnbas uppskattad med (T−Td)×400 ft. Modellprognos — ej ersättning för GAFOR/TAF.</div>';
+  } catch (e) { box.textContent = 'Kunde inte hämta prognos: ' + e.message; }
+}
+
+// ---------- flik: inställningar ----------
+function renderSettingsTab(el) {
+  const s = settings, u = spdUnit();
+  const num = (k, label, sub, step = 1, conv = (v) => v) => `<div class="field"><span>${label}${sub ? `<small>${sub}</small>` : ''}</span>
+    <input type="number" inputmode="decimal" step="${step}" data-k="${k}" value="${+conv(s[k]).toFixed(1)}"></div>`;
+  el.innerHTML = `
+  <h3>Visning</h3>
+  <div class="field"><span>Tema</span><select data-k="theme">
+    <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Mörkt</option><option value="day" ${s.theme === 'day' ? 'selected' : ''}>Ljust (dag/sol)</option>
+    <option value="night" ${s.theme === 'night' ? 'selected' : ''}>Natt (rött)</option></select></div>
+  <div class="field"><span>Fartenhet</span><select data-k="speedUnit"><option value="kt" ${s.speedUnit === 'kt' ? 'selected' : ''}>knop (kt)</option>
+    <option value="kmh" ${s.speedUnit === 'kmh' ? 'selected' : ''}>km/h</option></select></div>
+
+  <h3>Flygplan</h3>
+  ${num('tas', `Marschfart TAS (${u})`, '', 1, spdOut)}
+  ${num('fuelBurn', 'Förbrukning (l/h)', '', 0.5)}
+  ${num('fuelUsable', 'Användbart bränsle (l)', '', 1)}
+  ${num('taxiFuel', 'Taxi/start (l)', '', 0.5)}
+  ${num('reserveMin', 'Reserv (min)', '', 5)}
+  ${num('glideRatio', 'Glidtal 1:x', 'för glidräckviddsring', 0.5)}
+
+  <h3>Planering</h3>
+  ${num('cruiseAlt', 'Standardhöjd (ft MSL)', 'för nya brytpunkter', 100)}
+  ${num('minClearance', 'Terrängmarginal (ft)', 'varning i profil/navlogg', 100)}
+  ${num('variation', 'Magnetisk variation (°)', 'ost = +, väst = −. Hämta från aktuell karta/AIP', 0.5)}
+  ${num('arrivalRadius', 'Ankomstradie (NM)', 'byt till nästa punkt', 0.1)}
+
+  <h3>Datakällor</h3>
+  <div class="field"><span>OpenAIP API-nyckel<small>Gratis på <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a> › konto › API-klienter</small></span>
+    <input type="password" data-k="openaipKey" value="${esc(s.openaipKey)}" autocomplete="off"></div>
+  <div class="field"><span>Lantmäteriet användare<small>Gratis konto på Geotorget (öppna data)</small></span><input type="text" data-k="lmUser" value="${esc(s.lmUser)}" autocomplete="off"></div>
+  <div class="field"><span>Lantmäteriet lösenord</span><input type="password" data-k="lmPass" value="${esc(s.lmPass)}" autocomplete="off"></div>
+  <div class="field"><span>OurAirports länder<small>ISO-koder, t.ex. SE,NO,DK,FI</small></span><input type="text" data-k="oaCountries" value="${esc(s.oaCountries)}"></div>
+  <div class="field"><span>Ta med helikopterplatser</span><input type="checkbox" data-k="oaIncludeHeli" ${s.oaIncludeHeli ? 'checked' : ''}></div>
+  <div class="btnrow"><button class="btn" id="oaReload">↻ Ladda om OurAirports</button></div>
+  <div class="field"><span>CORS-proxy (valfri)<small>Prefix för METAR/TAF m.fl. om webbläsaren blockerar. {url} ersätts om den finns.</small></span>
+    <input type="url" data-k="corsProxy" value="${esc(s.corsProxy)}" placeholder="https://…/?url={url}"></div>
+
+  <h3>Offline</h3>
+  <div class="muted">Spara kartbilder (zoom 7–12, ±8 NM) och terräng längs aktuell rutt för vald baskarta och aktiva flygkartlager. Data för luftrum och flygfält sparas automatiskt när de visas.</div>
+  <div class="btnrow"><button class="btn primary" id="offDl">⤓ Spara rutten offline</button><button class="btn danger" id="offClr">Töm kartcache</button></div>
+  <div id="offInfo" class="muted"></div>
+
+  <details style="margin-top:12px"><summary class="btn" style="display:inline-flex;align-items:center">Avancerat: kart-URL:er</summary>
+    ${Object.keys(DEFAULT_TILES).map((k) => `<div class="field" style="flex-direction:column;align-items:stretch"><span><small>${k}</small></span>
+      <input type="url" data-tile="${k}" value="${esc(s.tiles[k])}" style="width:100%;font-size:13px"></div>`).join('')}
+    <div class="btnrow"><button class="btn" id="tilesReset">Återställ standard</button></div>
+  </details>
+
+  <h3>Om & licenser</h3>
+  <div class="muted" style="line-height:1.5">
+  Kartdata © OpenStreetMap-bidragsgivare (ODbL) · OpenTopoMap (CC-BY-SA) · Lantmäteriet (CC-BY) · Esri World Imagery ·
+  open flightmaps · OpenAIP (CC BY-NC 4.0) · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
+  RainViewer · AWS Terrain Tiles (SRTM, GMTED, ETOPO m.fl.) · Leaflet (BSD-2).<br><br>
+  <b>Viktigt:</b> Appen är ett hjälpmedel för planering och lägesuppfattning. Den ersätter inte officiell AIP, ICAO-karta, NOTAM,
+  briefing eller godkänd navigationsutrustning. Data från öppna källor kan vara ofullständiga eller inaktuella. Befälhavaren ansvarar alltid.</div>`;
+
+  el.querySelectorAll('[data-k]').forEach((inp) => inp.addEventListener('change', () => {
+    const k = inp.dataset.k;
+    let v = inp.type === 'checkbox' ? inp.checked : inp.type === 'number' ? +inp.value : inp.value.trim();
+    if (k === 'tas') v = spdIn(v);
+    saveSettings({ [k]: v });
+    if (k === 'theme') applyTheme();
+    if (['tas', 'fuelBurn', 'variation', 'speedUnit', 'minClearance'].includes(k)) recompute();
+    if (k === 'speedUnit') renderSettingsTab(el);
+    updateInstruments();
+  }));
+  el.querySelectorAll('[data-tile]').forEach((inp) => inp.addEventListener('change', () => saveSettings({ tiles: { ...settings.tiles, [inp.dataset.tile]: inp.value.trim() } })));
+  $('#tilesReset', el).onclick = () => { saveSettings({ tiles: { ...DEFAULT_TILES } }); renderSettingsTab(el); };
+  $('#oaReload', el).onclick = () => loadOurAirports(true);
+  const showInfo = async () => { const i = await cacheInfo(); if (i) $('#offInfo', el).textContent = `${i.n} kartbilder i cache${i.usedMB != null ? ` · ${i.usedMB.toFixed(0)} MB använt av ${(i.quotaMB / 1000).toFixed(1)} GB` : ''}`; };
+  showInfo();
+  $('#offDl', el).onclick = async () => {
+    const b = $('#offDl', el); b.disabled = true;
+    await downloadRoute((d, n) => { b.textContent = `Sparar ${d}/${n}…`; });
+    b.disabled = false; b.textContent = '⤓ Spara rutten offline'; showInfo();
+  };
+  $('#offClr', el).onclick = async () => { if (confirm('Töm kartcachen?')) { await clearTiles(); showInfo(); } };
+}
+
+// ---------- storlek/orientering ----------
+window.addEventListener('resize', debounce(() => { map.invalidateSize(); drawProfile(); }, 150));
+new ResizeObserver(debounce(() => map.invalidateSize(), 100)).observe($('#mapwrap'));
+window.addEventListener('online', () => toast('Online igen'));
+window.addEventListener('offline', () => toast('Offline — använder sparade data', 4000));
+
+// ---------- service worker ----------
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW', e));
+}
+
+// Första start: visa tips
+if (!store.get('ulnav.welcomed', false)) {
+  store.set('ulnav.welcomed', true);
+  modal(`<h3>Välkommen till Ultranav</h3>
+  <ol style="line-height:1.6;padding-left:20px">
+   <li>Öppna <b>☰ › Inställningar</b> och ange din gratis <b>OpenAIP-nyckel</b> (luftrum, UL-fält, rapportpunkter), samt flygplanets fart och förbrukning.</li>
+   <li>Tryck på <b>✎ Rutt</b> och sedan på kartan för att lägga ut brytpunkter. Tryck nära ett fält för att fästa vid det.</li>
+   <li>Navloggen med vindkorrektion, bränsle, solnedgång och luftrum längs rutten finns under <b>☰ › Rutt</b>. Terrängprofilen öppnas med <b>⛰</b>.</li>
+   <li>Före start: <b>Spara rutten offline</b> under Inställningar. Lägg sedan till appen på hemskärmen via Safari › Dela › Lägg till på hemskärmen.</li>
+   <li>I luften: <b>📡 GPS</b>, sedan <b>◎ Följ</b> och <b>N/▲</b> för norr-upp eller kurs-upp. <b>✈ Närm.</b> visar närmaste fält för nödlandning.</li>
+  </ol>
+  <div class="warnbox">Hjälpmedel — ersätter inte officiell AIP, NOTAM eller briefing.</div>`);
+}

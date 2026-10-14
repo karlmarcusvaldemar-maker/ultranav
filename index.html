@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ultranav">
+<meta name="theme-color" content="#0f1720">
+<title>Ultranav</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- Instrumentlist -->
+  <header id="instruments">
+    <button id="btnMenu" class="ibtn" aria-label="Meny">☰</button>
+    <div class="inst"><span class="lbl">GS</span><span class="val" id="iGS">--</span><span class="unit" id="iGSu">kt</span></div>
+    <div class="inst"><span class="lbl">TRK</span><span class="val" id="iTRK">---</span><span class="unit">°</span></div>
+    <div class="inst"><span class="lbl">ALT</span><span class="val" id="iALT">----</span><span class="unit">ft</span></div>
+    <div class="inst"><span class="lbl">AGL</span><span class="val" id="iAGL">----</span><span class="unit">ft</span></div>
+    <div class="inst wide"><span class="lbl">NÄSTA</span><span class="val" id="iWP">—</span></div>
+    <div class="inst"><span class="lbl">BRG</span><span class="val" id="iBRG">---</span><span class="unit">°</span></div>
+    <div class="inst"><span class="lbl">DIST</span><span class="val" id="iDIST">--</span><span class="unit">NM</span></div>
+    <div class="inst"><span class="lbl">ETE</span><span class="val" id="iETE">--:--</span></div>
+    <div class="inst"><span class="lbl">ETA</span><span class="val" id="iETA">--:--</span><span class="unit">Z</span></div>
+    <div class="inst"><span class="lbl">UTC</span><span class="val" id="iUTC">--:--</span></div>
+  </header>
+
+  <div id="mapwrap">
+    <div id="map"></div>
+    <div id="toast" class="hidden"></div>
+    <div id="editBanner" class="hidden">Ruttläge: tryck på kartan för att lägga till punkter · dra punkterna för att flytta dem <button id="btnEditDone">Klar</button></div>
+
+    <!-- Snabbknappar -->
+    <nav id="fab">
+      <button id="btnGps" title="GPS på/av">📡<small>GPS</small></button>
+      <button id="btnFollow" title="Följ position">◎<small>Följ</small></button>
+      <button id="btnOrient" title="Norr-upp / kurs-upp">N<small>Norr</small></button>
+      <button id="btnEdit" title="Rita rutt">✎<small>Rutt</small></button>
+      <button id="btnNearest" title="Närmaste fält">✈<small>Närm.</small></button>
+      <button id="btnLayers" title="Kartlager">▤<small>Lager</small></button>
+      <button id="btnProfile" title="Terrängprofil">⛰<small>Profil</small></button>
+      <button id="btnZoomIn" title="Zooma in">+</button>
+      <button id="btnZoomOut" title="Zooma ut">−</button>
+    </nav>
+
+    <!-- Lagerpanel -->
+    <section id="layerPanel" class="popover hidden"></section>
+
+    <!-- Terrängprofil -->
+    <section id="profilePanel" class="hidden">
+      <canvas id="profileCanvas"></canvas>
+      <div id="profileLegend"></div>
+    </section>
+  </div>
+
+  <!-- Sidopanel -->
+  <aside id="side" class="hidden">
+    <div class="tabs">
+      <button data-tab="route" class="active">Rutt</button>
+      <button data-tab="wx">Väder</button>
+      <button data-tab="fields">Fält</button>
+      <button data-tab="track">Logg</button>
+      <button data-tab="settings">Inställn.</button>
+      <button id="btnCloseSide" class="close" aria-label="Stäng">✕</button>
+    </div>
+    <div class="tabbody" id="tab-route"></div>
+    <div class="tabbody hidden" id="tab-wx"></div>
+    <div class="tabbody hidden" id="tab-fields"></div>
+    <div class="tabbody hidden" id="tab-track"></div>
+    <div class="tabbody hidden" id="tab-settings"></div>
+  </aside>
+
+  <!-- Modal -->
+  <div id="modal" class="hidden"><div class="modalbox"><div id="modalBody"></div><div class="modalbtns"><button id="modalClose">Stäng</button></div></div></div>
+</div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/leaflet/leaflet-rotate.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

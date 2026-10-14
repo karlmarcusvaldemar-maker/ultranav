@@ -1,0 +1,60 @@
+// Service worker: appskal offline, kartbilder cache-först, API-data nätverk-först
+const APP = 'ulnav-app-v1';
+const TILES = 'ulnav-tiles-v1';
+const DATA = 'ulnav-data-v1';
+const SHELL = [
+  './', 'index.html', 'manifest.webmanifest', 'css/app.css',
+  'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'vendor/leaflet/leaflet-rotate.js',
+  'js/app.js', 'js/util.js', 'js/settings.js', 'js/map.js', 'js/openaip.js', 'js/airports.js', 'js/aero.js',
+  'js/terrain.js', 'js/sun.js', 'js/wx.js', 'js/route.js', 'js/profile.js', 'js/nav.js', 'js/offline.js',
+  'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
+];
+const TILE_HOSTS = /tile\.openstreetmap\.org|tile\.opentopomap\.org|arcgisonline\.com|lantmateriet\.se|newaydata\.com|tiles\.openaip\.net|elevation-tiles-prod|tilecache\.rainviewer\.com/;
+const MAX_TILES = 20000;
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(APP).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => ![APP, TILES, DATA].includes(k)).map((k) => caches.delete(k))))
+    .then(() => self.clients.claim()));
+});
+
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin === location.origin) {
+    // appskal: nätverk först (så uppdateringar slår igenom), annars cache
+    e.respondWith(fetch(req).then((r) => { if (r.ok) { const c = r.clone(); caches.open(APP).then((ca) => ca.put(req, c)); } return r; })
+      .catch(() => caches.match(req, { ignoreSearch: true })));
+    return;
+  }
+  if (TILE_HOSTS.test(url.hostname) && !/rainviewer\.com$/.test(url.hostname)) {
+    // kartbilder: cache först. Radarbilder sparas inte (de blir inaktuella).
+    e.respondWith(caches.open(TILES).then(async (c) => {
+      const hit = await c.match(req);
+      if (hit) return hit;
+      try {
+        const r = await fetch(req);
+        if (r.ok || r.type === 'opaque') { c.put(req, r.clone()); trim(c); }
+        return r;
+      } catch (err) { return hit || Response.error(); }
+    }));
+    return;
+  }
+  if (/open-meteo\.com|aviationweather\.gov|ourairports-data/.test(url.href)) {
+    // väder/data: nätverk först, cache som reserv offline
+    e.respondWith(fetch(req).then((r) => { if (r.ok) { const c = r.clone(); caches.open(DATA).then((ca) => ca.put(req, c)); } return r; })
+      .catch(() => caches.match(req)));
+  }
+});
+
+let trimming = false, puts = 0;
+async function trim(c) {
+  if (trimming || ++puts % 200) return; trimming = true;
+  try {
+    const keys = await c.keys();
+    if (keys.length > MAX_TILES) for (const k of keys.slice(0, keys.length - MAX_TILES)) await c.delete(k);
+  } finally { trimming = false; }
+}
