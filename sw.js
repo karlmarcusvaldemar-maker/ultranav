@@ -1,5 +1,5 @@
 // Service worker: appskal offline, kartbilder cache-först, API-data nätverk-först
-const APP = 'ulnav-app-v4';
+const APP = 'ulnav-app-v6';
 const TILES = 'ulnav-tiles-v1';
 const DATA = 'ulnav-data-v1';
 const SHELL = [
@@ -10,7 +10,7 @@ const SHELL = [
   'vendor/maplibre/maplibre-gl.js', 'vendor/maplibre/maplibre-gl.css', 'vendor/maplibre/leaflet-maplibre-gl.js', 'js/sun.js', 'js/wx.js', 'js/route.js', 'js/profile.js', 'js/nav.js', 'js/offline.js',
   'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
-const TILE_HOSTS = /tile\.openstreetmap\.org|tile\.opentopomap\.org|arcgisonline\.com|lantmateriet\.se|newaydata\.com|tiles\.openaip\.net|elevation-tiles-prod|tilecache\.rainviewer\.com|tiles\.openfreemap\.org/;
+const TILE_HOSTS = /tile\.openstreetmap\.org|tile\.opentopomap\.org|arcgisonline\.com|newaydata\.com|tiles\.openaip\.net|elevation-tiles-prod|tilecache\.rainviewer\.com|tiles\.openfreemap\.org/;
 const MAX_TILES = 20000;
 
 self.addEventListener('install', (e) => {

@@ -38,47 +38,22 @@ export async function testOpenAip() {
   return box('badbox', `✗ ${esc(r.msg)}<br>${hint}`);
 }
 
-// ---------- Lantmäteriet ----------
-const LM_CAPS = 'https://maps.lantmateriet.se/open/topowebb-ccby/v1/wmts?request=GetCapabilities&version=1.0.0&service=wmts';
 
-/** Läs ResourceURL-mallen för lagret topowebb ur GetCapabilities och gör om den till {z}/{x}/{y} */
-function parseCaps(xml, layer = 'topowebb') {
-  const doc = new DOMParser().parseFromString(xml, 'application/xml');
-  const layers = [...doc.getElementsByTagNameNS('*', 'Layer')];
-  const L0 = layers.find((l) => [...l.children].some((c) => c.localName === 'Identifier' && c.textContent.trim() === layer)) || layers[0];
-  if (!L0) return null;
-  const res = [...L0.getElementsByTagNameNS('*', 'ResourceURL')].find((r) => /png/i.test(r.getAttribute('format') || '')) || L0.getElementsByTagNameNS('*', 'ResourceURL')[0];
-  const sets = [...L0.getElementsByTagNameNS('*', 'TileMatrixSet')].map((t) => t.textContent.trim());
-  const set = sets.find((s) => /3857|GoogleMaps|WebMercator/i.test(s));
-  if (!res || !set) return { sets };
-  const tpl = res.getAttribute('template')
-    .replace('{TileMatrixSet}', set).replace('{Style}', 'default').replace('{style}', 'default')
-    .replace('{TileMatrix}', '{z}').replace('{TileRow}', '{y}').replace('{TileCol}', '{x}');
-  return { tpl, set, sets };
-}
-
-export async function testLantmateriet() {
-  const { lmUser, lmPass, lmKey } = settings;
-  if (!lmUser && !lmKey) return box('warnbox', 'Ange användarnamn och lösenord från Geotorget (eller en äldre API-nyckel).');
-  let caps, how;
-  if (lmUser) {
-    caps = await probe(LM_CAPS, { Authorization: 'Basic ' + btoa(unescape(encodeURIComponent(`${lmUser}:${lmPass}`))) });
-    how = 'Geotorget-inloggning';
-  } else {
-    caps = await probe(`https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/${encodeURIComponent(lmKey)}/?request=GetCapabilities&version=1.0.0&service=wmts`);
-    how = 'API-nyckel';
+/** Testa att en kartbild (eller stil) går att hämta och visa. Bilder testas som <img> (kräver inte CORS). */
+export async function testTile(url, name, isJson = false) {
+  if (!navigator.onLine) return box('badbox', 'Ingen internetanslutning.');
+  if (!isJson) {
+    const ok = await new Promise((res) => {
+      const img = new Image(); const t = setTimeout(() => res(false), 12000);
+      img.onload = () => { clearTimeout(t); res(true); }; img.onerror = () => { clearTimeout(t); res(false); };
+      img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+    });
+    if (ok) return box('okbox', `✓ ${esc(name)} fungerar.`);
   }
-  if (!caps.ok) {
-    const hint = {
-      auth: 'Fel användarnamn eller lösenord. Använd inloggningen för API-åtkomsten på Geotorget.',
-      forbidden: 'Inloggningen fungerar men kontot saknar behörighet. Beställ åtkomst till "Topografisk webbkarta Visning, översiktlig" på Geotorget och vänta tills behörigheten syns under ditt konto.',
-      cors: 'Lantmäteriets server tillåter inte inloggade anrop direkt från en webbapp. Det går inte att lösa i appen — det kräver en liten mellanserver (proxy) som lägger till inloggningen. Använd OpenTopoMap eller vektorkartan så länge.',
-      notfound: 'Åtkomstpunkten finns inte (längre).',
-    }[caps.kind] || '';
-    return box('badbox', `✗ ${how}: ${esc(caps.msg)}<br>${hint}`);
-  }
-  const p = parseCaps(caps.text);
-  if (!p?.tpl) return box('warnbox', `Inloggningen fungerar, men hittade ingen Web Mercator-uppsättning i svaret (finns: ${esc((p?.sets || []).join(', '))}).`);
-  saveSettings({ tiles: { ...settings.tiles, ...(lmUser ? { lmBasic: p.tpl } : { lm: p.tpl.replace(encodeURIComponent(lmKey), '{key}').replace(lmKey, '{key}') }) } });
-  return box('okbox', `✓ Lantmäteriet fungerar (${how}). Kartadress hämtad från tjänsten. Välj "Lantmäteriet Topowebb" under ▤ Lager.`);
+  const r = await probe(url);
+  if (r.ok) return box('okbox', `✓ ${esc(name)} fungerar.`);
+  const hint = r.status === 403 || r.status === 429
+    ? 'Servern nekar just nu — troligen tillfällig spärr eller överbelastning (t.ex. efter många nedladdningar). Vänta en stund eller välj en annan karta.'
+    : r.kind === 'cors' ? 'Servern svarar men bilden kunde inte visas.' : r.kind === 'network' ? 'Servern går inte att nå — den kan vara nere.' : '';
+  return box('badbox', `✗ ${esc(name)}: ${esc(r.msg)}<br>${hint}`);
 }

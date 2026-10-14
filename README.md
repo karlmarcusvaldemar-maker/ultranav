@@ -24,7 +24,6 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 |---|---|---|
 | OpenStreetMap / OpenTopoMap | Baskartor | – |
 | OpenFreeMap (OSM-vektordata) | Vektorkartor i MapLibre | – |
-| Lantmäteriet Topowebb | Svensk topokarta (utgår 2026-12-31) | Gratis API-nyckel via Geotorget |
 | Esri World Imagery | Satellit | – |
 | open flightmaps | VFR-karta där OFM har täckning | – |
 | OpenAIP | Luftrum, fält (inkl. UL), rapportpunkter | Gratis API-nyckel |
@@ -45,3 +44,11 @@ Obs: iPad-modeller med bara Wi-Fi saknar GPS-mottagare. Använd en mobildatamode
 
 ## Viktigt
 Appen är ett hjälpmedel. Den ersätter inte officiell AIP, ICAO-karta, NOTAM, briefing eller godkänd navigationsutrustning. Magnetisk variation anges manuellt i inställningarna.
+
+## CORS-proxy (valfri)
+Om METAR/TAF inte går att hämta kan du köra en egen liten proxy gratis hos Cloudflare.
+Koden finns i [`tools/cors-proxy-worker.js`](tools/cors-proxy-worker.js). Den släpper bara igenom anrop från Ultranavs adress, och bara till väderkällorna.
+1. Skapa ett gratis konto på https://dash.cloudflare.com och gå till **Compute (Workers) › Create › Worker** ("Hello World").
+2. Välj **Edit code**, ersätt koden med innehållet i filen och tryck **Deploy**.
+3. Kopiera adressen, t.ex. `https://ultranav-proxy.<namn>.workers.dev`.
+4. Ange `https://ultranav-proxy.<namn>.workers.dev/?url={url}` i Ultranav under **Inställn. › CORS-proxy**.

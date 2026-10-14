@@ -1,7 +1,7 @@
 // Förladdning av kartbilder längs rutten (för flygning utan mobiltäckning)
 import { settings } from './settings.js';
 import { route } from './route.js';
-import { currentBase, overlayOn, basicAuth } from './map.js';
+import { currentBase, overlayOn } from './map.js';
 import { interp, distNM, toast } from './util.js';
 
 export const TILE_CACHE = 'ulnav-tiles-v1';
@@ -11,25 +11,21 @@ function tileXY(lat, lon, z) {
   return { x: Math.floor((lon + 180) / 360 * n), y: Math.floor((1 - Math.log(Math.tan(φ) + 1 / Math.cos(φ)) / Math.PI) / 2 * n) };
 }
 function fill(tpl, z, x, y) {
-  return tpl.replace('{s}', 'abc'[(x + y) % 3]).replace('{z}', z).replace('{x}', x).replace('{y}', y).replace('{key}', encodeURIComponent(tpl.includes('lantmateriet') ? settings.lmKey : settings.openaipKey));
+  return tpl.replace('{s}', 'abc'[(x + y) % 3]).replace('{z}', z).replace('{x}', x).replace('{y}', y).replace('{key}', encodeURIComponent(settings.openaipKey));
 }
 
 /** Lista tile-URL:er i en korridor (±corridor NM) längs rutten */
-const authUrls = new Set(); // kräver Basic-inloggning
 export function routeTiles({ corridor = 8, zMin = 7, zMax = 12 } = {}) {
   const sources = [];
   const base = currentBase();
   // OSM:s standardserver tillåter inte massnedladdning → hoppa över
   if (base === 'otm') sources.push({ tpl: settings.tiles.otm, max: 15 });
-  if (base === 'lm' && settings.lmUser) sources.push({ tpl: settings.tiles.lmBasic, max: 14, auth: true });
-  else if (base === 'lm' && settings.lmKey) sources.push({ tpl: settings.tiles.lm, max: 14 });
   if (base === 'esri') sources.push({ tpl: settings.tiles.esri, max: 18 });
   if (base === 'ofmBase') sources.push({ tpl: settings.tiles.ofmBase, max: 12 });
   if (overlayOn('ofmAero')) sources.push({ tpl: settings.tiles.ofmAero, max: 12 });
   if (overlayOn('openaipTiles') && settings.openaipKey) sources.push({ tpl: settings.tiles.openaip, max: 14 });
   sources.push({ tpl: settings.tiles.terrain, max: 10, only: 10 });
   const urls = new Set();
-  authUrls.clear();
   const w = route.wps;
   for (let z = zMin; z <= zMax; z++) {
     const set = new Set();
@@ -44,7 +40,7 @@ export function routeTiles({ corridor = 8, zMin = 7, zMax = 12 } = {}) {
     }
     for (const s of sources) {
       if (z > s.max || (s.only && z !== s.only)) continue;
-      for (const k of set) { const [x, y] = k.split('/'); const u = fill(s.tpl, z, +x, +y); urls.add(u); if (s.auth) authUrls.add(u); }
+      for (const k of set) { const [x, y] = k.split('/'); urls.add(fill(s.tpl, z, +x, +y)); }
     }
   }
   return [...urls];
@@ -64,9 +60,8 @@ export async function downloadRoute(onProgress) {
       const u = queue.shift();
       try {
         if (!(await cache.match(u))) {
-          // Försök med CORS först; källor utan CORS-huvuden (t.ex. Lantmäteriet) sparas som opaka svar
-          const r = authUrls.has(u) ? await fetch(u, { headers: { Authorization: basicAuth() } })
-            : await fetch(u, { mode: 'cors' }).catch(() => fetch(u, { mode: 'no-cors' }));
+          // Försök med CORS först; källor utan CORS-huvuden sparas som opaka svar
+          const r = await fetch(u, { mode: 'cors' }).catch(() => fetch(u, { mode: 'no-cors' }));
           if (r.ok || r.type === 'opaque') await cache.put(u, r); else fail++;
         }
       } catch { fail++; }

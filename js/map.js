@@ -7,43 +7,21 @@ export let map;
 const state = store.get('ulnav.layers', { base: 'otm', overlays: ['openaipVec', 'oa', 'route'], opacity: {} });
 const save = () => store.set('ulnav.layers', state);
 
-// Tile-lager som hämtar med Basic-inloggning (Geotorget). Kräver att servern tillåter CORS.
-export const basicAuth = () => 'Basic ' + btoa(unescape(encodeURIComponent(`${settings.lmUser}:${settings.lmPass}`)));
-let lmErrShown = false;
-const AuthTileLayer = L.TileLayer.extend({
-  createTile(coords, done) {
-    const img = document.createElement('img');
-    img.alt = ''; img.setAttribute('role', 'presentation');
-    fetch(this.getTileUrl(coords), { headers: { Authorization: basicAuth() } })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
-      .then((b) => { img.onload = () => { URL.revokeObjectURL(img.src); done(null, img); }; img.src = URL.createObjectURL(b); })
-      .catch((e) => {
-        if (!lmErrShown && navigator.onLine) { lmErrShown = true; toast('Lantmäteriet: ' + e.message + ' — använd "Testa anslutning" under Inställningar', 7000); }
-        done(e, img);
-      });
-    return img;
-  },
-});
-
-const tileOpts = (extra) => ({ maxZoom: 19, crossOrigin: true, className: 'basemap', ...extra });
+// crossOrigin av: bilderna visas även om servern inte skickar CORS-huvuden (appen läser aldrig pixlarna)
+const tileOpts = (extra) => ({ maxZoom: 19, crossOrigin: false, className: 'basemap', ...extra });
 
 export const BASES = {
   otm: { name: 'OpenTopoMap', note: 'Topografi, höjdkurvor', make: () => L.tileLayer(settings.tiles.otm, tileOpts({ maxNativeZoom: 17, subdomains: 'abc', attribution: '© OpenStreetMap, SRTM | © OpenTopoMap (CC-BY-SA)' })) },
   vecLiberty: { name: 'Vektorkarta (MapLibre)', note: 'OpenFreeMap/OSM, skarp i alla zoomnivåer, terrängskuggning', make: () => vectorLayer('liberty', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
   vecPositron: { name: 'Vektorkarta ljus (MapLibre)', note: 'Nedtonad – flygdata syns tydligt', make: () => vectorLayer('positron', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
   osm: { name: 'OpenStreetMap', note: 'Gatukarta', make: () => L.tileLayer(settings.tiles.osm, tileOpts({ maxNativeZoom: 19, attribution: '© OpenStreetMap-bidragsgivare' })) },
-  lm: { name: 'Lantmäteriet Topowebb', note: 'Sverige, officiell topo (kräver Geotorget-inloggning)', needsLmKey: true,
-    // crossOrigin av: tjänsten behöver inte skicka CORS-huvuden för att bilderna ska visas
-    make: () => settings.lmUser
-      ? new AuthTileLayer(settings.tiles.lmBasic, tileOpts({ maxNativeZoom: 14, crossOrigin: false, attribution: '© Lantmäteriet' }))
-      : L.tileLayer(settings.tiles.lm.replace('{key}', encodeURIComponent(settings.lmKey)), tileOpts({ maxNativeZoom: 14, crossOrigin: false, attribution: '© Lantmäteriet' })) },
   esri: { name: 'Satellit (Esri)', note: 'Flyg-/satellitbild', make: () => L.tileLayer(settings.tiles.esri, tileOpts({ maxNativeZoom: 18, attribution: 'Bild © Esri, Maxar, Earthstar Geographics' })) },
   ofmBase: { name: 'OpenFlightMaps bas', note: 'Där OFM har täckning', make: () => L.tileLayer(settings.tiles.ofmBase, tileOpts({ maxNativeZoom: 12, attribution: '© open flightmaps' })) },
 };
 
 export const OVERLAYS = {
-  ofmAero: { name: 'OpenFlightMaps VFR', note: 'Flygkarta (där täckning finns)', opacity: 1, make: () => L.tileLayer(settings.tiles.ofmAero, { maxNativeZoom: 12, maxZoom: 19, crossOrigin: true, attribution: '© open flightmaps' }) },
-  openaipTiles: { name: 'OpenAIP-karta (raster)', note: 'Kräver API-nyckel', needsKey: true, opacity: 1, make: () => L.tileLayer(settings.tiles.openaip.replace('{key}', encodeURIComponent(settings.openaipKey)), { maxNativeZoom: 14, maxZoom: 19, crossOrigin: true, attribution: '© OpenAIP (CC BY-NC 4.0)' }) },
+  ofmAero: { name: 'OpenFlightMaps VFR', note: 'Flygkarta (där täckning finns)', opacity: 1, make: () => L.tileLayer(settings.tiles.ofmAero, { maxNativeZoom: 12, maxZoom: 19, attribution: '© open flightmaps' }) },
+  openaipTiles: { name: 'OpenAIP-karta (raster)', note: 'Kräver API-nyckel', needsKey: true, opacity: 1, make: () => L.tileLayer(settings.tiles.openaip.replace('{key}', encodeURIComponent(settings.openaipKey)), { maxNativeZoom: 14, maxZoom: 19, attribution: '© OpenAIP (CC BY-NC 4.0)' }) },
   radar: { name: 'Nederbördsradar', note: 'RainViewer, senaste bild', opacity: 0.6, make: makeRadar },
 };
 
@@ -75,7 +53,7 @@ export function initMap() {
   setBase(state.base);
   for (const id of state.overlays) if (OVERLAYS[id]) enableOverlay(id, true);
   onSettings((s, patch) => {
-    if (patch.tiles || 'lmKey' in patch || 'lmUser' in patch || 'lmPass' in patch || 'vectorHillshade' in patch) { lmErrShown = false; setBase(state.base); }
+    if (patch.tiles || 'vectorHillshade' in patch) setBase(state.base);
     if ('openaipKey' in patch || patch.tiles) for (const id of Object.keys(OVERLAYS)) if (overlayLayers[id]) { enableOverlay(id, false); enableOverlay(id, true); }
   });
   return map;
@@ -83,17 +61,26 @@ export function initMap() {
 
 export function setBase(id) {
   if (!BASES[id]) id = 'otm';
-  if (BASES[id].needsLmKey && !settings.lmKey && !settings.lmUser) toast('Ange inloggning för Lantmäteriet under Inställningar', 5000);
   if (baseLayer) map.removeLayer(baseLayer);
   baseLayer = BASES[id].make().addTo(map);
-  baseLayer.on('tileerror', tileErr(BASES[id].name));
+  watchErrors(baseLayer, BASES[id].name);
   state.base = id; save();
 }
 export const currentBase = () => state.base;
 
-function tileErr(name) {
-  let shown = false;
-  return () => { if (!shown && navigator.onLine) { shown = true; toast(`Kunde inte hämta kartbilder från ${name}`); } };
+/** Varna bara om inga kartrutor alls kunde hämtas i vyn — enstaka saknade rutor (utanför täckning, utzoomning) är normalt */
+let lastErrToast = 0;
+function watchErrors(layer, name) {
+  let ok = 0, err = 0;
+  layer.on('loading', () => { ok = 0; err = 0; });
+  layer.on('tileload', () => ok++);
+  layer.on('tileerror', () => err++);
+  layer.on('load', () => {
+    if (err > 0 && ok === 0 && navigator.onLine && Date.now() - lastErrToast > 60000) {
+      lastErrToast = Date.now();
+      toast(`${name} svarar inte. Tryck ▤ Lager › Testa vald karta för att se orsaken.`, 6000);
+    }
+  });
 }
 
 function enableOverlay(id, on) {
@@ -142,6 +129,17 @@ function makeRadar() {
   return grp;
 }
 
+// ---------- test av baskarta ----------
+async function testCurrentBase() {
+  const id = state.base, b = BASES[id];
+  const { testTile } = await import('./diag.js');
+  if (id.startsWith('vec')) return testTile('https://tiles.openfreemap.org/styles/liberty', b.name, true);
+  const c = map.getCenter(), z = Math.min(Math.round(map.getZoom()), 12), n = 2 ** z, φ = c.lat * Math.PI / 180;
+  const x = Math.floor((c.lng + 180) / 360 * n), y = Math.floor((1 - Math.log(Math.tan(φ) + 1 / Math.cos(φ)) / Math.PI) / 2 * n);
+  const tpl = { otm: settings.tiles.otm, osm: settings.tiles.osm, esri: settings.tiles.esri, ofmBase: settings.tiles.ofmBase }[id];
+  return testTile(tpl.replace('{s}', 'a').replace('{z}', z).replace('{x}', x).replace('{y}', y), b.name);
+}
+
 // ---------- Lagerpanel ----------
 export function renderLayerPanel() {
   const el = $('#layerPanel');
@@ -150,6 +148,7 @@ export function renderLayerPanel() {
      <span>${esc(name)}<span class="note">${esc(note || '')}</span></span></label>${extra}</div>`;
   let h = '<h3>Baskarta</h3>';
   for (const [id, b] of Object.entries(BASES)) h += row('radio', id, b.name, b.note, state.base === id);
+  h += `<div class="btnrow"><button class="btn small" id="lpTest">🔍 Testa vald karta</button></div><div id="lpTestRes"></div>`;
   h += '<h3>Flygdata & väder</h3>';
   for (const [id, o] of Object.entries(external)) h += row('checkbox', id, o.name, o.note, state.overlays.includes(id));
   for (const [id, o] of Object.entries(OVERLAYS)) {
@@ -157,7 +156,9 @@ export function renderLayerPanel() {
     h += row('checkbox', id, o.name, o.note, state.overlays.includes(id), `<input type="range" min="20" max="100" value="${op}" data-op="${id}">`);
   }
   el.innerHTML = h;
-  el.querySelectorAll('input[type=radio]').forEach((r) => r.onchange = () => setBase(r.value));
+  el.querySelectorAll('input[type=radio]').forEach((r) => r.onchange = () => { setBase(r.value); renderLayerPanel(); });
+  const res = el.querySelector('#lpTestRes');
+  el.querySelector('#lpTest').onclick = async () => { res.innerHTML = '<div class="muted">Testar…</div>'; res.innerHTML = await testCurrentBase(); };
   el.querySelectorAll('input[type=checkbox]').forEach((c) => c.onchange = () => {
     const id = c.value;
     if (external[id]) { external[id].onToggle(c.checked); setOverlayState(id, c.checked); return; }
