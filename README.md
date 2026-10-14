@@ -52,3 +52,24 @@ Koden finns i [`tools/cors-proxy-worker.js`](tools/cors-proxy-worker.js). Den sl
 2. Välj **Edit code**, ersätt koden med innehållet i filen och tryck **Deploy**.
 3. Kopiera adressen, t.ex. `https://ultranav-proxy.<namn>.workers.dev`.
 4. Ange `https://ultranav-proxy.<namn>.workers.dev/?url={url}` i Ultranav under **Inställn. › CORS-proxy**.
+
+## Konto och synk (Supabase)
+Konton (e-post och lösenord), synk mellan enheter, säkerhetskopia, eget kartmaterial, loggbok och delning med länk använder [Supabase](https://supabase.com) (gratisnivå). Appen fungerar fullt ut utan konto, och då sparas allt bara på enheten.
+
+1. Skapa ett gratis konto på supabase.com och skapa ett nytt projekt. Välj region **Stockholm** (eu-north-1) eller närmaste.
+2. Öppna **SQL Editor › New query**, klistra in hela [`supabase/schema.sql`](supabase/schema.sql) och tryck **Run**.
+3. Under **Authentication › URL Configuration**:
+   - **Site URL:** `https://karlmarcusvaldemar-maker.github.io/ultranav/`
+   - **Redirect URLs:** lägg till samma adress (behövs för bekräftelse- och återställningslänkar).
+4. Under **Project Settings › API**, kopiera **Project URL** och **anon public / publishable key** till [`js/config.js`](js/config.js).
+
+Nyckeln är avsedd att ligga i webbappen. Det är säkerhetsreglerna i databasen (Row Level Security) som gör att varje användare bara kommer åt sina egna data. Delat innehåll kan bara hämtas med sin delningskod.
+
+Supabases inbyggda e-posttjänst skickar bara ett fåtal mejl per timme. Öppnas appen för många användare bör en egen SMTP-tjänst kopplas in under **Authentication › Emails**.
+
+### Eget kartmaterial
+Kartor › Eget kartmaterial › **Lägg till kartmaterial**:
+- **Filer:** KML, KMZ, GPX, GeoJSON eller shapefil (zip med .shp, .dbf, .shx och .prj; koordinatsystemet räknas om automatiskt).
+- **WMS-tjänster:** adress och lager. Lagerlistan hämtas från tjänsten om den tillåter det.
+
+Lager över cirka 9 MB sparas bara på enheten.

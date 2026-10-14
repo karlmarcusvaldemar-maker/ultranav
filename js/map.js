@@ -149,6 +149,10 @@ export async function testCurrentBase() {
   return testTile(tpl.replace('{s}', 'a').replace('{z}', z).replace('{x}', x).replace('{y}', y), b.name);
 }
 
+// ---------- eget kartmaterial (customlayers.js registrerar sig här) ----------
+let custom = null;
+export function registerCustomLayers(provider) { custom = provider; }
+
 // ---------- Lagerpanel ----------
 const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', osm: 'mapRoad', esri: 'satellite' };
 const OVERLAY_ORDER = ['airspace', 'fields', 'rp', 'metar', 'radar', 'ofmAero', 'openaipTiles', 'drawings'];
@@ -170,9 +174,20 @@ export function renderLayerPanel() {
     h += `<div class="lrow"><label><span>${esc(o.name)}</span><input type="checkbox" class="switch" value="${id}" ${on ? 'checked' : ''}></label>
       ${raster && on ? `<input type="range" min="20" max="100" value="${op}" data-op="${id}" aria-label="Genomskinlighet ${esc(o.name)}">` : ''}</div>`;
   }
+  if (custom) {
+    h += '<h3>Eget kartmaterial</h3>';
+    for (const c of custom.list()) {
+      h += `<div class="lrow"><label><span>${esc(c.name)}</span><input type="checkbox" class="switch" data-custom="${c.id}" ${c.on ? 'checked' : ''}></label>
+        <button class="btn small icon" data-manage="${c.id}" aria-label="Hantera ${esc(c.name)}">${ic('dots', 18)}</button></div>`;
+    }
+    h += `<div class="btnrow"><button class="btn small" id="lpAdd">${ic('plus')}Lägg till kartmaterial</button></div>`;
+  }
   el.innerHTML = h;
+  el.querySelectorAll('[data-custom]').forEach((c) => c.onchange = (e) => { e.stopPropagation(); custom.toggle(c.dataset.custom, c.checked); });
+  el.querySelectorAll('[data-manage]').forEach((b) => b.onclick = () => custom.manage(b.dataset.manage));
+  el.querySelector('#lpAdd')?.addEventListener('click', () => custom.add());
   el.querySelectorAll('input[type=radio]').forEach((r) => r.onchange = () => { setBase(r.value); renderLayerPanel(); });
-  el.querySelectorAll('input[type=checkbox]').forEach((c) => c.onchange = () => {
+  el.querySelectorAll('input[type=checkbox]:not([data-custom])').forEach((c) => c.onchange = () => {
     const id = c.value;
     if (external[id]) { external[id].onToggle(c.checked); setOverlayState(id, c.checked); return; }
     const ok = enableOverlay(id, c.checked);

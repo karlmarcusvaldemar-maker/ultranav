@@ -8,6 +8,7 @@ import { allAirports } from './airports.js';
 import { reportingPoints, airspacesAt, loadRoute, limitFt, asLabel, fmtLimit, asStyle } from './openaip.js';
 import { routeProfile } from './terrain.js';
 import { sunInfo } from './sun.js';
+import * as lib from './library.js';
 
 export const route = store.get('ulnav.route', { name: 'Ny rutt', wps: [], depTime: null });
 let fc = null, fcSig = '';            // vindprognos för sträckornas mittpunkter
@@ -232,7 +233,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
   const T = totals();
   const dep = depDate();
   const depLocal = new Date(dep.getTime() - dep.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
-  const saved = store.get('ulnav.routes', {});
+  const saved = lib.list('route').sort((a, b) => a.name.localeCompare(b.name, 'sv'));
   let h = `<div class="field"><span>Namn</span><input type="text" id="rName" value="${esc(route.name)}"></div>
     <div class="field"><span>Avgång <small>lokal tid — styr vindprognosen</small></span><input type="datetime-local" id="rDep" value="${depLocal}"></div>`;
   h += `<h3>Brytpunkter</h3>`;
@@ -289,9 +290,10 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
     <button class="btn" id="rRev">${ic('swap')}Vänd</button><button class="btn" id="rSave">${ic('save')}Spara</button>
     <button class="btn" id="rGpx">${ic('download')}Exportera GPX</button><label class="btn">${ic('upload')}Importera GPX<input type="file" id="rImp" accept=".gpx,application/gpx+xml,text/xml" hidden></label>
     <button class="btn danger" id="rClr">${ic('trash')}Rensa</button></div>`;
-  const names = Object.keys(saved);
-  if (names.length) h += '<ul class="aplist">' + names.map((n) => `<li><div class="info"><b>${esc(n)}</b><span>${saved[n].wps.length} punkter</span></div>
-    <button class="btn small" data-load="${esc(n)}">Öppna</button><button class="btn small danger" data-rm="${esc(n)}" aria-label="Ta bort">${ic('trash')}</button></li>`).join('') + '</ul>';
+  if (saved.length) h += '<h3>Sparade rutter</h3><ul class="aplist">' + saved.map((r) => `<li><div class="info"><b>${esc(r.name)}</b><span>${r.data.wps.length} punkter${r.share ? ' · delad' : ''}</span></div>
+    <button class="btn small" data-load="${r.id}">Öppna</button>
+    <button class="btn small icon" data-share="${r.id}" aria-label="Dela">${ic('share')}</button>
+    <button class="btn small icon danger" data-rm="${r.id}" aria-label="Ta bort">${ic('trash')}</button></li>`).join('') + '</ul>';
   el.innerHTML = h;
 
   $('#rName', el).onchange = (e) => { route.name = e.target.value; persist(); };
@@ -305,13 +307,16 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
   $('#rClr', el).onclick = () => { if (confirm('Rensa rutten?')) clearRoute(); };
   $('#rSave', el).onclick = () => {
     const n = prompt('Spara rutt som:', route.name); if (!n) return;
-    const all = store.get('ulnav.routes', {}); all[n] = JSON.parse(JSON.stringify({ ...route, name: n })); store.set('ulnav.routes', all);
+    const same = lib.list('route').find((r) => r.name === n);
+    if (same && !confirm(`Det finns redan en sparad rutt som heter "${n}". Ersätta den?`)) return;
+    lib.put('route', { id: same?.id || lib.newId(), name: n, data: JSON.parse(JSON.stringify({ wps: route.wps, depTime: route.depTime })) });
     route.name = n; persist(); emit(); toast('Rutten sparad');
   };
   $('#rGpx', el).onclick = () => download(`${route.name.replace(/[^\wåäöÅÄÖ-]+/g, '_')}.gpx`, toGPX());
   $('#rImp', el).onchange = async (e) => { const f = e.target.files[0]; if (f) { importGPX(await f.text()); } };
-  el.querySelectorAll('[data-load]').forEach((b) => b.onclick = () => { setRoute(store.get('ulnav.routes', {})[b.dataset.load]); fitRoute(); });
-  el.querySelectorAll('[data-rm]').forEach((b) => b.onclick = () => { if (!confirm('Ta bort sparad rutt?')) return; const all = store.get('ulnav.routes', {}); delete all[b.dataset.rm]; store.set('ulnav.routes', all); emit(); });
+  el.querySelectorAll('[data-load]').forEach((b) => b.onclick = () => { const r = lib.get('route', b.dataset.load); if (r) { setRoute({ name: r.name, ...r.data }); fitRoute(); } });
+  el.querySelectorAll('[data-share]').forEach((b) => b.onclick = () => window.ulnav.share('route', b.dataset.share));
+  el.querySelectorAll('[data-rm]').forEach((b) => b.onclick = () => { if (!confirm('Ta bort sparad rutt?')) return; lib.remove('route', b.dataset.rm); emit(); });
 }
 
 export function fitRoute() { if (route.wps.length) map.fitBounds(route.wps.map((w) => [w.lat, w.lon]), { padding: [60, 100] }); }

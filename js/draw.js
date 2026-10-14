@@ -2,11 +2,15 @@
 import { map, registerOverlay } from './map.js';
 import { settings } from './settings.js';
 import { icon, ic } from './icons.js';
+import * as lib from './library.js';
 import { distNM, bearing, norm360, fmtDeg, fmtLatLon, esc, store, toast, download, $, interp } from './util.js';
 
 const R_M = 6371008.8;
-export const drawings = store.get('ulnav.drawings', []);
-const save = () => store.set('ulnav.drawings', drawings);
+// Ritningarna lagras i biblioteket (synkas med kontot); här hålls en arbetslista i minnet
+export const drawings = [];
+const fromLib = (i) => ({ id: i.id, name: i.name, type: i.data.type, coords: i.data.coords, color: i.data.color, share: i.share });
+function reloadDrawings() { drawings.splice(0, drawings.length, ...lib.list('drawing').map(fromLib)); }
+const saveOne = (f) => lib.put('drawing', { id: f.id, name: f.name, data: { type: f.type, coords: f.coords, color: f.color } });
 const listeners = new Set();
 export const onDrawings = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f(drawings));
@@ -50,6 +54,8 @@ export function describe(f) {
 
 // ---------- init ----------
 export function initDraw() {
+  reloadDrawings();
+  lib.onLibrary((kind, source) => { if (kind === 'drawing' && source !== 'local') { reloadDrawings(); if (savedOn) drawSaved(); emit(); } });
   liveLayer.addTo(map);
   registerOverlay('drawings', 'Mina ritningar', '', (v) => { savedOn = v; if (v) { savedLayer.addTo(map); drawSaved(); } else map.removeLayer(savedLayer); });
   buildToolbar();
@@ -182,8 +188,8 @@ function savePoint(p) {
   addDrawing({ type: 'point', name: name || `P${n}`, coords: [p] });
 }
 function addDrawing(f) {
-  f.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  drawings.push(f); save();
+  f.id = lib.newId();
+  drawings.push(f); saveOne(f);
   if (!savedOn) { savedOn = true; savedLayer.addTo(map); }
   drawSaved(); emit();
   toast(`Sparat: ${f.name}`);
@@ -222,7 +228,7 @@ function popupHtml(f) {
   return `<h4>${esc(f.name)}</h4><div>${describe(f)}</div>${rel}
     <div class="pbtns">${f.type === 'point' ? `<button onclick="window.ulnavDraw.dto('${id}')">${ic('arrowRight')}Direkt till</button><button class="sec" onclick="window.ulnavDraw.addWp('${id}')">${ic('plus')}Rutt</button>` : ''}
     ${f.type === 'line' ? `<button onclick="window.ulnavDraw.asRoute('${id}')">${ic('route')}Använd som rutt</button>` : ''}
-    <button class="sec" onclick="window.ulnavDraw.rename('${id}')">${ic('edit')}Byt namn</button><button class="sec" onclick="window.ulnavDraw.del('${id}')">${ic('trash')}Ta bort</button></div>`;
+    <button class="sec" onclick="window.ulnavDraw.share('${id}')">${ic('share')}Dela</button><button class="sec" onclick="window.ulnavDraw.rename('${id}')">${ic('edit')}Byt namn</button><button class="sec" onclick="window.ulnavDraw.del('${id}')">${ic('trash')}Ta bort</button></div>`;
 }
 
 const byId = (id) => drawings.find((f) => f.id === id);
@@ -234,8 +240,9 @@ window.ulnavDraw = {
     if (!confirm(`Ersätta aktuell rutt med "${f.name}"?`)) return;
     drawActions.setRoute({ name: f.name, wps: f.coords.map((p, i) => ({ lat: p.lat, lon: p.lon, name: i === 0 ? 'Start' : i === f.coords.length - 1 ? 'Mål' : `WP${i + 1}`, alt: settings.cruiseAlt })) });
   },
-  rename(id) { const f = byId(id); const n = prompt('Nytt namn:', f.name); if (!n) return; f.name = n; save(); drawSaved(); emit(); map.closePopup(); },
-  del(id) { const i = drawings.findIndex((f) => f.id === id); if (i < 0 || !confirm(`Ta bort "${drawings[i].name}"?`)) return; drawings.splice(i, 1); save(); drawSaved(); emit(); map.closePopup(); },
+  rename(id) { const f = byId(id); const n = prompt('Nytt namn:', f.name); if (!n) return; f.name = n; saveOne(f); drawSaved(); emit(); map.closePopup(); },
+  del(id) { const i = drawings.findIndex((f) => f.id === id); if (i < 0 || !confirm(`Ta bort "${drawings[i].name}"?`)) return; lib.remove('drawing', id); drawings.splice(i, 1); drawSaved(); emit(); map.closePopup(); },
+  share(id) { map.closePopup(); window.ulnav.share('drawing', id); },
   zoom(id) {
     const f = byId(id);
     if (f.type === 'point') map.setView(ll(f.coords[0]), Math.max(map.getZoom(), 12));
@@ -252,7 +259,7 @@ export function renderDrawTab(el) {
     <div class="muted">Avstånd visas i NM och km, kurs i grader magnetiskt (variation ${settings.variation}°). Ytor räknas på jordklotet.</div>
     <h3>Sparade (${drawings.length})</h3>
     ${drawings.length ? `<ul class="aplist">${drawings.map((f) => `<li><div class="info"><b class="popinfo">${ic({ point: 'pin', line: 'polyline', polygon: 'polygon' }[f.type], 16)} ${esc(f.name)}</b><span>${describe(f)}</span></div>
-      <button class="btn small" onclick="window.ulnavDraw.zoom('${f.id}')">${ic('search')}Visa</button><button class="btn small danger" onclick="window.ulnavDraw.del('${f.id}')" aria-label="Ta bort">${ic('trash')}</button></li>`).join('')}</ul>`
+      <button class="btn small" onclick="window.ulnavDraw.zoom('${f.id}')">${ic('search')}Visa</button><button class="btn small icon" onclick="window.ulnavDraw.share('${f.id}')" aria-label="Dela">${ic('share')}</button><button class="btn small danger" onclick="window.ulnavDraw.del('${f.id}')" aria-label="Ta bort">${ic('trash')}</button></li>`).join('')}</ul>`
       : `<div class="empty">${ic('ruler', 34)}<b>Inget sparat ännu</b><span>Mät en sträcka eller rita en linje, yta eller punkt — de sparas här.</span></div>`}
     <div class="btnrow"><button class="btn" id="dExp">${ic('download')}Exportera GeoJSON</button>
     <label class="btn">${ic('upload')}Importera GeoJSON<input type="file" id="dImp" accept=".geojson,.json,application/geo+json,application/json" hidden></label></div>`;
@@ -279,7 +286,7 @@ function importGeoJSON(gj) {
   for (const ft of feats) {
     const g = ft.geometry, name = ft.properties?.name || ft.properties?.namn || `Import ${++n}`;
     const P = ([lon, lat]) => ({ lat, lon });
-    const add = (type, coords) => { drawings.push({ id: Math.random().toString(36).slice(2, 10), type, name, coords }); n++; };
+    const add = (type, coords) => { const f = { id: lib.newId(), type, name, coords }; drawings.push(f); saveOne(f); n++; };
     if (!g) continue;
     if (g.type === 'Point') add('point', [P(g.coordinates)]);
     else if (g.type === 'LineString') add('line', g.coordinates.map(P));
@@ -288,6 +295,6 @@ function importGeoJSON(gj) {
     else if (g.type === 'MultiLineString') g.coordinates.forEach((c) => add('line', c.map(P)));
     else if (g.type === 'MultiPolygon') g.coordinates.forEach((c) => add('polygon', c[0].slice(0, -1).map(P)));
   }
-  save(); if (!savedOn) { savedOn = true; savedLayer.addTo(map); } drawSaved(); emit();
+  if (!savedOn) { savedOn = true; savedLayer.addTo(map); } drawSaved(); emit();
   return n;
 }

@@ -361,3 +361,24 @@ input.switch:checked::after { transform: translateX(20px); }
 .suggest small { color: var(--muted); font-size: 12px; white-space: nowrap; }
 #editBanner button.sec { background: var(--panel2); color: var(--text); border: 1px solid var(--line-strong); }
 #editBanner button.sec .ic { color: var(--accent); }
+.lrow:has([data-manage]) label { flex: 1 1 auto; }
+.lrow:has([data-manage]) { flex-wrap: nowrap; gap: 8px; }
+.modalbox h3.sub { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 6px; }
+
+/* Konto */
+#side { width: min(470px, 94vw); }
+body.side-open #profilePanel { left: calc(min(470px, 94vw) + 10px); }
+.tabs button { padding: 6px 0 4px; min-width: 0; }
+.tabs button span { font-size: 9.5px; letter-spacing: .04em; }
+.tabs button.close { flex: 0 0 44px; }
+.seg { display: flex; background: var(--panel2); border: 1px solid var(--line-strong); border-radius: 12px; padding: 3px; margin: 4px 0 8px; }
+.seg button { flex: 1; min-height: 42px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 600; }
+.seg button.on { background: var(--accent); color: var(--accent-text); }
+.field input[type=email] { width: 240px; }
+.acct { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.acct .ic { color: var(--accent); }
+.acct b { display: block; font-size: 16px; }
+.acct span { font-size: 13px; color: var(--muted); }
+.benefits { list-style: none; margin: 0; padding: 0; }
+.benefits li { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; font-size: 15px; }
+.benefits .ic { color: var(--accent); margin-top: 1px; }
