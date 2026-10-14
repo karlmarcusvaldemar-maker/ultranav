@@ -21,8 +21,8 @@ const tileOpts = (extra) => ({ maxZoom: 19, crossOrigin: false, className: 'base
 
 export const BASES = {
   otm: { name: 'Topografikarta', make: () => L.tileLayer(settings.tiles.otm, tileOpts({ maxNativeZoom: 17, subdomains: 'abc', attribution: '© OpenStreetMap, SRTM | © OpenTopoMap (CC-BY-SA)' })) },
-  vecLiberty: { name: 'Vektorkarta', make: () => vectorLayer('liberty', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
-  vecPositron: { name: 'Vektorkarta nedtonad', make: () => vectorLayer('positron', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
+  vecLiberty: { name: 'Detaljkarta', make: () => vectorLayer('liberty', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
+  vecPositron: { name: 'Ljus karta', make: () => vectorLayer('positron', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
   osm: { name: 'Vägkarta', make: () => L.tileLayer(settings.tiles.osm, tileOpts({ maxNativeZoom: 19, attribution: '© OpenStreetMap-bidragsgivare' })) },
   esri: { name: 'Satellitkarta', make: () => L.tileLayer(settings.tiles.esri, tileOpts({ maxNativeZoom: 18, attribution: 'Bild © Esri, Maxar, Earthstar Geographics' })) },
 };
@@ -149,7 +149,7 @@ export async function testCurrentBase() {
 }
 
 // ---------- Lagerpanel ----------
-const BASE_ICON = { otm: 'mountain', vecLiberty: 'layers', vecPositron: 'layers', osm: 'road', esri: 'globe' };
+const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', vecPositron: 'mapLight', osm: 'mapRoad', esri: 'satellite' };
 const OVERLAY_ORDER = ['airspace', 'fields', 'rp', 'metar', 'radar', 'ofmAero', 'openaipTiles', 'drawings'];
 
 export function renderLayerPanel() {

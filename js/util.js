@@ -139,7 +139,10 @@ export async function fetchX(url, { timeout = 20000, proxy = '', headers, as = '
     try {
       const r = await fetch(u, { signal: ctl.signal, headers });
       if (!r.ok) { const e = new Error(`HTTP ${r.status}`); e.http = true; throw e; }
-      return as === 'json' ? await r.json() : as === 'blob' ? await r.blob() : await r.text();
+      if (as === 'blob') return await r.blob();
+      const text = await r.text();
+      if (as !== 'json') return text;
+      return text.trim() ? JSON.parse(text) : null; // tomt svar (t.ex. HTTP 204: ingen data) → null
     } finally { clearTimeout(t); }
   };
   if (!proxy) return once(url);

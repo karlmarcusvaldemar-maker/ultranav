@@ -23,7 +23,7 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 | Källa | Innehåll | Nyckel |
 |---|---|---|
 | OpenStreetMap / OpenTopoMap | Vägkarta och topografikarta | – |
-| OpenFreeMap (OSM-vektordata) | Vektorkartor i MapLibre | – |
+| OpenFreeMap (OSM-vektordata) | Detaljkarta och Ljus karta (MapLibre) | – |
 | Esri World Imagery | Satellit | – |
 | open flightmaps | VFR-karta där OFM har täckning | – |
 | OpenAIP | Luftrum, fält (inkl. UL), rapportpunkter | Gratis API-nyckel |

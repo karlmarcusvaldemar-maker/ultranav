@@ -8,7 +8,7 @@ import { loadOurAirports, nearestAirports, searchAirports, oaInfo, longestRwy, o
 import { initRoute, route, addWaypoint, removeWp, handleEditTap, setEditing, renderRouteTab, onRouteChange, getLegs, fitRoute, depDate, recompute, setRoute } from './route.js';
 import { initNav, nav, startGps, stopGps, directTo, cancelDto, setFollow, setTrackUp, instrumentData, onNav, renderLogTab, setActiveLeg } from './nav.js';
 import { drawProfile } from './profile.js';
-import { initWxOverlay, fetchMetarTaf, metarHtml, fetchForecast, hourIndex, surfaceWx, windAt } from './wx.js';
+import { initWxOverlay, fetchMetarTaf, metarHtml, fetchForecast, hourIndex, surfaceWx, windAt, searchStations, loadStationList } from './wx.js';
 import { elevationFt } from './terrain.js';
 import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
 import { sunInfo } from './sun.js';
@@ -228,31 +228,62 @@ function renderFieldsTab(el) {
 async function showWx(icao) {
   toggleSide(true);
   $$('.tabs button[data-tab]').find((b) => b.dataset.tab === 'wx').click();
-  if (icao) { const inp = $('#wxIds'); inp.value = icao; $('#wxGo').click(); }
+  if (icao) $('#tab-wx')._wxAdd?.(icao.toUpperCase());
 }
 function routeIcaos() { return [...new Set(route.wps.map((w) => w.name).filter((n) => /^[A-Z]{4}$/.test(n)))]; }
+// Valda väderstationer sparas som lista; äldre versioner sparade en sträng
+function wxIds() {
+  const v = store.get('ulnav.wxids', null);
+  const list = Array.isArray(v) ? v : typeof v === 'string' ? v.split(/[\s,]+/) : routeIcaos();
+  return [...new Set(list.map((x) => x.trim().toUpperCase()).filter((x) => /^[A-Z0-9]{3,4}$/.test(x)))];
+}
+const setWxIds = (ids) => store.set('ulnav.wxids', [...new Set(ids)]);
+
 function renderWxTab(el) {
-  const ids = store.get('ulnav.wxids', '') || routeIcaos().join(' ');
   el.innerHTML = `<h3>METAR / TAF</h3>
-    <div style="display:flex;gap:8px"><input class="search" id="wxIds" placeholder="ICAO, t.ex. ESSA ESOW" value="${esc(ids || routeIcaos().join(' '))}" style="margin:0">
-    <button class="btn primary" id="wxGo">Hämta</button></div>
-    ${routeIcaos().length ? `<div class="btnrow"><button class="btn small" id="wxRoute">Fält i rutten (${routeIcaos().join(', ')})</button></div>` : ''}
+    <div class="wxsearch">
+      <div class="chips" id="wxChips"></div>
+      <input id="wxQ" type="search" placeholder="Sök flygplats – t.ex. ES, ESSA eller Arlanda" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    </div>
+    <ul class="suggest hidden" id="wxSug"></ul>
+    ${routeIcaos().length ? `<div class="btnrow"><button class="btn small" id="wxRoute">${ic('route')}Fält i rutten (${routeIcaos().join(', ')})</button></div>` : ''}
     <div id="wxRes"></div>
     <h3>Prognos för rutten <span class="muted">(Open-Meteo)</span></h3><div id="wxRoute2" class="muted">${route.wps.length < 2 ? 'Skapa en rutt för vindprognos.' : 'Hämtar…'}</div>
     <div class="muted" style="margin-top:12px">Lägg till <b>METAR-stationer</b> och <b>Nederbördsradar</b> som lager via <b>Kartor</b>. Officiell briefing (LFV/AIM) ska alltid användas före flygning.</div>`;
-  const go = async () => {
-    const v = $('#wxIds', el).value; store.set('ulnav.wxids', v);
+  const q = $('#wxQ', el), sug = $('#wxSug', el);
+  const drawChips = () => {
+    $('#wxChips', el).innerHTML = wxIds().map((id) => `<span class="chip">${esc(id)}<button data-rm="${esc(id)}" aria-label="Ta bort ${esc(id)}">${ic('close', 14)}</button></span>`).join('');
+    $('#wxChips', el).querySelectorAll('[data-rm]').forEach((b) => b.onclick = () => { setWxIds(wxIds().filter((x) => x !== b.dataset.rm)); drawChips(); fetchWx(); });
+  };
+  const add = (id) => { setWxIds([...wxIds(), id]); q.value = ''; sug.classList.add('hidden'); drawChips(); fetchWx(); };
+  const fetchWx = async () => {
+    const ids = wxIds();
+    if (!ids.length) { $('#wxRes', el).innerHTML = '<div class="muted">Sök och välj en eller flera flygplatser.</div>'; return; }
     $('#wxRes', el).innerHTML = '<div class="muted">Hämtar…</div>';
     try {
-      const r = await fetchMetarTaf(v.split(/[\s,]+/));
-      $('#wxRes', el).innerHTML = r.map(metarHtml).join('') || '<div class="muted">Ange minst en ICAO-kod.</div>';
+      const r = await fetchMetarTaf(ids);
+      $('#wxRes', el).innerHTML = r.map(metarHtml).join('');
     } catch (e) {
-      $('#wxRes', el).innerHTML = note('bad', `${esc(e.message)}<br>aviationweather.gov kan blockera direktanrop från webbläsare. Ange en CORS-proxy under Inställningar.`);
+      $('#wxRes', el).innerHTML = note('bad', `Kunde inte hämta väder: ${esc(e.message)}<br>Tryck Inställn. › Felsökning › Testa väder för att se orsaken.`);
     }
   };
-  $('#wxGo', el).onclick = go;
-  $('#wxRoute', el)?.addEventListener('click', () => { $('#wxIds', el).value = routeIcaos().join(' '); go(); });
-  if ($('#wxIds', el).value.trim()) go();
+  const suggest = debounce(async () => {
+    const v = q.value.trim();
+    if (!v) { sug.classList.add('hidden'); return; }
+    const list = await searchStations(v);
+    const exact = /^[A-Z0-9]{4}$/i.test(v) && !list.some((s) => s.id === v.toUpperCase());
+    sug.innerHTML = list.map((s) => `<li><button data-id="${esc(s.id)}"><b>${esc(s.id)}</b><span>${esc(s.name)}</span>${s.known === false ? '<small>METAR okänt</small>' : s.taf ? '<small>METAR + TAF</small>' : '<small>METAR</small>'}</button></li>`).join('')
+      + (exact ? `<li><button data-id="${esc(v.toUpperCase())}"><b>${esc(v.toUpperCase())}</b><span>Lägg till ändå</span></button></li>` : '')
+      || '<li class="muted" style="padding:10px 12px">Inga flygplatser med väderrapporter matchar.</li>';
+    sug.classList.remove('hidden');
+    sug.querySelectorAll('[data-id]').forEach((b) => b.onclick = () => add(b.dataset.id));
+  }, 150);
+  q.addEventListener('input', suggest);
+  q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const first = sug.querySelector('[data-id]'); if (first) add(first.dataset.id); } });
+  $('#wxRoute', el)?.addEventListener('click', () => { setWxIds([...wxIds(), ...routeIcaos()]); drawChips(); fetchWx(); });
+  el._wxAdd = add;
+  drawChips(); fetchWx();
+  loadStationList(); // förladda stationsregistret
   if (route.wps.length >= 2) routeForecast($('#wxRoute2', el));
 }
 async function routeForecast(box) {
@@ -400,7 +431,7 @@ window.addEventListener('online', () => toast('Online igen'));
 window.addEventListener('offline', () => toast('Offline — använder sparade data', 4000));
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-14.12';
+export const APP_VERSION = '2026-10-14.13';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {

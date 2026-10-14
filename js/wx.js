@@ -1,6 +1,7 @@
 // Väder: vind på höjd (Open-Meteo), METAR/TAF (aviationweather.gov / NOAA)
 import { settings } from './settings.js';
-import { fetchX, esc, toast, debounce, FT_PER_M } from './util.js';
+import { fetchX, esc, toast, debounce, FT_PER_M, idb } from './util.js';
+import { allAirports } from './airports.js';
 import { map, registerOverlay } from './map.js';
 
 const LEVELS = [1000, 975, 950, 925, 900, 850, 800, 700];
@@ -63,10 +64,11 @@ export async function fetchMetarTaf(ids) {
   ids = ids.map((s) => s.trim().toUpperCase()).filter((s) => /^[A-Z0-9]{3,4}$/.test(s));
   if (!ids.length) return [];
   const q = ids.join(',');
-  const [m, t] = await Promise.all([
+  const [m0, t0] = await Promise.all([
     fetchX(`${AWC}metar?ids=${q}&format=json&hours=3`, { proxy: settings.corsProxy }).catch((e) => { throw new Error('METAR: ' + e.message); }),
     fetchX(`${AWC}taf?ids=${q}&format=json`, { proxy: settings.corsProxy }).catch(() => []),
   ]);
+  const m = Array.isArray(m0) ? m0 : [], t = Array.isArray(t0) ? t0 : []; // tomt svar = ingen data
   return ids.map((id) => {
     const ms = (m || []).filter((x) => x.icaoId === id).sort((a, b) => (b.obsTime || 0) - (a.obsTime || 0));
     const tf = (t || []).find((x) => x.icaoId === id);
@@ -85,9 +87,42 @@ function calcCat(m) {
   return 'VFR';
 }
 
+// ---------- sökbara väderstationer ----------
+let stations = null, stationsLoading = null;
+const NORDIC_BBOX = '54,4,72,32'; // lat0,lon0,lat1,lon1 — Norden med omnejd
+/** Stationer med METAR/TAF (aviationweather.gov stationsregister), cachade i 30 dygn */
+export function loadStationList() {
+  if (stations) return Promise.resolve(stations);
+  if (!stationsLoading) stationsLoading = (async () => {
+    const cached = await idb.get('awc:stations');
+    if (cached && (Date.now() - cached.t < 30 * 864e5 || !navigator.onLine)) return (stations = cached.list);
+    try {
+      const j = await fetchX(`${AWC}stationinfo?bbox=${NORDIC_BBOX}&format=json`, { proxy: settings.corsProxy, timeout: 30000 });
+      const list = (Array.isArray(j) ? j : []).filter((s) => s.icaoId && (!s.siteType || s.siteType.some((t) => /METAR|TAF/.test(t))))
+        .map((s) => ({ id: s.icaoId, name: s.site || s.name || '', lat: s.lat, lon: s.lon, taf: !!s.siteType?.includes('TAF'), known: true }));
+      if (list.length) { await idb.set('awc:stations', { t: Date.now(), list }); return (stations = list); }
+    } catch { /* faller tillbaka på flygfältslistan */ }
+    return cached?.list || null;
+  })().finally(() => { stationsLoading = null; });
+  return stationsLoading;
+}
+/** Sök på ICAO-kod eller namn. Utan stationsregister används flygfält med ICAO-kod (METAR okänt). */
+export async function searchStations(q, n = 10) {
+  q = q.trim().toLowerCase();
+  if (!q) return [];
+  const list = (await loadStationList()) || allAirports().filter((a) => /^[A-Z]{4}$/.test(a.icao)).map((a) => ({ id: a.icao, name: a.name, known: false }));
+  const seen = new Set();
+  return list.map((s) => {
+    const id = s.id.toLowerCase(), name = s.name.toLowerCase();
+    const score = id === q ? 0 : id.startsWith(q) ? 1 : name.startsWith(q) ? 2 : name.includes(q) ? 3 : 9;
+    return { s, score };
+  }).filter((x) => x.score < 9 && !seen.has(x.s.id) && seen.add(x.s.id))
+    .sort((a, b) => a.score - b.score || a.s.id.localeCompare(b.s.id)).slice(0, n).map((x) => x.s);
+}
+
 export function metarHtml(r) {
   return `<div class="metar"><div class="st"><span>${esc(r.id)} <span class="muted">${esc(r.name)}</span></span>${r.cat ? `<span class="cat ${esc(r.cat)}">${esc(r.cat)}</span>` : ''}</div>${
-    r.metar ? esc(r.metar) : '<span class="muted">Ingen METAR</span>'}${r.taf ? '\n\n' + esc(r.taf).replace(/ (BECMG|TEMPO|FM\d+|PROB\d+)/g, '\n  $1') : ''}</div>`;
+    r.metar ? esc(r.metar) : `<span class="muted">Ingen METAR för ${esc(r.id)} just nu${r.taf ? '' : ' — fältet rapporterar troligen inte väder'}</span>`}${r.taf ? '\n\n' + esc(r.taf).replace(/ (BECMG|TEMPO|FM\d+|PROB\d+)/g, '\n  $1') : ''}</div>`;
 }
 
 // ---------- METAR-stationer på kartan ----------
