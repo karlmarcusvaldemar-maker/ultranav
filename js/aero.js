@@ -5,6 +5,7 @@ import { allAirports, onAirports, longestRwy } from './airports.js';
 import { esc, debounce, distNM, bearing, fmtDeg, fmtLatLon } from './util.js';
 import { settings } from './settings.js';
 import { fetchMetarTaf, metarHtml } from './wx.js';
+import { ic } from './icons.js';
 import { sunInfo } from './sun.js';
 
 /** Åtgärder som app.js fyller i (undviker cirkulära beroenden) */
@@ -94,7 +95,7 @@ function drawAll() {
         const name = r.name;
         if (actions.drawActive()) actions.drawTap({ lat, lng: lon });
         else if (actions.editMode()) actions.addWaypoint({ lat, lon, name });
-        else L.popup().setLatLng([lat, lon]).setContent(`<h4>▲ ${esc(name)}</h4><div>${r.compulsory ? 'Obligatorisk' : 'Vid anmodan'} rapportpunkt</div>
+        else L.popup().setLatLng([lat, lon]).setContent(`<h4 class="popinfo">${ic('triangle', 18)} ${esc(name)}</h4><div>${r.compulsory ? 'Obligatorisk' : 'Vid anmodan'} rapportpunkt</div>
           <div class="muted">${fmtLatLon(lat, lon)}</div>${btns({ lat, lon, name })}`).openOn(map);
       });
     }
@@ -108,7 +109,7 @@ function btns(p) {
     document.getElementById(id + 'a')?.addEventListener('click', () => { map.closePopup(); actions.addWaypoint(p); });
     document.getElementById(id + 'w')?.addEventListener('click', () => { map.closePopup(); actions.showWx(p.icao); });
   }, 0);
-  return `<div class="pbtns"><button id="${id}d">→ Direkt till</button><button id="${id}a" class="sec">+ Lägg till i rutt</button>
+  return `<div class="pbtns"><button id="${id}d">${ic('arrowRight')}Direkt till</button><button id="${id}a" class="sec">${ic('plus')}Lägg till i rutt</button>
     ${p.icao ? `<button id="${id}w" class="sec">METAR/TAF</button>` : ''}</div>`;
 }
 
@@ -134,7 +135,7 @@ export function airportHtml(a) {
 function sunLine(a) {
   const s = sunInfo(new Date(), a.lat, a.lon);
   const f = (d) => d ? `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}Z` : '—';
-  return `<div style="margin-top:4px">☀ Upp ${f(s.sunrise)} · ned ${f(s.sunset)} · skymning ${f(s.civilDusk)}</div>`;
+  return `<div class="popinfo" style="margin-top:4px">${ic('sun', 16)} Upp ${f(s.sunrise)} · ned ${f(s.sunset)} · skymning ${f(s.civilDusk)}</div>`;
 }
 
 /** Visa fältinformation i popup och hämta METAR/TAF för fält med ICAO-kod */

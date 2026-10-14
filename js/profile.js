@@ -80,8 +80,8 @@ export function drawProfile() {
 
   // egen position
   if (own && own.d >= 0 && own.d <= total) {
-    g.strokeStyle = '#f2b632'; g.lineWidth = 2; g.beginPath(); g.moveTo(x(own.d), T); g.lineTo(x(own.d), H - B); g.stroke();
-    if (own.altFt != null) { g.fillStyle = '#f2b632'; g.beginPath(); g.arc(x(own.d), y(own.altFt), 6, 0, 7); g.fill(); }
+    g.strokeStyle = '#d8b86e'; g.lineWidth = 2; g.beginPath(); g.moveTo(x(own.d), T); g.lineTo(x(own.d), H - B); g.stroke();
+    if (own.altFt != null) { g.fillStyle = '#d8b86e'; g.beginPath(); g.arc(x(own.d), y(own.altFt), 6, 0, 7); g.fill(); }
   }
   $('#profileLegend').textContent = `Högsta terräng ${Math.round(maxT)} ft · marginal ${settings.minClearance} ft · ${total.toFixed(0)} NM`;
 }

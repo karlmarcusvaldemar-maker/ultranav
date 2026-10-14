@@ -1,6 +1,7 @@
 // Ritverktyg: snabbmätning av avstånd, samt linjer, ytor (polygoner) och punkter som sparas
 import { map, registerOverlay } from './map.js';
 import { settings } from './settings.js';
+import { icon, ic } from './icons.js';
 import { distNM, bearing, norm360, fmtDeg, fmtLatLon, esc, store, toast, download, $, interp } from './util.js';
 
 const R_M = 6371008.8;
@@ -76,12 +77,12 @@ function buildToolbar() {
   const bar = document.createElement('div');
   bar.id = 'drawBar'; bar.className = 'hidden';
   bar.innerHTML = `<div class="dbtns">
-      <button data-mode="measure">📏<small>Mät</small></button><button data-mode="line">〰<small>Linje</small></button>
-      <button data-mode="polygon">⬠<small>Yta</small></button><button data-mode="point">📍<small>Punkt</small></button>
+      <button data-mode="measure">${icon('measure')}<small>Mät</small></button><button data-mode="line">${icon('polyline')}<small>Linje</small></button>
+      <button data-mode="polygon">${icon('polygon')}<small>Yta</small></button><button data-mode="point">${icon('pin')}<small>Punkt</small></button>
       <span class="sep"></span>
-      <button id="dOwn" title="Börja från min position">⌖<small>Min pos</small></button>
-      <button id="dUndo">↶<small>Ångra</small></button><button id="dDone" class="primary">✓<small>Spara</small></button>
-      <button id="dClose">✕<small>Stäng</small></button></div>
+      <button id="dOwn" title="Börja från min position">${icon('crosshair')}<small>Min pos</small></button>
+      <button id="dUndo">${icon('undo')}<small>Ångra</small></button><button id="dDone" class="primary">${icon('check')}<small>Spara</small></button>
+      <button id="dClose">${icon('close')}<small>Stäng</small></button></div>
     <div id="drawReadout"></div>`;
   $('#mapwrap').appendChild(bar);
   bar.querySelectorAll('[data-mode]').forEach((b) => b.onclick = () => setMode(b.dataset.mode));
@@ -132,7 +133,7 @@ function readout() {
   const el = $('#drawReadout');
   if (!el) return;
   const hint = { measure: 'Tryck på kartan för att mäta. Dra punkterna för att justera.', line: 'Tryck för att lägga till punkter i linjen.',
-    polygon: 'Tryck för att lägga till hörn. Tryck på punkt 1 eller ✓ för att avsluta.', point: 'Tryck på kartan för att placera en punkt.' }[mode] || '';
+    polygon: 'Tryck för att lägga till hörn. Tryck på punkt 1 eller Spara för att avsluta.', point: 'Tryck på kartan för att placera en punkt.' }[mode] || '';
   if (pts.length < 2) { el.innerHTML = `<span class="muted">${hint}</span>`; return; }
   const total = lengthNM(pts);
   const last = distNM(pts[pts.length - 2], pts[pts.length - 1]);
@@ -200,9 +201,9 @@ function popupHtml(f) {
   const c = f.type === 'point' ? f.coords[0] : null;
   const rel = c && own ? `<div><b>${distNM(own, c).toFixed(1)} NM</b> · ${magBrg(own, c)}°M från dig</div>` : '';
   return `<h4>${esc(f.name)}</h4><div>${describe(f)}</div>${rel}
-    <div class="pbtns">${f.type === 'point' ? `<button onclick="window.ulnavDraw.dto('${id}')">→ Direkt till</button><button class="sec" onclick="window.ulnavDraw.addWp('${id}')">+ Rutt</button>` : ''}
-    ${f.type === 'line' ? `<button onclick="window.ulnavDraw.asRoute('${id}')">Använd som rutt</button>` : ''}
-    <button class="sec" onclick="window.ulnavDraw.rename('${id}')">Byt namn</button><button class="sec" onclick="window.ulnavDraw.del('${id}')">Ta bort</button></div>`;
+    <div class="pbtns">${f.type === 'point' ? `<button onclick="window.ulnavDraw.dto('${id}')">${ic('arrowRight')}Direkt till</button><button class="sec" onclick="window.ulnavDraw.addWp('${id}')">${ic('plus')}Rutt</button>` : ''}
+    ${f.type === 'line' ? `<button onclick="window.ulnavDraw.asRoute('${id}')">${ic('route')}Använd som rutt</button>` : ''}
+    <button class="sec" onclick="window.ulnavDraw.rename('${id}')">${ic('edit')}Byt namn</button><button class="sec" onclick="window.ulnavDraw.del('${id}')">${ic('trash')}Ta bort</button></div>`;
 }
 
 const byId = (id) => drawings.find((f) => f.id === id);
@@ -227,15 +228,15 @@ window.ulnavDraw = {
 // ---------- flik ----------
 export function renderDrawTab(el) {
   el.innerHTML = `<h3>Verktyg</h3>
-    <div class="btnrow"><button class="btn" data-m="measure">📏 Mät avstånd</button><button class="btn" data-m="line">〰 Linje</button>
-    <button class="btn" data-m="polygon">⬠ Yta</button><button class="btn" data-m="point">📍 Punkt</button></div>
+    <div class="btnrow"><button class="btn" data-m="measure">${ic('measure')}Mät avstånd</button><button class="btn" data-m="line">${ic('polyline')}Linje</button>
+    <button class="btn" data-m="polygon">${ic('polygon')}Yta</button><button class="btn" data-m="point">${ic('pin')}Punkt</button></div>
     <div class="muted">Avstånd visas i NM och km, kurs i grader magnetiskt (variation ${settings.variation}°). Ytor räknas på jordklotet.</div>
     <h3>Sparade (${drawings.length})</h3>
-    ${drawings.length ? `<ul class="aplist">${drawings.map((f) => `<li><div class="info"><b>${{ point: '📍', line: '〰', polygon: '⬠' }[f.type]} ${esc(f.name)}</b><span>${describe(f)}</span></div>
-      <button class="btn small" onclick="window.ulnavDraw.zoom('${f.id}')">Visa</button><button class="btn small danger" onclick="window.ulnavDraw.del('${f.id}')">✕</button></li>`).join('')}</ul>`
+    ${drawings.length ? `<ul class="aplist">${drawings.map((f) => `<li><div class="info"><b class="popinfo">${ic({ point: 'pin', line: 'polyline', polygon: 'polygon' }[f.type], 16)} ${esc(f.name)}</b><span>${describe(f)}</span></div>
+      <button class="btn small" onclick="window.ulnavDraw.zoom('${f.id}')">${ic('search')}Visa</button><button class="btn small danger" onclick="window.ulnavDraw.del('${f.id}')" aria-label="Ta bort">${ic('trash')}</button></li>`).join('')}</ul>`
       : '<div class="muted">Inga ritningar ännu.</div>'}
-    <div class="btnrow"><button class="btn" id="dExp">⤓ Exportera GeoJSON</button>
-    <label class="btn" style="display:inline-flex;align-items:center">⤒ Importera GeoJSON<input type="file" id="dImp" accept=".geojson,.json,application/geo+json,application/json" hidden></label></div>`;
+    <div class="btnrow"><button class="btn" id="dExp">${ic('download')}Exportera GeoJSON</button>
+    <label class="btn">${ic('upload')}Importera GeoJSON<input type="file" id="dImp" accept=".geojson,.json,application/geo+json,application/json" hidden></label></div>`;
   el.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { drawActions.closeSide?.(); setMode(b.dataset.m); });
   $('#dExp', el).onclick = () => { if (!drawings.length) return toast('Inget att exportera'); download('ritningar.geojson', JSON.stringify(toGeoJSON(), null, 1), 'application/geo+json'); };
   $('#dImp', el).onchange = async (e) => {

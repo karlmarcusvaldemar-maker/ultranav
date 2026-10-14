@@ -1,7 +1,8 @@
 // Ruttplanering och navlogg
 import { map } from './map.js';
 import { settings, spdOut, spdUnit } from './settings.js';
-import { distNM, bearing, interp, windTriangle, norm360, fmtDeg, fmtHM, fmtUTC, fmtLocal, esc, store, toast, debounce, download, $ } from './util.js';
+import { distNM, bearing, interp, windTriangle, norm360, fmtDeg, fmtHM, fmtUTC, fmtLocal, esc, store, toast, debounce, download, $, note } from './util.js';
+import { ic } from './icons.js';
 import { fetchForecast, hourIndex, windAt } from './wx.js';
 import { allAirports } from './airports.js';
 import { reportingPoints, airspacesAt, loadRoute, limitFt, asLabel, fmtLimit, asStyle } from './openaip.js';
@@ -200,7 +201,7 @@ function draw() {
     m.on('click', () => {
       if (editing) return;
       L.popup().setLatLng([w.lat, w.lon]).setContent(`<h4>${i + 1}. ${esc(w.name)}</h4><div class="pbtns">
-        <button onclick="window.ulnav.directTo(${i})">→ Direkt till</button><button class="sec" onclick="window.ulnav.removeWp(${i})">Ta bort</button></div>`).openOn(map);
+        <button onclick="window.ulnav.directTo(${i})">${ic('arrowRight')}Direkt till</button><button class="sec" onclick="window.ulnav.removeWp(${i})">${ic('trash')}Ta bort</button></div>`).openOn(map);
     });
   });
   drawLabels();
@@ -235,11 +236,11 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
   let h = `<div class="field"><span>Namn</span><input type="text" id="rName" value="${esc(route.name)}"></div>
     <div class="field"><span>Avgång <small>lokal tid — styr vindprognosen</small></span><input type="datetime-local" id="rDep" value="${depLocal}"></div>`;
   h += `<h3>Brytpunkter</h3>`;
-  if (!route.wps.length) h += `<div class="muted">Tryck på <b>✎ Rutt</b> och sedan på kartan, eller sök fält under <b>Fält</b>. Tryck nära ett fält eller en rapportpunkt för att fästa vid den.</div>`;
+  if (!route.wps.length) h += `<div class="muted">Tryck på <b>Rutt</b> i kontrollräcket och sedan på kartan, eller sök fält under <b>Fält</b>. Tryck nära ett fält eller en rapportpunkt för att fästa vid den.</div>`;
   h += '<ul class="wplist">' + route.wps.map((w, i) => `<li class="${i === activeLeg + 1 ? 'active' : ''}"><span class="num">${i + 1}</span>
     <span class="nm"><input data-name="${i}" value="${esc(w.name)}"></span>
     ${i > 0 ? `<input class="alt" type="number" inputmode="numeric" step="100" data-alt="${i}" value="${w.alt}" title="Höjd ft MSL på sträckan hit">` : '<span style="width:76px" class="muted">start</span>'}
-    <button class="ib" data-up="${i}">↑</button><button class="ib" data-dn="${i}">↓</button><button class="ib" data-del="${i}">✕</button></li>`).join('') + '</ul>';
+    <button class="ib" data-up="${i}" aria-label="Flytta upp">${ic('arrowUp')}</button><button class="ib" data-dn="${i}" aria-label="Flytta ner">${ic('arrowDown')}</button><button class="ib" data-del="${i}" aria-label="Ta bort">${ic('close')}</button></li>`).join('') + '</ul>';
   if (route.wps.length > 1) h += `<div class="muted" style="margin-top:4px">Höjdfältet = planerad höjd (ft MSL) på sträckan <i>till</i> punkten.</div>`;
 
   if (legs.length) {
@@ -247,7 +248,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
     h += `<h3>Navlogg <span class="muted">(TAS ${Math.round(spdOut(settings.tas))} ${u}, var ${settings.variation >= 0 ? settings.variation + '°E' : -settings.variation + '°W'})</span></h3>
       <table class="navlog"><tr><th>Till</th><th>Höjd</th><th>MT</th><th>Vind</th><th>MH</th><th>NM</th><th>GS</th><th>Tid</th><th>ETA</th></tr>`;
     for (const l of legs) {
-      h += `<tr class="${l.i === activeLeg ? 'active' : ''}"><td>${esc(l.to.name)}</td><td>${l.to.alt}${l.lowClear ? ' ⚠' : ''}</td><td>${fmtDeg(l.mt)}</td>
+      h += `<tr class="${l.i === activeLeg ? 'active' : ''}"><td>${esc(l.to.name)}</td><td>${l.to.alt}${l.lowClear ? ' <span class="warnmark">' + ic('alert', 14) + '</span>' : ''}</td><td>${fmtDeg(l.mt)}</td>
         <td>${l.wind ? fmtDeg(l.wind.dir) + '/' + Math.round(l.wind.spd) : '—'}</td><td><b>${fmtDeg(l.mh)}</b></td><td>${l.d.toFixed(1)}</td>
         <td>${isFinite(l.gs) ? Math.round(spdOut(l.gs)) : '—'}</td><td>${fmtHM(l.ete)}</td><td>${fmtUTC(l.eta)}</td></tr>`;
     }
@@ -260,23 +261,23 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
       <span>Reserv ${settings.reserveMin} min</span><b>${T.reserve.toFixed(1)} l</b>
       <span>Minst ombord</span><b>${T.need.toFixed(1)} l</b>
       <span>Användbart</span><b>${settings.fuelUsable} l (uthållighet ${fmtHM(T.endurance)})</b></div>`;
-    h += T.extra < 0 ? `<div class="badbox">⛽ Bränslet räcker inte! Saknas ${(-T.extra).toFixed(1)} l — planera tankstopp.</div>` : '';
+    h += T.extra < 0 ? note('bad', `Bränslet räcker inte. Det saknas ${(-T.extra).toFixed(1)} l — planera tankstopp.`, 'fuel') : '';
 
     if (T.sun) {
       const s = T.sun;
       const late = T.eta && s.sunset && T.eta > s.sunset;
       h += `<h3>Ljus vid destination</h3><div class="kv"><span>Solnedgång</span><b>${fmtUTC(s.sunset)}Z (${fmtLocal(s.sunset)} lokal)</b>
         <span>Civil skymning</span><b>${fmtUTC(s.civilDusk)}Z (${fmtLocal(s.civilDusk)} lokal)</b><span>Soluppgång</span><b>${fmtUTC(s.sunrise)}Z</b></div>
-        ${late ? '<div class="badbox">🌙 Beräknad ankomst efter solnedgång!</div>' : ''}`;
+        ${late ? note('bad', 'Beräknad ankomst efter solnedgång.', 'moon') : ''}`;
     }
     const low = legs.filter((l) => l.lowClear);
-    if (low.length) h += `<div class="warnbox">⛰ Under ${settings.minClearance} ft terrängmarginal på: ${low.map((l) => `${esc(l.to.name)} (terräng ${Math.round(l.terr)} ft)`).join(', ')}. Höjddata saknar master och byggnader.</div>`;
+    if (low.length) h += note('warn', `Under ${settings.minClearance} ft terrängmarginal på: ${low.map((l) => `${esc(l.to.name)} (terräng ${Math.round(l.terr)} ft)`).join(', ')}. Höjddata saknar master och byggnader.`);
 
     h += `<h3>Luftrum längs rutten</h3>`;
     if (!settings.openaipKey) h += '<div class="muted">Ange OpenAIP-nyckel under Inställningar för luftrumskontroll.</div>';
     else if (!crossings.length) h += '<div class="muted">Inga luftrum funna längs rutten i OpenAIP-data (eller ännu ej inläst).</div>';
     else h += crossings.map((c) => {
-      const cls = c.inside && [1, 3, 4, 7, 13, 26, 36, 2].includes(c.as.type) ? 'badbox' : c.inside ? 'warnbox' : '';
+      const cls = c.inside && [1, 3, 4, 7, 13, 26, 36, 2].includes(c.as.type) ? 'asp-bad' : c.inside ? 'asp-warn' : '';
       return `<div class="asp ${cls}" style="border-left:5px solid ${asStyle(c.as).color};padding:6px 8px;margin:6px 0">
         <b>${esc(c.as.name)}</b> — ${esc(asLabel(c.as))}<br>${esc(fmtLimit(c.as.lowerLimit))} – ${esc(fmtLimit(c.as.upperLimit))}
         · NM ${c.from.toFixed(0)}–${c.to.toFixed(0)} · ${c.inside ? '<b>du är inne vid ' + c.alt + ' ft</b>' : c.below ? 'du passerar under' : c.mixed ? 'du passerar under/över' : 'du passerar över'}
@@ -285,12 +286,12 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
   }
 
   h += `<h3>Rutthantering</h3><div class="btnrow">
-    <button class="btn" id="rRev">⇅ Vänd</button><button class="btn" id="rSave">💾 Spara</button>
-    <button class="btn" id="rGpx">⤓ GPX</button><label class="btn" style="display:inline-flex;align-items:center">⤒ Importera GPX<input type="file" id="rImp" accept=".gpx,application/gpx+xml,text/xml" hidden></label>
-    <button class="btn danger" id="rClr">Rensa</button></div>`;
+    <button class="btn" id="rRev">${ic('swap')}Vänd</button><button class="btn" id="rSave">${ic('save')}Spara</button>
+    <button class="btn" id="rGpx">${ic('download')}Exportera GPX</button><label class="btn">${ic('upload')}Importera GPX<input type="file" id="rImp" accept=".gpx,application/gpx+xml,text/xml" hidden></label>
+    <button class="btn danger" id="rClr">${ic('trash')}Rensa</button></div>`;
   const names = Object.keys(saved);
   if (names.length) h += '<ul class="aplist">' + names.map((n) => `<li><div class="info"><b>${esc(n)}</b><span>${saved[n].wps.length} punkter</span></div>
-    <button class="btn small" data-load="${esc(n)}">Öppna</button><button class="btn small danger" data-rm="${esc(n)}">✕</button></li>`).join('') + '</ul>';
+    <button class="btn small" data-load="${esc(n)}">Öppna</button><button class="btn small danger" data-rm="${esc(n)}" aria-label="Ta bort">${ic('trash')}</button></li>`).join('') + '</ul>';
   el.innerHTML = h;
 
   $('#rName', el).onchange = (e) => { route.name = e.target.value; persist(); };

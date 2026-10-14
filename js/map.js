@@ -2,6 +2,7 @@
 import { settings, saveSettings, onSettings } from './settings.js';
 import { store, esc, $, fetchX, toast } from './util.js';
 import { vectorLayer } from './vector.js';
+import { ic } from './icons.js';
 
 export let map;
 const state = store.get('ulnav.layers', { base: 'otm', overlays: ['openaipVec', 'oa', 'route'], opacity: {} });
@@ -78,7 +79,7 @@ function watchErrors(layer, name) {
   layer.on('load', () => {
     if (err > 0 && ok === 0 && navigator.onLine && Date.now() - lastErrToast > 60000) {
       lastErrToast = Date.now();
-      toast(`${name} svarar inte. Tryck ▤ Lager › Testa vald karta för att se orsaken.`, 6000);
+      toast(`${name} svarar inte. Öppna Lager › Testa vald karta för att se orsaken.`, 6000);
     }
   });
 }
@@ -148,7 +149,7 @@ export function renderLayerPanel() {
      <span>${esc(name)}<span class="note">${esc(note || '')}</span></span></label>${extra}</div>`;
   let h = '<h3>Baskarta</h3>';
   for (const [id, b] of Object.entries(BASES)) h += row('radio', id, b.name, b.note, state.base === id);
-  h += `<div class="btnrow"><button class="btn small" id="lpTest">🔍 Testa vald karta</button></div><div id="lpTestRes"></div>`;
+  h += `<div class="btnrow"><button class="btn small" id="lpTest">${ic('search')}Testa vald karta</button></div><div id="lpTestRes"></div>`;
   h += '<h3>Flygdata & väder</h3>';
   for (const [id, o] of Object.entries(external)) h += row('checkbox', id, o.name, o.note, state.overlays.includes(id));
   for (const [id, o] of Object.entries(OVERLAYS)) {

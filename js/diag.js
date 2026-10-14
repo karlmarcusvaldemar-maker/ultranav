@@ -1,6 +1,6 @@
 // Felsökning av anslutningar: visar varför ett anrop misslyckas (inloggning, behörighet, CORS, nätverk)
 import { settings, saveSettings } from './settings.js';
-import { esc } from './util.js';
+import { esc, note } from './util.js';
 
 /** Gör ett anrop och klassificera resultatet */
 export async function probe(url, headers) {
@@ -20,7 +20,7 @@ export async function probe(url, headers) {
   }
 }
 
-const box = (cls, html) => `<div class="${cls}">${html}</div>`;
+const box = (cls, html) => note(cls.replace('box', ''), html, cls === 'okbox' ? 'ok' : cls === 'badbox' ? 'fail' : 'alert');
 
 // ---------- OpenAIP ----------
 export async function testOpenAip() {
@@ -28,14 +28,14 @@ export async function testOpenAip() {
   if (!key) return box('warnbox', 'Ange en API-nyckel först.');
   const base = 'https://api.core.openaip.net/api/airports?limit=1&page=1';
   const q = await probe(`${base}&apiKey=${encodeURIComponent(key)}`);
-  if (q.ok) { saveSettings({ openaipAuth: 'query' }); return box('okbox', '✓ OpenAIP fungerar (nyckel i adressen).'); }
+  if (q.ok) { saveSettings({ openaipAuth: 'query' }); return box('okbox', 'OpenAIP fungerar (nyckel i adressen).'); }
   const h = await probe(base, { 'x-openaip-api-key': key });
-  if (h.ok) { saveSettings({ openaipAuth: 'header' }); return box('okbox', '✓ OpenAIP fungerar (nyckel i huvud).'); }
+  if (h.ok) { saveSettings({ openaipAuth: 'header' }); return box('okbox', 'OpenAIP fungerar (nyckel i huvud).'); }
   const r = [q, h].find((x) => x.kind === 'auth' || x.kind === 'forbidden') || q;
   const hint = { auth: 'Nyckeln godtas inte. Kontrollera att du kopierat hela nyckeln utan mellanslag, och att API-klienten är aktiv på openaip.net.',
     forbidden: 'Nyckeln saknar behörighet. Kontrollera API-klienten på openaip.net.',
     cors: 'OpenAIP blockerar anrop från den här webbadressen.', offline: '', network: 'Kontrollera nätverket.', notfound: 'Adressen hittades inte.' }[r.kind] || '';
-  return box('badbox', `✗ ${esc(r.msg)}<br>${hint}`);
+  return box('badbox', `${esc(r.msg)}<br>${hint}`);
 }
 
 
@@ -48,12 +48,12 @@ export async function testTile(url, name, isJson = false) {
       img.onload = () => { clearTimeout(t); res(true); }; img.onerror = () => { clearTimeout(t); res(false); };
       img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
     });
-    if (ok) return box('okbox', `✓ ${esc(name)} fungerar.`);
+    if (ok) return box('okbox', `${esc(name)} fungerar.`);
   }
   const r = await probe(url);
-  if (r.ok) return box('okbox', `✓ ${esc(name)} fungerar.`);
+  if (r.ok) return box('okbox', `${esc(name)} fungerar.`);
   const hint = r.status === 403 || r.status === 429
     ? 'Servern nekar just nu — troligen tillfällig spärr eller överbelastning (t.ex. efter många nedladdningar). Vänta en stund eller välj en annan karta.'
     : r.kind === 'cors' ? 'Servern svarar men bilden kunde inte visas.' : r.kind === 'network' ? 'Servern går inte att nå — den kan vara nere.' : '';
-  return box('badbox', `✗ ${esc(name)}: ${esc(r.msg)}<br>${hint}`);
+  return box('badbox', `${esc(name)}: ${esc(r.msg)}<br>${hint}`);
 }

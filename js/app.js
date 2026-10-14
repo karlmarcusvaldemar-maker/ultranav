@@ -1,6 +1,6 @@
 // Ultranav — huvudmodul
 import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES } from './settings.js';
-import { $, $$, esc, toast, modal, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store } from './util.js';
+import { $, $$, esc, toast, modal, note, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store } from './util.js';
 import { initMap, map, renderLayerPanel } from './map.js';
 import { initAero, actions, airportHtml, mapInfoPopup, openAirport, airportNear } from './aero.js';
 import { initDraw, drawActive, drawTap, setMode as setDrawMode, renderDrawTab, drawActions, onDrawings } from './draw.js';
@@ -13,6 +13,7 @@ import { elevationFt } from './terrain.js';
 import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
 import { sunInfo } from './sun.js';
 import { testOpenAip } from './diag.js';
+import { applyIcons, icon, ic } from './icons.js';
 
 let editing = false;
 let currentTab = 'route';
@@ -21,9 +22,10 @@ let currentTab = 'route';
 function applyTheme() {
   document.body.classList.remove('day', 'night', 'dark');
   document.body.classList.add(settings.theme);
-  document.querySelector('meta[name=theme-color]').content = settings.theme === 'day' ? '#ffffff' : settings.theme === 'night' ? '#050505' : '#0f1720';
+  document.querySelector('meta[name=theme-color]').content = settings.theme === 'day' ? '#faf6ec' : settings.theme === 'night' ? '#050303' : '#16251c';
 }
 applyTheme();
+applyIcons();
 
 // ---------- start ----------
 initMap();
@@ -100,7 +102,7 @@ function syncFab() {
   $('#btnGps').classList.toggle('on', nav.tracking);
   $('#btnGps small').textContent = nav.simulating ? 'SIM' : 'GPS';
   $('#btnFollow').classList.toggle('on', nav.follow && nav.tracking);
-  $('#btnOrient').innerHTML = nav.trackUp ? '▲<small>Kurs</small>' : 'N<small>Norr</small>';
+  $('#btnOrient').innerHTML = nav.trackUp ? icon('heading') + '<small>Kurs</small>' : icon('north') + '<small>Norr</small>';
   $('#btnOrient').classList.toggle('on', nav.trackUp);
   $('#btnEdit').classList.toggle('on', editing);
   $('#btnDraw').classList.toggle('on', drawActive());
@@ -149,7 +151,7 @@ function updateInstruments() {
   setI('#iTRK', o.trk != null ? fmtDeg(o.trk - settings.variation) : '---');
   setI('#iALT', o.alt != null ? Math.round(o.alt) : '----');
   setI('#iAGL', o.agl != null ? Math.round(o.agl) : '----', o.agl != null && o.agl < 300 && (o.gs || 0) > 30);
-  setI('#iWP', o.wp ? (nav.dto ? '→ ' : '') + o.wp : '—');
+  setI('#iWP', o.wp ? (nav.dto ? 'D→ ' : '') + o.wp : '—');
   setI('#iBRG', o.brg != null ? fmtDeg(o.brg) : '---');
   setI('#iDIST', o.dist != null ? (o.dist < 10 ? o.dist.toFixed(1) : Math.round(o.dist)) : '--');
   setI('#iETE', fmtHM(o.ete));
@@ -163,7 +165,7 @@ syncFab();
 $('#iWP').parentElement.addEventListener('click', () => {
   if (nav.dto) { if (confirm('Avbryt Direkt till?')) cancelDto(); return; }
   if (route.wps.length < 2) return;
-  modal(`<h3>Välj aktiv sträcka</h3><ul class="aplist">${route.wps.slice(1).map((w, i) => `<li><div class="info"><b>${i + 1}→${i + 2} ${esc(w.name)}</b></div>
+  modal(`<h3>Välj aktiv sträcka</h3><ul class="aplist">${route.wps.slice(1).map((w, i) => `<li><div class="info"><b>${i + 1}–${i + 2} ${esc(w.name)}</b></div>
     <button class="btn small ${i === nav.activeLeg ? 'primary' : ''}" onclick="window.ulnav.setActiveLeg(${i});document.getElementById('modal').classList.add('hidden')">Aktivera</button></li>`).join('')}</ul>`);
 });
 
@@ -173,7 +175,7 @@ function showNearest() {
   const list = nearestAirports(ref, 12);
   window.ulnav._near = list.map((x) => x.a);
   modal(`<h3>Närmaste fält ${nav.pos ? 'från din position' : '<span class="muted">(från kartans mitt — GPS av)</span>'}</h3>
-    ${nav.pos && nav.aglFt ? `<div class="okbox">Glidräckvidd ≈ <b>${(nav.aglFt * settings.glideRatio / 6076).toFixed(1)} NM</b> (1:${settings.glideRatio}, ${Math.round(nav.aglFt)} ft AGL)</div>` : ''}
+    ${nav.pos && nav.aglFt ? note('ok', `Glidräckvidd ≈ <b>${(nav.aglFt * settings.glideRatio / 6076).toFixed(1)} NM</b> (1:${settings.glideRatio}, ${Math.round(nav.aglFt)} ft AGL)`, 'triangle') : ''}
     ${list.length ? `<ul class="aplist">${list.map(({ a, d }, i) => apRow(a, d, bearing(ref, a), i, true)).join('')}</ul>` : '<div class="muted">Inga fält inlästa ännu.</div>'}`);
 }
 function apRow(a, d, brg, i, big) {
@@ -181,8 +183,8 @@ function apRow(a, d, brg, i, big) {
   return `<li><div class="info"><b>${a.ul ? '<span class="tag ul">UL</span>' : ''}${esc(a.name)}</b>
     <span>${esc(a.icao || '')} ${esc(a.type)}${r ? ` · ${esc(r.des)} ${r.lenM ? r.lenM + ' m' : ''} ${esc(r.surf)}` : ''}${a.freqs[0] ? ' · ' + esc(a.freqs[0].mhz) : ''}</span></div>
     <div class="dist">${d.toFixed(1)}<small>NM · ${fmtDeg(brg - settings.variation)}°M</small></div>
-    <button class="btn small ${big ? 'primary' : ''}" onclick="window.ulnav.dtoNear(${i})">→</button>
-    <button class="btn small" onclick="window.ulnav.showNear(${i})">ⓘ</button></li>`;
+    <button class="btn small ${big ? 'primary' : ''}" onclick="window.ulnav.dtoNear(${i})" aria-label="Direkt till">${ic('arrowRight', 20)}</button>
+    <button class="btn small" onclick="window.ulnav.showNear(${i})" aria-label="Info">${ic('info', 20)}</button></li>`;
 }
 window.ulnav.dtoNear = (i) => { const a = window.ulnav._near[i]; $('#modal').classList.add('hidden'); directTo({ lat: a.lat, lon: a.lon, name: a.icao || a.name }); };
 window.ulnav.showNear = (i) => {
@@ -228,7 +230,7 @@ function renderWxTab(el) {
     ${routeIcaos().length ? `<div class="btnrow"><button class="btn small" id="wxRoute">Fält i rutten (${routeIcaos().join(', ')})</button></div>` : ''}
     <div id="wxRes"></div>
     <h3>Prognos för rutten <span class="muted">(Open-Meteo)</span></h3><div id="wxRoute2" class="muted">${route.wps.length < 2 ? 'Skapa en rutt för vindprognos.' : 'Hämtar…'}</div>
-    <div class="muted" style="margin-top:12px">Lägg till <b>METAR-stationer</b> och <b>Nederbördsradar</b> som lager via ▤. Officiell briefing (LFV/AIM) ska alltid användas före flygning.</div>`;
+    <div class="muted" style="margin-top:12px">Lägg till <b>METAR-stationer</b> och <b>Nederbördsradar</b> som lager via <b>Lager</b>. Officiell briefing (LFV/AIM) ska alltid användas före flygning.</div>`;
   const go = async () => {
     const v = $('#wxIds', el).value; store.set('ulnav.wxids', v);
     $('#wxRes', el).innerHTML = '<div class="muted">Hämtar…</div>';
@@ -236,7 +238,7 @@ function renderWxTab(el) {
       const r = await fetchMetarTaf(v.split(/[\s,]+/));
       $('#wxRes', el).innerHTML = r.map(metarHtml).join('') || '<div class="muted">Ange minst en ICAO-kod.</div>';
     } catch (e) {
-      $('#wxRes', el).innerHTML = `<div class="badbox">${esc(e.message)}<br>aviationweather.gov kan blockera direktanrop från webbläsare. Ange en CORS-proxy under Inställningar.</div>`;
+      $('#wxRes', el).innerHTML = note('bad', `${esc(e.message)}<br>aviationweather.gov kan blockera direktanrop från webbläsare. Ange en CORS-proxy under Inställningar.`);
     }
   };
   $('#wxGo', el).onclick = go;
@@ -280,7 +282,7 @@ function renderSettingsTab(el) {
   el.innerHTML = `
   <h3>Visning</h3>
   <div class="field"><span>Tema</span><select data-k="theme">
-    <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Mörkt</option><option value="day" ${s.theme === 'day' ? 'selected' : ''}>Ljust (dag/sol)</option>
+    <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Skog (mörkt)</option><option value="day" ${s.theme === 'day' ? 'selected' : ''}>Pergament (ljust, sol)</option>
     <option value="night" ${s.theme === 'night' ? 'selected' : ''}>Natt (rött)</option></select></div>
   <div class="field"><span>Fartenhet</span><select data-k="speedUnit"><option value="kt" ${s.speedUnit === 'kt' ? 'selected' : ''}>knop (kt)</option>
     <option value="kmh" ${s.speedUnit === 'kmh' ? 'selected' : ''}>km/h</option></select></div>
@@ -307,13 +309,13 @@ function renderSettingsTab(el) {
   <div class="btnrow"><button class="btn" id="tOaip">Testa OpenAIP-nyckel</button></div><div id="tOaipRes"></div>
   <div class="field"><span>OurAirports länder<small>ISO-koder, t.ex. SE,NO,DK,FI</small></span><input type="text" data-k="oaCountries" value="${esc(s.oaCountries)}"></div>
   <div class="field"><span>Ta med helikopterplatser</span><input type="checkbox" data-k="oaIncludeHeli" ${s.oaIncludeHeli ? 'checked' : ''}></div>
-  <div class="btnrow"><button class="btn" id="oaReload">↻ Ladda om OurAirports</button></div>
+  <div class="btnrow"><button class="btn" id="oaReload">${ic('refresh')}Ladda om OurAirports</button></div>
   <div class="field"><span>CORS-proxy (valfri)<small>Prefix för METAR/TAF m.fl. om webbläsaren blockerar. {url} ersätts om den finns.</small></span>
     <input type="url" data-k="corsProxy" value="${esc(s.corsProxy)}" placeholder="https://…/?url={url}"></div>
 
   <h3>Offline</h3>
   <div class="muted">Spara kartbilder (zoom 7–12, ±8 NM) och terräng längs aktuell rutt för vald baskarta och aktiva flygkartlager. Data för luftrum och flygfält sparas automatiskt när de visas.</div>
-  <div class="btnrow"><button class="btn primary" id="offDl">⤓ Spara rutten offline</button><button class="btn danger" id="offClr">Töm kartcache</button></div>
+  <div class="btnrow"><button class="btn primary" id="offDl">${ic('download')}Spara rutten offline</button><button class="btn danger" id="offClr">${ic('trash')}Töm kartcache</button></div>
   <div id="offInfo" class="muted"></div>
 
   <details style="margin-top:12px"><summary class="btn" style="display:inline-flex;align-items:center">Avancerat: kart-URL:er</summary>
@@ -324,7 +326,7 @@ function renderSettingsTab(el) {
 
   <h3>Om & licenser</h3>
   <div class="field"><span>Version<small>Uppdateras automatiskt när du är online</small></span><b>${APP_VERSION}</b></div>
-  <div class="btnrow"><button class="btn" id="forceUpd">↻ Tvinga uppdatering</button></div>
+  <div class="btnrow"><button class="btn" id="forceUpd">${ic('refresh')}Tvinga uppdatering</button></div>
   <div class="muted" style="line-height:1.5">
   Kartdata © OpenStreetMap-bidragsgivare (ODbL) · OpenFreeMap/OpenMapTiles · MapLibre GL (BSD-3) · OpenTopoMap (CC-BY-SA) · Esri World Imagery ·
   open flightmaps · OpenAIP (CC BY-NC 4.0) · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
@@ -362,7 +364,7 @@ function renderSettingsTab(el) {
   $('#offDl', el).onclick = async () => {
     const b = $('#offDl', el); b.disabled = true;
     await downloadRoute((d, n) => { b.textContent = `Sparar ${d}/${n}…`; });
-    b.disabled = false; b.textContent = '⤓ Spara rutten offline'; showInfo();
+    b.disabled = false; b.innerHTML = ic('download') + 'Spara rutten offline'; showInfo();
   };
   $('#offClr', el).onclick = async () => { if (confirm('Töm kartcachen?')) { await clearTiles(); showInfo(); } };
 }
@@ -374,7 +376,7 @@ window.addEventListener('online', () => toast('Online igen'));
 window.addEventListener('offline', () => toast('Offline — använder sparade data', 4000));
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-14.6';
+export const APP_VERSION = '2026-10-14.7';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
@@ -395,11 +397,11 @@ if (!store.get('ulnav.welcomed', false)) {
   store.set('ulnav.welcomed', true);
   modal(`<h3>Välkommen till Ultranav</h3>
   <ol style="line-height:1.6;padding-left:20px">
-   <li>Öppna <b>☰ › Inställningar</b> och ange din gratis <b>OpenAIP-nyckel</b> (luftrum, UL-fält, rapportpunkter), samt flygplanets fart och förbrukning.</li>
-   <li>Tryck på <b>✎ Rutt</b> och sedan på kartan för att lägga ut brytpunkter. Tryck nära ett fält för att fästa vid det.</li>
-   <li>Navloggen med vindkorrektion, bränsle, solnedgång och luftrum längs rutten finns under <b>☰ › Rutt</b>. Terrängprofilen öppnas med <b>⛰</b>.</li>
+   <li>Öppna <b>Meny › Inställningar</b> och ange din gratis <b>OpenAIP-nyckel</b> (luftrum, UL-fält, rapportpunkter), samt flygplanets fart och förbrukning.</li>
+   <li>Tryck på <b>Rutt</b> och sedan på kartan för att lägga ut brytpunkter. Tryck nära ett fält för att fästa vid det.</li>
+   <li>Navloggen med vindkorrektion, bränsle, solnedgång och luftrum längs rutten finns under <b>Meny › Rutt</b>. Terrängprofilen öppnas med <b>Profil</b>.</li>
    <li>Före start: <b>Spara rutten offline</b> under Inställningar. Lägg sedan till appen på hemskärmen via Safari › Dela › Lägg till på hemskärmen.</li>
-   <li>I luften: <b>📡 GPS</b>, sedan <b>◎ Följ</b> och <b>N/▲</b> för norr-upp eller kurs-upp. <b>✈ Närm.</b> visar närmaste fält för nödlandning.</li>
+   <li>I luften: <b>GPS</b>, sedan <b>Följ</b> och <b>Norr/Kurs</b> för norr upp eller kurs upp. <b>Närmast</b> visar närmaste fält för nödlandning.</li>
   </ol>
-  <div class="warnbox">Hjälpmedel — ersätter inte officiell AIP, NOTAM eller briefing.</div>`);
+  ${note('warn', 'Hjälpmedel — ersätter inte officiell AIP, NOTAM eller briefing.')}`);
 }

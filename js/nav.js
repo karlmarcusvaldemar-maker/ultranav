@@ -1,5 +1,6 @@
 // GPS, rörlig karta, aktiv sträcka, direkt-till, glidräckvidd, spårlogg och varningar
 import { map } from './map.js';
+import { ic } from './icons.js';
 import { settings, spdOut, spdUnit } from './settings.js';
 import { route, onRouteChange, getLegs } from './route.js';
 import { airspacesAt, limitFt, asLabel, fmtLimit } from './openaip.js';
@@ -18,7 +19,7 @@ const listeners = new Set();
 export const onNav = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f(nav));
 
-const PLANE = `<svg viewBox="0 0 56 56"><path d="M28 4 L31 22 L50 30 L50 34 L31 30 L30 44 L36 48 L36 51 L28 49 L20 51 L20 48 L26 44 L25 30 L6 34 L6 30 L25 22 Z" fill="#f2b632" stroke="#000" stroke-width="1.5"/></svg>`;
+const PLANE = `<svg viewBox="0 0 56 56"><path d="M28 4 L31 22 L50 30 L50 34 L31 30 L30 44 L36 48 L36 51 L28 49 L20 51 L20 48 L26 44 L25 30 L6 34 L6 30 L25 22 Z" fill="#d8b86e" stroke="#14200f" stroke-width="1.6"/></svg>`;
 
 export async function initNav() {
   ownLayer.addTo(map);
@@ -153,7 +154,7 @@ function airspaceCheck(fix) {
       const k = a._id + (ahead ? 'a' : 'i');
       if (Date.now() - (warned.get(k) || 0) < 5 * 6e4) continue;
       warned.set(k, Date.now());
-      toast(`${ahead ? '⚠ Om ca 2 min: ' : '⚠ Inne i '}${a.name} — ${asLabel(a)} ${fmtLimit(a.lowerLimit)}–${fmtLimit(a.upperLimit)}`, 7000);
+      toast(`${ahead ? 'Varning – om ca 2 min: ' : 'Varning – inne i '}${a.name} — ${asLabel(a)} ${fmtLimit(a.lowerLimit)}–${fmtLimit(a.upperLimit)}`, 7000);
       return;
     }
   };
@@ -169,7 +170,7 @@ function update() {
   const ll = [p.lat, p.lon];
   if (!ownMarker) {
     ownMarker = L.marker(ll, { pane: 'own', interactive: false, icon: L.divIcon({ className: 'own-ship', iconSize: [56, 56], iconAnchor: [28, 28], html: PLANE }) }).addTo(ownLayer);
-    vecLine = L.polyline([], { pane: 'ownPath', color: '#f2b632', weight: 3, dashArray: '2 6', interactive: false }).addTo(ownLayer);
+    vecLine = L.polyline([], { pane: 'ownPath', color: '#d8b86e', weight: 3, dashArray: '2 6', interactive: false }).addTo(ownLayer);
     dtoLine = L.polyline([], { pane: 'route', color: '#ff2fd0', weight: 4, dashArray: '10 8', interactive: false }).addTo(ownLayer);
     glideCircle = L.circle(ll, { pane: 'ownPath', radius: 1, color: '#2ecc71', weight: 2, fill: true, fillOpacity: 0.05, dashArray: '6 6', interactive: false }).addTo(ownLayer);
   }
@@ -260,10 +261,10 @@ export function renderLogTab(el) {
     ${s ? `<div class="kv" style="margin-top:8px"><span>Start</span><b>${s.start.toLocaleString('sv-SE')}</b><span>Punkter</span><b>${s.n}</b>
       <span>Sträcka</span><b>${s.d.toFixed(1)} NM</b><span>Tid</span><b>${fmtHM(s.h)}</b>
       <span>Max höjd</span><b>${s.maxAlt != null ? s.maxAlt + ' ft' : '—'}</b><span>Max GS</span><b>${Math.round(spdOut(s.maxGs))} ${spdUnit()}</b></div>` : '<div class="muted">Ingen logg ännu.</div>'}
-    <div class="btnrow"><button class="btn" id="lgExp">⤓ Exportera GPX</button><button class="btn danger" id="lgClr">Rensa logg</button></div>
+    <div class="btnrow"><button class="btn" id="lgExp">${ic('download')}Exportera GPX</button><button class="btn danger" id="lgClr">${ic('trash')}Rensa logg</button></div>
     <h3>Simulering (träning på marken)</h3>
     <div class="muted">Flyger rutten med din TAS och prognosvind ×10 i tid, så att du kan öva på instrumentlisten, sekvensering och varningar.</div>
-    <div class="btnrow"><button class="btn ${nav.simulating ? 'primary' : ''}" id="simBtn">${nav.simulating ? '■ Stoppa simulering' : '▶ Simulera rutten'}</button></div>`;
+    <div class="btnrow"><button class="btn ${nav.simulating ? 'primary' : ''}" id="simBtn">${nav.simulating ? ic('stop') + 'Stoppa simulering' : ic('play') + 'Simulera rutten'}</button></div>`;
   $('#lgOn', el).onchange = (e) => { nav.logging = e.target.checked; };
   $('#lgExp', el).onclick = exportLog;
   $('#lgClr', el).onclick = () => { if (confirm('Rensa spårloggen?')) clearLog(); };

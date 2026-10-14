@@ -17,7 +17,7 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 - **Spårlogg** med GPX-export. **GPX-import och -export** av rutter, och sparade rutter.
 - **Simulering** av rutten för träning på marken.
 - **Offline**: spara kartbilder längs rutten. Luftrum och fält cachas i IndexedDB.
-- Teman: mörkt, ljust (sol) och natt (rött).
+- Designspråk "British countryside": teman **Skog** (mörkgrönt med mässing), **Pergament** (ljust, för sol) och **Natt** (rött). Egna linjeikoner i [`js/icons.js`](js/icons.js).
 
 ## Datakällor (öppna)
 | Källa | Innehåll | Nyckel |

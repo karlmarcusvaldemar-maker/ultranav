@@ -1,0 +1,69 @@
+// Ultranavs ikonbibliotek — linjeikoner, 24×24, 1,75 px linje, rundade ändar. Ritas i currentColor.
+const P = {
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  minus: '<path d="M5 12h14"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  // navigation
+  gps: '<circle cx="12" cy="12" r="1.8"/><path d="M8.6 8.6a4.8 4.8 0 0 0 0 6.8M15.4 8.6a4.8 4.8 0 0 1 0 6.8M5.8 5.8a8.8 8.8 0 0 0 0 12.4M18.2 5.8a8.8 8.8 0 0 1 0 12.4"/>',
+  follow: '<circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>',
+  north: '<circle cx="12" cy="12" r="9"/><path d="M12 5.5l3 6.5h-6z" fill="currentColor"/><path d="M9 12l3 6.5 3-6.5"/>',
+  heading: '<path d="M12 3l6.5 17L12 16l-6.5 4z"/>',
+  route: '<circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="5.5" r="2"/><path d="M7.5 18.5h7a3 3 0 0 0 0-6h-5a3 3 0 0 1 0-6h7"/>',
+  plane: '<path d="M10.2 20.5l1.6-6.3-4.7-.1-1.8 2.2H3.6l1-3.8-1-3.8h1.7l1.8 2.2 4.7-.1-1.6-6.3h2l3.8 6.3 4.2-.1c1.1 0 2.1.8 2.1 1.8s-1 1.8-2.1 1.8l-4.2-.1-3.8 6.3z"/>',
+  nearest: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/><circle cx="12" cy="12" r="3.2"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/>',
+  ruler: '<path d="M3.5 16.5L16.5 3.5l4 4-13 13z"/><path d="M7.5 12.5l1.8 1.8M10.5 9.5l1.8 1.8M13.5 6.5l1.8 1.8"/>',
+  mountain: '<path d="M2.5 20l6.5-11 4 6.5 2.5-3.5L21.5 20z"/><path d="M7.2 12.2l1.8 1.3 1.6-1.4"/>',
+  // ritverktyg
+  measure: '<path d="M4 19L20 5"/><path d="M4 15v4h4M20 9V5h-4"/>',
+  polyline: '<circle cx="4.5" cy="17" r="1.6"/><circle cx="10" cy="9" r="1.6"/><circle cx="15" cy="15" r="1.6"/><circle cx="20" cy="6" r="1.6"/><path d="M5.5 15.7l3.6-5.4M11.2 10.2l2.7 3.6M15.8 13.5l3.4-6"/>',
+  polygon: '<path d="M12 3.5l8.5 6.2-3.2 10.3H6.7L3.5 9.7z"/>',
+  pin: '<path d="M12 21s-6.5-5.9-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 15.1 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/>',
+  crosshair: '<circle cx="12" cy="12" r="7.5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  // allmänt
+  arrowRight: '<path d="M4 12h15M13 6l6 6-6 6"/>',
+  arrowUp: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  arrowDown: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  swap: '<path d="M8 4v16M4 8l4-4 4 4M16 20V4M12 16l4 4 4-4"/>',
+  save: '<path d="M5 3.5h11l3.5 3.5v13.5h-14.5z"/><path d="M8 3.5V8h7V3.5M8 20.5V14h8v6.5"/>',
+  download: '<path d="M12 4v11M7 10.5l5 5 5-5M4.5 19.5h15"/>',
+  upload: '<path d="M12 15.5V4.5M7 9l5-5 5 5M4.5 19.5h15"/>',
+  trash: '<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/>',
+  refresh: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/>',
+  play: '<path d="M7 4.5v15l12-7.5z"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
+  // tillstånd och varningar
+  alert: '<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.3" r=".6" fill="currentColor"/>',
+  fuel: '<path d="M5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h6A1.5 1.5 0 0 1 14 5v15.5M3.5 20.5h12M5 10h9"/><path d="M14 8.5h1.5a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 0 3 0V8l-2.5-2.5"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+  ok: '<circle cx="12" cy="12" r="9"/><path d="M8 12.3l2.8 2.8L16.5 9.3"/>',
+  fail: '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',
+  // flikar
+  cloud: '<path d="M7 18.5h10a4 4 0 0 0 .6-8 5.5 5.5 0 0 0-10.7 1A3.5 3.5 0 0 0 7 18.5z"/>',
+  runway: '<path d="M8 21L10 3h4l2 18z"/><path d="M12 6v2.5M12 11v2.5M12 16v2.5"/>',
+  log: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>',
+  sliders: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+  triangle: '<path d="M12 5l7.5 13h-15z"/>',
+};
+
+/** SVG-sträng för en ikon */
+export function icon(name, size = 22, cls = '') {
+  return `<svg class="ic ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[name] || ''}</svg>`;
+}
+/** Kort alias för mallsträngar: `${ic('save')} Spara` */
+export const ic = (name, size = 18) => icon(name, size);
+
+/** Ersätt <i data-icon="namn"></i> i DOM med SVG */
+export function applyIcons(root = document) {
+  root.querySelectorAll('i[data-icon]').forEach((el) => {
+    el.outerHTML = icon(el.dataset.icon, +(el.dataset.size || 22), el.className);
+  });
+}
+export const ICON_NAMES = Object.keys(P);

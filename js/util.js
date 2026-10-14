@@ -1,4 +1,5 @@
 // Gemensamma hjälpfunktioner: geodesi, formattering, lagring, UI-hjälp.
+import { icon } from './icons.js';
 
 export const R_NM = 3440.065;          // jordradie i nautiska mil
 export const FT_PER_M = 3.28084;
@@ -144,6 +145,8 @@ export function modal(html) {
   document.getElementById('modalBody').innerHTML = html;
   document.getElementById('modal').classList.remove('hidden');
 }
+/** Meddelanderuta med ikon: kind = 'ok' | 'warn' | 'bad' */
+export const note = (kind, html, ico) => `<div class="${kind}box">${icon(ico || { ok: 'ok', warn: 'alert', bad: 'alert' }[kind], 20)}<div>${html}</div></div>`;
 export const $ = (s, root = document) => root.querySelector(s);
 export const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 export function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
