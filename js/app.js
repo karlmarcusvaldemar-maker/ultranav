@@ -12,7 +12,7 @@ import { initWxOverlay, fetchMetarTaf, metarHtml, fetchForecast, hourIndex, surf
 import { elevationFt } from './terrain.js';
 import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
 import { sunInfo } from './sun.js';
-import { testOpenAip } from './diag.js';
+import { testOpenAip, testProxy } from './diag.js';
 import { oaipStatus, resetOpenAip } from './openaip.js';
 import { applyIcons, icon, ic } from './icons.js';
 
@@ -319,8 +319,9 @@ function renderSettingsTab(el) {
   <div class="field"><span>OurAirports länder<small>ISO-koder, t.ex. SE,NO,DK,FI</small></span><input type="text" data-k="oaCountries" value="${esc(s.oaCountries)}"></div>
   <div class="field"><span>Ta med helikopterplatser</span><input type="checkbox" data-k="oaIncludeHeli" ${s.oaIncludeHeli ? 'checked' : ''}></div>
   <div class="btnrow"><button class="btn" id="oaReload">${ic('refresh')}Ladda om OurAirports</button></div>
-  <div class="field"><span>CORS-proxy (valfri)<small>Prefix för METAR/TAF m.fl. om webbläsaren blockerar. {url} ersätts om den finns.</small></span>
-    <input type="url" data-k="corsProxy" value="${esc(s.corsProxy)}" placeholder="https://…/?url={url}"></div>
+  <div class="field"><span>CORS-proxy (valfri)<small>Adressen till din Cloudflare Worker, t.ex. https://ultranav-proxy.namn.workers.dev</small></span>
+    <input type="url" data-k="corsProxy" value="${esc(s.corsProxy)}" placeholder="https://…workers.dev" autocapitalize="off"></div>
+  <div class="btnrow"><button class="btn" id="tProxy">${ic('search')}Testa CORS-proxy</button></div><div id="tProxyRes"></div>
 
   <h3>Offline</h3>
   <div class="muted">Spara kartbilder (zoom 7–12, ±8 NM) och terräng längs aktuell rutt för vald baskarta och aktiva flygkartlager. Data för luftrum och flygfält sparas automatiskt när de visas.</div>
@@ -363,10 +364,11 @@ function renderSettingsTab(el) {
   $('#tilesReset', el).onclick = () => { saveSettings({ tiles: { ...DEFAULT_TILES } }); renderSettingsTab(el); };
   $('#oaReload', el).onclick = () => loadOurAirports(true);
   const runTest = (btn, res, fn) => { $(btn, el).onclick = async () => {
-    el.querySelectorAll('[data-k=openaipKey]').forEach((i) => i.dispatchEvent(new Event('change'))); // spara ev. osparade fält först
+    el.querySelectorAll('[data-k=openaipKey],[data-k=corsProxy]').forEach((i) => i.dispatchEvent(new Event('change'))); // spara ev. osparade fält först
     $(res, el).innerHTML = '<div class="muted">Testar…</div>'; $(res, el).innerHTML = await fn(); }; };
   runTest('#tOaip', '#tOaipRes', async () => { const r = await testOpenAip(); map.fire('moveend'); setTimeout(showStat, 4000); showStat(); return r; });
   runTest('#tBase', '#tBaseRes', testCurrentBase);
+  runTest('#tProxy', '#tProxyRes', testProxy);
   const showStat = () => { const st = oaipStatus(); $('#oaipStat', el).textContent = settings.openaipKey
     ? `OpenAIP inläst: ${st.airspaces} luftrum, ${st.airports} flygfält, ${st.rp} rapportpunkter (${st.cells} områden). Hämtning: ${settings.openaipQuery === 'country' ? 'per land' : 'per område (' + settings.openaipQuery + ')'}.`
     : 'OpenAIP: ingen nyckel angiven.'; };
@@ -396,7 +398,7 @@ window.addEventListener('online', () => toast('Online igen'));
 window.addEventListener('offline', () => toast('Offline — använder sparade data', 4000));
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-14.10';
+export const APP_VERSION = '2026-10-14.11';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {

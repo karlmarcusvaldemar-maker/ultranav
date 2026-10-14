@@ -1,6 +1,6 @@
 // Felsökning av anslutningar: visar varför ett anrop misslyckas (inloggning, behörighet, CORS, nätverk)
 import { settings, saveSettings } from './settings.js';
-import { esc, note } from './util.js';
+import { esc, note, withProxy } from './util.js';
 
 /** Gör ett anrop och klassificera resultatet */
 export async function probe(url, headers) {
@@ -94,4 +94,24 @@ export async function testTile(url, name, isJson = false) {
     ? 'Servern nekar just nu — troligen tillfällig spärr eller överbelastning (t.ex. efter många nedladdningar). Vänta en stund eller välj en annan karta.'
     : r.kind === 'cors' ? 'Servern svarar men bilden kunde inte visas.' : r.kind === 'network' ? 'Servern går inte att nå — den kan vara nere.' : '';
   return box('badbox', `${esc(name)}: ${esc(r.msg)}<br>${hint}`);
+}
+
+// ---------- CORS-proxy ----------
+export async function testProxy() {
+  const proxy = settings.corsProxy?.trim();
+  if (!proxy) return box('warnbox', 'Ingen proxy angiven. Fyll i adressen till din Worker i fältet CORS-proxy ovan.');
+  if (!/^https:\/\//.test(proxy)) return box('badbox', 'Adressen måste börja med https://');
+  const target = 'https://aviationweather.gov/api/data/metar?ids=ESSA&format=json';
+  const r = await probe(withProxy(target, proxy));
+  if (r.ok) {
+    let n = 0; try { n = JSON.parse(r.text).length; } catch { /* inte JSON */ }
+    if (/hello world/i.test(r.text)) return box('badbox', 'Workern svarar "Hello World" — koden är inte utbytt. Klistra in innehållet i tools/cors-proxy-worker.js i Cloudflare och tryck Deploy.');
+    return box('okbox', `Proxyn fungerar. METAR för ESSA hämtades via proxyn${n ? '' : ' (tomt svar från NOAA, men proxyn svarar)'}.`);
+  }
+  const t = r.text || '';
+  if (r.status === 403 && /Otillåten webbplats/.test(t)) return box('badbox', `Proxyn svarar men nekar den här webbplatsen. Lägg till <b>${esc(location.origin)}</b> i ALLOWED_ORIGINS i Worker-koden och tryck Deploy.`);
+  if (r.status === 403 && /Otillåten adress/.test(t)) return box('badbox', 'Proxyn nekar väderadressen. Kontrollera att aviationweather.gov finns i ALLOWED_HOSTS i Worker-koden.');
+  if (r.kind === 'cors') return box('badbox', 'Workern svarar men utan CORS-tillåtelse — troligen körs fortfarande standardkoden ("Hello World"). Klistra in koden från tools/cors-proxy-worker.js och tryck Deploy.');
+  if (r.kind === 'network') return box('badbox', 'Adressen går inte att nå. Kontrollera stavningen — den ska se ut som https://namn.konto.workers.dev');
+  return box('badbox', `Proxyn svarade med ett fel: ${esc(r.msg)}`);
 }

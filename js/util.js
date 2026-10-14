@@ -122,12 +122,20 @@ export const idb = {
 };
 
 // ---------- nätverk ----------
-/** fetch med timeout; valfri CORS-proxy (prefix) för källor som saknar CORS */
+/** Bygg proxyadress. Godtar "https://x.workers.dev/?url={url}", ett prefix som slutar på "=", eller bara grundadressen. */
+export function withProxy(url, proxy) {
+  if (!proxy) return url;
+  proxy = proxy.trim();
+  if (proxy.includes('{url}')) return proxy.replace('{url}', encodeURIComponent(url));
+  if (/[=?]$/.test(proxy)) return proxy + encodeURIComponent(url);
+  return proxy.replace(/\/?$/, '/') + '?url=' + encodeURIComponent(url); // bara grundadressen angiven
+}
+/** fetch med timeout; valfri CORS-proxy för källor som saknar CORS */
 export async function fetchX(url, { timeout = 20000, proxy = '', headers, as = 'json' } = {}) {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), timeout);
   try {
-    const u = proxy ? (proxy.includes('{url}') ? proxy.replace('{url}', encodeURIComponent(url)) : proxy + url) : url;
+    const u = withProxy(url, proxy);
     const r = await fetch(u, { signal: ctl.signal, headers });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return as === 'json' ? await r.json() : as === 'blob' ? await r.blob() : await r.text();
