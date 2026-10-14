@@ -280,8 +280,8 @@ function renderSettingsTab(el) {
   <h3>Datakällor</h3>
   <div class="field"><span>OpenAIP API-nyckel<small>Gratis på <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a> › konto › API-klienter</small></span>
     <input type="password" data-k="openaipKey" value="${esc(s.openaipKey)}" autocomplete="off"></div>
-  <div class="field"><span>Lantmäteriet användare<small>Gratis konto på Geotorget (öppna data)</small></span><input type="text" data-k="lmUser" value="${esc(s.lmUser)}" autocomplete="off"></div>
-  <div class="field"><span>Lantmäteriet lösenord</span><input type="password" data-k="lmPass" value="${esc(s.lmPass)}" autocomplete="off"></div>
+  <div class="field"><span>Lantmäteriet API-nyckel<small>Gratis via <a href="https://geotorget.lantmateriet.se" target="_blank" rel="noopener">Geotorget</a> – produkten "Topografisk webbkarta Visning, översiktlig"</small></span>
+    <input type="password" data-k="lmKey" value="${esc(s.lmKey)}" autocomplete="off"></div>
   <div class="field"><span>OurAirports länder<small>ISO-koder, t.ex. SE,NO,DK,FI</small></span><input type="text" data-k="oaCountries" value="${esc(s.oaCountries)}"></div>
   <div class="field"><span>Ta med helikopterplatser</span><input type="checkbox" data-k="oaIncludeHeli" ${s.oaIncludeHeli ? 'checked' : ''}></div>
   <div class="btnrow"><button class="btn" id="oaReload">↻ Ladda om OurAirports</button></div>

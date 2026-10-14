@@ -6,28 +6,14 @@ export let map;
 const state = store.get('ulnav.layers', { base: 'otm', overlays: ['openaipVec', 'oa', 'route'], opacity: {} });
 const save = () => store.set('ulnav.layers', state);
 
-// Tile-lager som hämtar med Basic-auth (Lantmäteriets öppna data kräver inloggning)
-const AuthTileLayer = L.TileLayer.extend({
-  createTile(coords, done) {
-    const img = document.createElement('img');
-    img.alt = ''; img.setAttribute('role', 'presentation');
-    const url = this.getTileUrl(coords);
-    const { user, pass } = this.options.auth || {};
-    if (!user) { img.onload = () => done(null, img); img.onerror = (e) => done(e, img); img.src = url; return img; }
-    fetch(url, { headers: { Authorization: 'Basic ' + btoa(`${user}:${pass}`) } })
-      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
-      .then((b) => { img.onload = () => { URL.revokeObjectURL(img.src); done(null, img); }; img.src = URL.createObjectURL(b); })
-      .catch((e) => done(e, img));
-    return img;
-  },
-});
-
 const tileOpts = (extra) => ({ maxZoom: 19, crossOrigin: true, className: 'basemap', ...extra });
 
 export const BASES = {
   otm: { name: 'OpenTopoMap', note: 'Topografi, höjdkurvor', make: () => L.tileLayer(settings.tiles.otm, tileOpts({ maxNativeZoom: 17, subdomains: 'abc', attribution: '© OpenStreetMap, SRTM | © OpenTopoMap (CC-BY-SA)' })) },
   osm: { name: 'OpenStreetMap', note: 'Gatukarta', make: () => L.tileLayer(settings.tiles.osm, tileOpts({ maxNativeZoom: 19, attribution: '© OpenStreetMap-bidragsgivare' })) },
-  lm: { name: 'Lantmäteriet Topowebb', note: 'Sverige, officiell topo (kräver inlogg)', make: () => new AuthTileLayer(settings.tiles.lm, tileOpts({ maxNativeZoom: 15, auth: { user: settings.lmUser, pass: settings.lmPass }, attribution: '© Lantmäteriet (CC-BY)' })) },
+  lm: { name: 'Lantmäteriet Topowebb', note: 'Sverige, officiell topo (kräver API-nyckel)', needsLmKey: true,
+    // crossOrigin av: tjänsten behöver inte skicka CORS-huvuden för att bilderna ska visas
+    make: () => L.tileLayer(settings.tiles.lm.replace('{key}', encodeURIComponent(settings.lmKey)), tileOpts({ maxNativeZoom: 14, crossOrigin: false, attribution: '© Lantmäteriet' })) },
   esri: { name: 'Satellit (Esri)', note: 'Flyg-/satellitbild', make: () => L.tileLayer(settings.tiles.esri, tileOpts({ maxNativeZoom: 18, attribution: 'Bild © Esri, Maxar, Earthstar Geographics' })) },
   ofmBase: { name: 'OpenFlightMaps bas', note: 'Där OFM har täckning', make: () => L.tileLayer(settings.tiles.ofmBase, tileOpts({ maxNativeZoom: 12, attribution: '© open flightmaps' })) },
 };
@@ -66,7 +52,7 @@ export function initMap() {
   setBase(state.base);
   for (const id of state.overlays) if (OVERLAYS[id]) enableOverlay(id, true);
   onSettings((s, patch) => {
-    if (patch.tiles || 'lmUser' in patch || 'lmPass' in patch) setBase(state.base);
+    if (patch.tiles || 'lmKey' in patch) setBase(state.base);
     if ('openaipKey' in patch || patch.tiles) for (const id of Object.keys(OVERLAYS)) if (overlayLayers[id]) { enableOverlay(id, false); enableOverlay(id, true); }
   });
   return map;
@@ -74,6 +60,7 @@ export function initMap() {
 
 export function setBase(id) {
   if (!BASES[id]) id = 'otm';
+  if (BASES[id].needsLmKey && !settings.lmKey) toast('Ange Lantmäteriets API-nyckel under Inställningar', 5000);
   if (baseLayer) map.removeLayer(baseLayer);
   baseLayer = BASES[id].make().addTo(map);
   baseLayer.on('tileerror', tileErr(BASES[id].name));

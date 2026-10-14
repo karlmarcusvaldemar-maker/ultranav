@@ -20,7 +20,7 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 | Källa | Innehåll | Nyckel |
 |---|---|---|
 | OpenStreetMap / OpenTopoMap | Baskartor | – |
-| Lantmäteriet Topowebb | Svensk topokarta | Gratis konto på Geotorget |
+| Lantmäteriet Topowebb | Svensk topokarta (utgår 2026-12-31) | Gratis API-nyckel via Geotorget |
 | Esri World Imagery | Satellit | – |
 | open flightmaps | VFR-karta där OFM har täckning | – |
 | OpenAIP | Luftrum, fält (inkl. UL), rapportpunkter | Gratis API-nyckel |

@@ -11,7 +11,7 @@ function tileXY(lat, lon, z) {
   return { x: Math.floor((lon + 180) / 360 * n), y: Math.floor((1 - Math.log(Math.tan(φ) + 1 / Math.cos(φ)) / Math.PI) / 2 * n) };
 }
 function fill(tpl, z, x, y) {
-  return tpl.replace('{s}', 'abc'[(x + y) % 3]).replace('{z}', z).replace('{x}', x).replace('{y}', y).replace('{key}', encodeURIComponent(settings.openaipKey));
+  return tpl.replace('{s}', 'abc'[(x + y) % 3]).replace('{z}', z).replace('{x}', x).replace('{y}', y).replace('{key}', encodeURIComponent(tpl.includes('lantmateriet') ? settings.lmKey : settings.openaipKey));
 }
 
 /** Lista tile-URL:er i en korridor (±corridor NM) längs rutten */
@@ -20,6 +20,7 @@ export function routeTiles({ corridor = 8, zMin = 7, zMax = 12 } = {}) {
   const base = currentBase();
   // OSM:s standardserver tillåter inte massnedladdning → hoppa över
   if (base === 'otm') sources.push({ tpl: settings.tiles.otm, max: 15 });
+  if (base === 'lm' && settings.lmKey) sources.push({ tpl: settings.tiles.lm, max: 14, opaque: true });
   if (base === 'esri') sources.push({ tpl: settings.tiles.esri, max: 18 });
   if (base === 'ofmBase') sources.push({ tpl: settings.tiles.ofmBase, max: 12 });
   if (overlayOn('ofmAero')) sources.push({ tpl: settings.tiles.ofmAero, max: 12 });
@@ -60,8 +61,9 @@ export async function downloadRoute(onProgress) {
       const u = queue.shift();
       try {
         if (!(await cache.match(u))) {
-          const r = await fetch(u, { mode: 'cors' });
-          if (r.ok) await cache.put(u, r); else fail++;
+          // Försök med CORS först; källor utan CORS-huvuden (t.ex. Lantmäteriet) sparas som opaka svar
+          const r = await fetch(u, { mode: 'cors' }).catch(() => fetch(u, { mode: 'no-cors' }));
+          if (r.ok || r.type === 'opaque') await cache.put(u, r); else fail++;
         }
       } catch { fail++; }
       done++; onProgress?.(done, urls.length, fail);
