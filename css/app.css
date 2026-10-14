@@ -359,3 +359,5 @@ input.switch:checked::after { transform: translateX(20px); }
 .suggest b { font: 700 16px var(--mono); min-width: 52px; }
 .suggest span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .suggest small { color: var(--muted); font-size: 12px; white-space: nowrap; }
+#editBanner button.sec { background: var(--panel2); color: var(--text); border: 1px solid var(--line-strong); }
+#editBanner button.sec .ic { color: var(--accent); }

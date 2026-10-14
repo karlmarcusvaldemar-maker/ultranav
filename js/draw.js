@@ -78,7 +78,6 @@ export function syncBar() {
   const bar = $('#drawBar');
   if (!bar) return;
   bar.querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === mode));
-  $('#dProfile')?.classList.toggle('on', drawActions.profileOn());
   const edit = mode !== null;
   for (const id of ['#dOwn', '#dUndo', '#dDone']) $(id)?.classList.toggle('hidden', !edit);
   $('#dSep2')?.classList.toggle('hidden', !edit);
@@ -96,10 +95,8 @@ function buildToolbar() {
   const bar = document.createElement('div');
   bar.id = 'drawBar'; bar.className = 'hidden';
   bar.innerHTML = `<div class="dbtns">
-      <button data-mode="route">${icon('route')}<small>Rutt</small></button>
       <button data-mode="measure">${icon('measure')}<small>Mät</small></button><button data-mode="line">${icon('polyline')}<small>Linje</small></button>
       <button data-mode="polygon">${icon('polygon')}<small>Yta</small></button><button data-mode="point">${icon('pin')}<small>Punkt</small></button>
-      <button id="dProfile">${icon('mountain')}<small>Profil</small></button>
       <span class="sep" id="dSep2"></span>
       <button id="dOwn" title="Börja från min position">${icon('crosshair')}<small>Min pos</small></button>
       <button id="dUndo">${icon('undo')}<small>Ångra</small></button><button id="dDone" class="primary">${icon('check')}<small>Spara</small></button>
@@ -107,7 +104,6 @@ function buildToolbar() {
     <div id="drawReadout"></div>`;
   $('#mapwrap').appendChild(bar);
   bar.querySelectorAll('[data-mode]').forEach((b) => b.onclick = () => setMode(b.dataset.mode));
-  $('#dProfile').onclick = () => { drawActions.toggleProfile(); syncBar(); };
   $('#dUndo').onclick = () => { if (mode === 'route') { drawActions.routeUndo(); readout(); return; } pts.pop(); drawLive(); };
   $('#dOwn').onclick = () => {
     const o = drawActions.ownPos();

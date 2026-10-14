@@ -36,7 +36,7 @@
   <div id="mapwrap">
     <div id="map"></div>
     <div id="toast" class="hidden"></div>
-    <div id="editBanner" class="hidden"><i data-icon="route"></i><span>Tryck på kartan för att lägga till brytpunkter. Dra en punkt för att flytta den.</span><button id="btnEditDone"><i data-icon="check" data-size="18"></i>Klar</button></div>
+    <div id="editBanner" class="hidden"><i data-icon="route"></i><span id="editInfo">Tryck på kartan för att lägga till brytpunkter. Dra en punkt för att flytta den.</span><button id="btnEditUndo" class="sec"><i data-icon="undo" data-size="18"></i>Ångra</button><button id="btnEditDone"><i data-icon="check" data-size="18"></i>Klar</button></div>
 
     <!-- Snabbknappar -->
     <nav id="fab" aria-label="Kartkontroller">
@@ -46,10 +46,12 @@
         <button id="btnOrient" title="Norr upp / kurs upp"><i data-icon="north"></i><small>Norr</small></button>
       </div>
       <div class="grp">
-        <button id="btnDraw" title="Rutt, mätning, ritning och terrängprofil"><i data-icon="edit"></i><small>Rita</small></button>
-        <button id="btnLayers" title="Kartor och kartlager"><i data-icon="layers"></i><small>Kartor</small></button>
+        <button id="btnEdit" title="Planera rutt"><i data-icon="route"></i><small>Rutt</small></button>
+        <button id="btnProfile" title="Terrängprofil längs rutten"><i data-icon="mountain"></i><small>Profil</small></button>
+        <button id="btnDraw" title="Mät avstånd, rita linjer, ytor och punkter"><i data-icon="ruler"></i><small>Mät</small></button>
       </div>
       <div class="grp">
+        <button id="btnLayers" title="Kartor och kartlager"><i data-icon="layers"></i><small>Kartor</small></button>
         <button id="btnNearest" title="Närmaste flygfält"><i data-icon="runway"></i><small>Närmast</small></button>
       </div>
       <div class="grp zoom">

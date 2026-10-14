@@ -53,7 +53,7 @@ Object.assign(drawActions, {
   ownPos: () => nav.pos,
   closeSide: () => toggleSide(false),
   onModeChange: (m) => {
-    if (m === 'route') setEdit(true); else if (editing) setEdit(false);
+    if (m && editing) setEdit(false);
     if (m) { map.closePopup(); setFollow(false); }
     syncFab();
   },
@@ -63,7 +63,7 @@ Object.assign(drawActions, {
   routeSummary: () => {
     if (route.wps.length < 2) return '';
     const legs = getLegs(), d = legs.reduce((s, l) => s + l.d, 0), t = legs.reduce((s, l) => s + l.ete, 0);
-    return `<b>${route.wps.length} punkter · ${d.toFixed(1)} NM</b> · ${fmtHM(t)} · fortsätt trycka för fler punkter, dra för att flytta`;
+    return `<b>${route.wps.length} punkter · ${d.toFixed(1)} NM · ${fmtHM(t)}</b> — tryck för fler punkter, dra för att flytta`;
   },
 });
 onDrawings(() => { if (currentTab === 'draw') renderTab(); });
@@ -90,7 +90,10 @@ fab('#btnOrient', () => {
   setTrackUp(!nav.trackUp);
   if (nav.trackUp && !nav.pos) toast('Kurs-upp aktiveras när GPS har position');
 });
-fab('#btnDraw', () => (drawBarOpen() ? closeDrawBar() : openDrawBar()));
+fab('#btnDraw', () => (drawBarOpen() ? closeDrawBar() : openDrawBar('measure')));
+fab('#btnEdit', () => setEdit(!editing));
+fab('#btnProfile', () => { $('#profilePanel').classList.toggle('hidden'); drawProfile(); syncFab(); });
+fab('#btnEditUndo', () => { if (route.wps.length) removeWp(route.wps.length - 1); });
 fab('#btnEditDone', () => setEdit(false));
 fab('#btnNearest', showNearest);
 fab('#btnLayers', () => { const p = $('#layerPanel'); p.classList.toggle('hidden'); if (!p.classList.contains('hidden')) renderLayerPanel(); syncFab(); });
@@ -103,8 +106,10 @@ $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') $('#
 map.on('click', () => { $('#layerPanel').classList.add('hidden'); syncFab(); });
 
 function setEdit(v) {
+  if (v && drawBarOpen()) closeDrawBar();
   editing = v; setEditing(v);
-  $('#editBanner').classList.add('hidden'); // ruttläget visas nu i ritverktyget
+  $('#editBanner').classList.toggle('hidden', !v);
+  if (v) updateEditInfo();
   if (v) { map.closePopup(); setFollow(false); }
   syncFab();
 }
@@ -115,6 +120,8 @@ function syncFab() {
   $('#btnOrient').innerHTML = nav.trackUp ? icon('heading') + '<small>Kurs</small>' : icon('north') + '<small>Norr</small>';
   $('#btnOrient').classList.toggle('on', nav.trackUp);
   $('#btnDraw').classList.toggle('on', drawBarOpen());
+  $('#btnEdit').classList.toggle('on', editing);
+  $('#btnProfile').classList.toggle('on', !$('#profilePanel').classList.contains('hidden'));
   $('#btnLayers').classList.toggle('on', !$('#layerPanel').classList.contains('hidden'));
 }
 onNav(() => { syncFab(); updateInstruments(); });
@@ -144,8 +151,11 @@ function renderTab() {
   if (currentTab === 'draw') renderDrawTab(el);
   if (currentTab === 'settings') renderSettingsTab(el);
 }
+function updateEditInfo() {
+  $('#editInfo').innerHTML = drawActions.routeSummary() || 'Tryck på kartan för att lägga till brytpunkter. Tryck nära ett fält för att fästa vid det.';
+}
 onRouteChange(() => {
-  if (editing) readout();
+  if (editing) updateEditInfo();
   if (currentTab === 'route' && !document.activeElement?.closest?.('#tab-route')) renderTab();
   drawProfile();
 });
@@ -431,7 +441,7 @@ window.addEventListener('online', () => toast('Online igen'));
 window.addEventListener('offline', () => toast('Offline — använder sparade data', 4000));
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-14.13';
+export const APP_VERSION = '2026-10-14.15';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
@@ -453,8 +463,8 @@ if (!store.get('ulnav.welcomed', false)) {
   modal(`<h3>Välkommen till Ultranav</h3>
   <ol style="line-height:1.6;padding-left:20px">
    <li>Öppna <b>Meny › Inställningar</b> och ange din gratis <b>OpenAIP-nyckel</b> (luftrum, UL-fält, rapportpunkter), samt flygplanets fart och förbrukning.</li>
-   <li>Tryck på <b>Rita › Rutt</b> och sedan på kartan för att lägga ut brytpunkter. Tryck nära ett fält för att fästa vid det.</li>
-   <li>Navloggen med vindkorrektion, bränsle, solnedgång och luftrum längs rutten finns under <b>Meny › Rutt</b>. Terrängprofilen öppnas med <b>Rita › Profil</b>.</li>
+   <li>Tryck på <b>Rutt</b> och sedan på kartan för att lägga ut brytpunkter. Tryck nära ett fält för att fästa vid det.</li>
+   <li>Navloggen med vindkorrektion, bränsle, solnedgång och luftrum längs rutten finns under <b>Meny › Rutt</b>. Terrängprofilen öppnas med <b>Profil</b>.</li>
    <li>Före start: <b>Spara rutten offline</b> under Inställningar. Lägg sedan till appen på hemskärmen via Safari › Dela › Lägg till på hemskärmen.</li>
    <li>I luften: <b>GPS</b>, sedan <b>Följ</b> och <b>Norr/Kurs</b> för norr upp eller kurs upp. <b>Närmast</b> visar närmaste fält för nödlandning.</li>
   </ol>

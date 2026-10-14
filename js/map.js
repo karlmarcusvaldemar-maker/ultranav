@@ -5,7 +5,7 @@ import { vectorLayer } from './vector.js';
 import { ic } from './icons.js';
 
 export let map;
-const state = store.get('ulnav.layers', { base: 'otm', overlays: ['airspace', 'fields', 'rp'], opacity: {} });
+const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspace', 'fields', 'rp'], opacity: {}, v: 2 });
 // Migrering: tidigare versioner sparade lagernamn som inte längre finns, vilket stängde av luftrum/fält
 {
   const MAP = { openaipVec: ['airspace', 'rp'], oa: ['fields'], route: [] };
@@ -13,6 +13,8 @@ const state = store.get('ulnav.layers', { base: 'otm', overlays: ['airspace', 'f
     state.overlays = [...new Set(state.overlays.flatMap((id) => MAP[id] ?? [id]))];
     store.set('ulnav.layers', state);
   }
+  // Standardkartan blev förvald baskarta i version 2 — byt en gång, därefter gäller användarens val
+  if ((state.v || 1) < 2) { state.base = 'vecLiberty'; state.v = 2; store.set('ulnav.layers', state); }
 }
 const save = () => store.set('ulnav.layers', state);
 
@@ -21,8 +23,7 @@ const tileOpts = (extra) => ({ maxZoom: 19, crossOrigin: false, className: 'base
 
 export const BASES = {
   otm: { name: 'Topografikarta', make: () => L.tileLayer(settings.tiles.otm, tileOpts({ maxNativeZoom: 17, subdomains: 'abc', attribution: '© OpenStreetMap, SRTM | © OpenTopoMap (CC-BY-SA)' })) },
-  vecLiberty: { name: 'Detaljkarta', make: () => vectorLayer('liberty', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
-  vecPositron: { name: 'Ljus karta', make: () => vectorLayer('positron', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
+  vecLiberty: { name: 'Standardkarta', make: () => vectorLayer('liberty', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
   osm: { name: 'Vägkarta', make: () => L.tileLayer(settings.tiles.osm, tileOpts({ maxNativeZoom: 19, attribution: '© OpenStreetMap-bidragsgivare' })) },
   esri: { name: 'Satellitkarta', make: () => L.tileLayer(settings.tiles.esri, tileOpts({ maxNativeZoom: 18, attribution: 'Bild © Esri, Maxar, Earthstar Geographics' })) },
 };
@@ -68,7 +69,7 @@ export function initMap() {
 }
 
 export function setBase(id) {
-  if (!BASES[id]) id = 'otm';
+  if (!BASES[id]) id = 'vecLiberty';
   if (baseLayer) map.removeLayer(baseLayer);
   baseLayer = BASES[id].make().addTo(map);
   watchErrors(baseLayer, BASES[id].name);
@@ -149,7 +150,7 @@ export async function testCurrentBase() {
 }
 
 // ---------- Lagerpanel ----------
-const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', vecPositron: 'mapLight', osm: 'mapRoad', esri: 'satellite' };
+const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', osm: 'mapRoad', esri: 'satellite' };
 const OVERLAY_ORDER = ['airspace', 'fields', 'rp', 'metar', 'radar', 'ofmAero', 'openaipTiles', 'drawings'];
 
 export function renderLayerPanel() {
