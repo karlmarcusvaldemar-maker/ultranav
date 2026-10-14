@@ -4,15 +4,17 @@ import { airspaces, reportingPoints, asStyle, asVisible, asLabel, fmtLimit, limi
 import { allAirports, onAirports, longestRwy } from './airports.js';
 import { esc, debounce, distNM, bearing, fmtDeg, fmtLatLon } from './util.js';
 import { settings } from './settings.js';
+import { fetchMetarTaf, metarHtml } from './wx.js';
+import { sunInfo } from './sun.js';
 
 /** Åtgärder som app.js fyller i (undviker cirkulära beroenden) */
-export const actions = { editMode: () => false, addWaypoint() {}, directTo() {}, showWx() {}, ownPos: () => null };
+export const actions = { editMode: () => false, drawActive: () => false, drawTap() {}, addWaypoint() {}, directTo() {}, showWx() {}, ownPos: () => null };
 
 const asLayer = L.layerGroup();
 const apLayer = L.layerGroup();
 const rpLayer = L.layerGroup();
 const on = { airspace: false, fields: false, rp: false };
-const renderer = L.canvas({ padding: 0.3 });
+const renderer = L.canvas({ padding: 0.3, tolerance: 10 }); // större träffyta för fingrar
 
 export function initAero() {
   registerOverlay('airspace', 'Luftrum (OpenAIP)', 'CTR, TMA, R/D/P, ATZ … tryck på kartan för info', (v) => toggle('airspace', asLayer, v));
@@ -74,8 +76,9 @@ function drawAll() {
         fillOpacity: 1, bubblingMouseEvents: false }).addTo(apLayer);
       if (z >= 10) m.bindTooltip(esc(a.icao || a.name), { permanent: true, direction: 'right', className: 'ap-label', offset: [6, 0] });
       m.on('click', () => {
-        if (actions.editMode()) actions.addWaypoint({ lat: a.lat, lon: a.lon, name: a.icao || a.name, elevFt: a.elevFt });
-        else L.popup({ maxWidth: 340 }).setLatLng([a.lat, a.lon]).setContent(airportHtml(a)).openOn(map);
+        if (actions.drawActive()) actions.drawTap({ lat: a.lat, lng: a.lon });
+        else if (actions.editMode()) actions.addWaypoint({ lat: a.lat, lon: a.lon, name: a.icao || a.name, elevFt: a.elevFt });
+        else openAirport(a);
       });
     }
   }
@@ -89,7 +92,8 @@ function drawAll() {
       if (z >= 10) m.bindTooltip(esc(r.name), { permanent: true, direction: 'right', className: 'ap-label', offset: [8, 0] });
       m.on('click', () => {
         const name = r.name;
-        if (actions.editMode()) actions.addWaypoint({ lat, lon, name });
+        if (actions.drawActive()) actions.drawTap({ lat, lng: lon });
+        else if (actions.editMode()) actions.addWaypoint({ lat, lon, name });
         else L.popup().setLatLng([lat, lon]).setContent(`<h4>▲ ${esc(name)}</h4><div>${r.compulsory ? 'Obligatorisk' : 'Vid anmodan'} rapportpunkt</div>
           <div class="muted">${fmtLatLon(lat, lon)}</div>${btns({ lat, lon, name })}`).openOn(map);
       });
@@ -121,8 +125,47 @@ export function airportHtml(a) {
     <div>${esc(a.icao || a.ident || '')} · ${esc(a.type)}${a.elevFt != null ? ' · ' + a.elevFt + ' ft' : ''}${a.ppr ? ' · <b>PPR</b>' : ''}${a.private ? ' · privat' : ''}</div>
     ${relPos(a)}
     <table style="margin-top:6px">${rw}</table>${fq ? `<table style="margin-top:6px">${fq}</table>` : ''}
+    ${a.icao ? `<div id="apwx-${esc(a.icao)}" class="muted" style="margin-top:6px">Hämtar METAR/TAF…</div>` : ''}
+    ${sunLine(a)}
     <div class="muted" style="margin-top:4px">Källa: ${esc(a.src)} — kontrollera alltid mot AIP/fältets info</div>
     ${btns({ lat: a.lat, lon: a.lon, name: a.icao || a.name, icao: a.icao, elevFt: a.elevFt })}`;
+}
+
+function sunLine(a) {
+  const s = sunInfo(new Date(), a.lat, a.lon);
+  const f = (d) => d ? `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}Z` : '—';
+  return `<div style="margin-top:4px">☀ Upp ${f(s.sunrise)} · ned ${f(s.sunset)} · skymning ${f(s.civilDusk)}</div>`;
+}
+
+/** Visa fältinformation i popup och hämta METAR/TAF för fält med ICAO-kod */
+export function openAirport(a) {
+  // DOM-innehåll (inte sträng) så att METAR som fylls i efteråt finns kvar när popupen ritas om
+  const box = document.createElement('div');
+  box.innerHTML = airportHtml(a);
+  const popup = L.popup({ maxWidth: 360, autoPanPaddingTopLeft: [10, 10], autoPanPaddingBottomRight: [90, 10] })
+    .setLatLng([a.lat, a.lon]).setContent(box).openOn(map);
+  if (!a.icao || !navigator.onLine) { const el = a.icao && document.getElementById('apwx-' + a.icao); if (el) el.textContent = 'Offline — ingen METAR'; return; }
+  fetchMetarTaf([a.icao]).then(([r]) => {
+    const el = box.querySelector('[id^="apwx-"]');
+    if (!el) return;
+    el.classList.remove('muted');
+    el.innerHTML = r && (r.metar || r.taf) ? metarHtml(r) : '<span class="muted">Ingen METAR/TAF för fältet</span>';
+    if (popup.isOpen()) popup.update(); // panorera om så att den större rutan syns helt
+  }).catch(() => { const el = document.getElementById('apwx-' + a.icao); if (el) el.textContent = 'METAR kunde inte hämtas (prova CORS-proxy i Inställningar)'; });
+}
+
+/** Närmaste synliga fält inom px pixlar från en skärmpunkt (för tryck som missar prickens kant) */
+export function airportNear(latlng, px = 30) {
+  if (!on.fields || map.getZoom() < 6) return null;
+  const pt = map.latLngToContainerPoint(latlng), b = map.getBounds();
+  let best = null, bd = px;
+  for (const a of allAirports()) {
+    if (!b.contains([a.lat, a.lon])) continue;
+    if (map.getZoom() < 8 && !(a.icao || a.ul)) continue;
+    const d = pt.distanceTo(map.latLngToContainerPoint([a.lat, a.lon]));
+    if (d < bd) { bd = d; best = a; }
+  }
+  return best;
 }
 
 export function airspaceListHtml(list) {

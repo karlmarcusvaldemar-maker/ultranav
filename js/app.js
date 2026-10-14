@@ -2,9 +2,10 @@
 import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES } from './settings.js';
 import { $, $$, esc, toast, modal, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store } from './util.js';
 import { initMap, map, renderLayerPanel } from './map.js';
-import { initAero, actions, airportHtml, mapInfoPopup } from './aero.js';
+import { initAero, actions, airportHtml, mapInfoPopup, openAirport, airportNear } from './aero.js';
+import { initDraw, drawActive, drawTap, setMode as setDrawMode, renderDrawTab, drawActions, onDrawings } from './draw.js';
 import { loadOurAirports, nearestAirports, searchAirports, oaInfo, longestRwy, onAirports } from './airports.js';
-import { initRoute, route, addWaypoint, removeWp, handleEditTap, setEditing, renderRouteTab, onRouteChange, getLegs, fitRoute, depDate, recompute } from './route.js';
+import { initRoute, route, addWaypoint, removeWp, handleEditTap, setEditing, renderRouteTab, onRouteChange, getLegs, fitRoute, depDate, recompute, setRoute } from './route.js';
 import { initNav, nav, startGps, stopGps, directTo, cancelDto, setFollow, setTrackUp, instrumentData, onNav, renderLogTab, setActiveLeg } from './nav.js';
 import { drawProfile } from './profile.js';
 import { initWxOverlay, fetchMetarTaf, metarHtml, fetchForecast, hourIndex, surfaceWx, windAt } from './wx.js';
@@ -29,6 +30,7 @@ initAero();
 initWxOverlay();
 initRoute();
 initNav();
+initDraw();
 loadOurAirports();
 
 Object.assign(actions, {
@@ -37,13 +39,28 @@ Object.assign(actions, {
   directTo: (p) => directTo(p),
   showWx: (icao) => showWx(icao),
   ownPos: () => nav.pos,
+  drawActive: () => drawActive(),
+  drawTap: (ll) => drawTap(ll),
 });
+Object.assign(drawActions, {
+  addWaypoint: (p) => addWaypoint(p),
+  directTo: (p) => directTo(p),
+  setRoute: (r) => { setRoute(r); fitRoute(); },
+  ownPos: () => nav.pos,
+  closeSide: () => toggleSide(false),
+  onModeChange: (m) => { if (m && editing) setEdit(false); if (m) { map.closePopup(); setFollow(false); } syncFab(); },
+});
+onDrawings(() => { if (currentTab === 'draw') renderTab(); });
 // globalt för knappar i popup-fönster
 window.ulnav = { directTo, removeWp: (i) => { map.closePopup(); removeWp(i); }, showWx: (i) => showWx(i), setActiveLeg };
 
 // ---------- kartinteraktion ----------
 map.on('click', async (e) => {
+  if (drawActive()) { drawTap(e.latlng); return; }
   if (editing) { handleEditTap(e.latlng); return; }
+  // Tryck nära ett flygfält öppnar fältinfo även om pricken missades
+  const ap = airportNear(e.latlng);
+  if (ap) { openAirport(ap); return; }
   const el = await elevationFt(e.latlng.lat, e.latlng.lng).catch(() => null);
   mapInfoPopup(e.latlng, el);
 });
@@ -58,6 +75,7 @@ fab('#btnOrient', () => {
   if (nav.trackUp && !nav.pos) toast('Kurs-upp aktiveras när GPS har position');
 });
 fab('#btnEdit', () => setEdit(!editing));
+fab('#btnDraw', () => setDrawMode(drawActive() ? null : 'measure'));
 fab('#btnEditDone', () => setEdit(false));
 fab('#btnNearest', showNearest);
 fab('#btnLayers', () => { const p = $('#layerPanel'); p.classList.toggle('hidden'); if (!p.classList.contains('hidden')) renderLayerPanel(); syncFab(); });
@@ -71,6 +89,7 @@ $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') $('#
 map.on('click', () => { $('#layerPanel').classList.add('hidden'); syncFab(); });
 
 function setEdit(v) {
+  if (v && drawActive()) setDrawMode(null);
   editing = v; setEditing(v);
   $('#editBanner').classList.toggle('hidden', !v);
   if (v) { map.closePopup(); setFollow(false); }
@@ -83,6 +102,7 @@ function syncFab() {
   $('#btnOrient').innerHTML = nav.trackUp ? '▲<small>Kurs</small>' : 'N<small>Norr</small>';
   $('#btnOrient').classList.toggle('on', nav.trackUp);
   $('#btnEdit').classList.toggle('on', editing);
+  $('#btnDraw').classList.toggle('on', drawActive());
   $('#btnLayers').classList.toggle('on', !$('#layerPanel').classList.contains('hidden'));
   $('#btnProfile').classList.toggle('on', !$('#profilePanel').classList.contains('hidden'));
 }
@@ -110,6 +130,7 @@ function renderTab() {
   if (currentTab === 'wx') renderWxTab(el);
   if (currentTab === 'fields') renderFieldsTab(el);
   if (currentTab === 'track') renderLogTab(el);
+  if (currentTab === 'draw') renderDrawTab(el);
   if (currentTab === 'settings') renderSettingsTab(el);
 }
 onRouteChange(() => {
@@ -167,7 +188,7 @@ window.ulnav.showNear = (i) => {
   const a = window.ulnav._near[i]; $('#modal').classList.add('hidden');
   if (window.innerWidth < 1000) toggleSide(false);
   map.setView([a.lat, a.lon], Math.max(map.getZoom(), 11));
-  L.popup({ maxWidth: 340 }).setLatLng([a.lat, a.lon]).setContent(airportHtml(a)).openOn(map);
+  openAirport(a);
 };
 window.ulnav.addNear = (i) => { const a = window.ulnav._near[i]; addWaypoint({ lat: a.lat, lon: a.lon, name: a.icao || a.name, elevFt: a.elevFt }); toast('+ ' + (a.icao || a.name)); };
 
@@ -263,6 +284,8 @@ function renderSettingsTab(el) {
   <div class="field"><span>Fartenhet</span><select data-k="speedUnit"><option value="kt" ${s.speedUnit === 'kt' ? 'selected' : ''}>knop (kt)</option>
     <option value="kmh" ${s.speedUnit === 'kmh' ? 'selected' : ''}>km/h</option></select></div>
 
+  <div class="field"><span>Terrängskuggning i vektorkarta</span><input type="checkbox" data-k="vectorHillshade" ${s.vectorHillshade ? 'checked' : ''}></div>
+
   <h3>Flygplan</h3>
   ${num('tas', `Marschfart TAS (${u})`, '', 1, spdOut)}
   ${num('fuelBurn', 'Förbrukning (l/h)', '', 0.5)}
@@ -301,7 +324,7 @@ function renderSettingsTab(el) {
 
   <h3>Om & licenser</h3>
   <div class="muted" style="line-height:1.5">
-  Kartdata © OpenStreetMap-bidragsgivare (ODbL) · OpenTopoMap (CC-BY-SA) · Lantmäteriet (CC-BY) · Esri World Imagery ·
+  Kartdata © OpenStreetMap-bidragsgivare (ODbL) · OpenFreeMap/OpenMapTiles · MapLibre GL (BSD-3) · OpenTopoMap (CC-BY-SA) · Lantmäteriet (CC-BY) · Esri World Imagery ·
   open flightmaps · OpenAIP (CC BY-NC 4.0) · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
   RainViewer · AWS Terrain Tiles (SRTM, GMTED, ETOPO m.fl.) · Leaflet (BSD-2).<br><br>
   <b>Viktigt:</b> Appen är ett hjälpmedel för planering och lägesuppfattning. Den ersätter inte officiell AIP, ICAO-karta, NOTAM,

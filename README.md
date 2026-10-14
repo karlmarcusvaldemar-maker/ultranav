@@ -11,6 +11,9 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 - **Terrängprofil** med planerad höjd, luftrumsblock och varning för terrängmarginal.
 - **Närmaste fält** (nödläge) med Direkt till. UL-fält är markerade.
 - **Väder**: METAR/TAF, METAR-stationer på kartan efter flygväderkategori, nederbördsradar och modellprognos för avgång och ankomst.
+- **Vektorkartor med MapLibre GL** (OpenFreeMap/OpenStreetMap): skarpa i alla zoomnivåer, med terrängskuggning. Fungerar även i kurs-upp-läge.
+- **Ritverktyg (📐 Rita)**: mät avstånd (NM, km, °M och tid vid TAS). Rita linjer, ytor (area i km²/NM²) och punkter. Sparas, och kan exporteras och importeras som GeoJSON. En linje kan användas som rutt, och en punkt som Direkt till.
+- **Fältinfo**: tryck på (eller nära) ett flygfält för banor, frekvenser, sol, och METAR/TAF som hämtas automatiskt.
 - **Spårlogg** med GPX-export. **GPX-import och -export** av rutter, och sparade rutter.
 - **Simulering** av rutten för träning på marken.
 - **Offline**: spara kartbilder längs rutten. Luftrum och fält cachas i IndexedDB.
@@ -20,6 +23,7 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 | Källa | Innehåll | Nyckel |
 |---|---|---|
 | OpenStreetMap / OpenTopoMap | Baskartor | – |
+| OpenFreeMap (OSM-vektordata) | Vektorkartor i MapLibre | – |
 | Lantmäteriet Topowebb | Svensk topokarta (utgår 2026-12-31) | Gratis API-nyckel via Geotorget |
 | Esri World Imagery | Satellit | – |
 | open flightmaps | VFR-karta där OFM har täckning | – |

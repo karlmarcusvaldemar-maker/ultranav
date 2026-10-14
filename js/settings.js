@@ -26,6 +26,7 @@ const DEFAULTS = {
   cruiseAlt: 1500,        // ft MSL standard
   theme: 'dark',          // 'dark' | 'day' | 'night'
   openaipKey: '',
+  vectorHillshade: true,  // terrängskuggning i vektorkartor
   lmKey: '',              // API-nyckel från Lantmäteriet (gratis)
   corsProxy: '',
   oaCountries: 'SE,NO,DK,FI',

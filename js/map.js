@@ -1,6 +1,7 @@
 // Karta, baskartor, överlägg och lagerpanel
 import { settings, saveSettings, onSettings } from './settings.js';
 import { store, esc, $, fetchX, toast } from './util.js';
+import { vectorLayer } from './vector.js';
 
 export let map;
 const state = store.get('ulnav.layers', { base: 'otm', overlays: ['openaipVec', 'oa', 'route'], opacity: {} });
@@ -10,6 +11,8 @@ const tileOpts = (extra) => ({ maxZoom: 19, crossOrigin: true, className: 'basem
 
 export const BASES = {
   otm: { name: 'OpenTopoMap', note: 'Topografi, höjdkurvor', make: () => L.tileLayer(settings.tiles.otm, tileOpts({ maxNativeZoom: 17, subdomains: 'abc', attribution: '© OpenStreetMap, SRTM | © OpenTopoMap (CC-BY-SA)' })) },
+  vecLiberty: { name: 'Vektorkarta (MapLibre)', note: 'OpenFreeMap/OSM, skarp i alla zoomnivåer, terrängskuggning', make: () => vectorLayer('liberty', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
+  vecPositron: { name: 'Vektorkarta ljus (MapLibre)', note: 'Nedtonad – flygdata syns tydligt', make: () => vectorLayer('positron', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
   osm: { name: 'OpenStreetMap', note: 'Gatukarta', make: () => L.tileLayer(settings.tiles.osm, tileOpts({ maxNativeZoom: 19, attribution: '© OpenStreetMap-bidragsgivare' })) },
   lm: { name: 'Lantmäteriet Topowebb', note: 'Sverige, officiell topo (kräver API-nyckel)', needsLmKey: true,
     // crossOrigin av: tjänsten behöver inte skicka CORS-huvuden för att bilderna ska visas
@@ -52,7 +55,7 @@ export function initMap() {
   setBase(state.base);
   for (const id of state.overlays) if (OVERLAYS[id]) enableOverlay(id, true);
   onSettings((s, patch) => {
-    if (patch.tiles || 'lmKey' in patch) setBase(state.base);
+    if (patch.tiles || 'lmKey' in patch || 'vectorHillshade' in patch) setBase(state.base);
     if ('openaipKey' in patch || patch.tiles) for (const id of Object.keys(OVERLAYS)) if (overlayLayers[id]) { enableOverlay(id, false); enableOverlay(id, true); }
   });
   return map;

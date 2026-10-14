@@ -218,3 +218,25 @@ table.navlog tr.tot td { font-weight: 700; border-top: 2px solid var(--line); }
 
 /* METAR-prickar på kartan */
 .wxdot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 3px #000; }
+
+/* ---------- Ritverktyg ---------- */
+#drawBar { position: absolute; z-index: 960; left: calc(10px + var(--safeL)); top: 10px; max-width: calc(100% - 104px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+#drawBar .dbtns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#drawBar button { min-width: 58px; height: 54px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel2);
+  font-size: 20px; line-height: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+#drawBar button small { font-size: 10px; margin-top: 3px; color: var(--muted); font-weight: 600; }
+#drawBar button.on, #drawBar button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+#drawBar button.on small, #drawBar button.primary small { color: var(--accent-text); }
+#drawBar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 2px; }
+#drawReadout { padding: 8px 6px 2px; font-size: 16px; font-variant-numeric: tabular-nums; }
+.dvert { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 3px solid #ff375f; color: #111;
+  font: 700 10px/16px sans-serif; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.dpin { width: 22px; height: 22px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); margin: 1px 2px; }
+.draw-seg, .draw-label { background: rgba(20,20,24,.85); color: #fff; border: 0; border-radius: 6px; padding: 1px 6px;
+  font: 700 12px/1.3 ui-monospace, Menlo, monospace; box-shadow: none; white-space: nowrap; }
+.draw-seg::before, .draw-label::before { display: none; }
+.leaflet-gl-layer { pointer-events: none; }
+/* METAR inne i (vita) kartpopuper */
+.leaflet-popup-content .metar { background: #f3f5f7; color: #13202d; border-color: #d5dde5; }
+.leaflet-popup-content .metar .muted { color: #586b7e; }
