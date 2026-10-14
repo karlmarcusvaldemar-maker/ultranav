@@ -496,3 +496,28 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 }
 @media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } .scene .fly.near { transform: translateX(420px); } .scene .fly.far { transform: translateX(1000px); } }
 #gateNote:not(:empty) { margin-bottom: 6px; }
+
+/* Påskägg: gryning efter en stund på inloggningssidan */
+.scene .dawnsky { opacity: 0; transition: opacity 16s ease-in-out 4s; }
+.scene .stars { transition: opacity 8s ease; }
+.scene .moonset { transition: transform 14s ease-in; }
+.scene .sunrise { transform: translateY(330px); transition: transform 18s ease-out 6s; }
+.scene .sun { fill: #ffe39a; }
+.scene .birds { opacity: 0; transform: translate(-120px, 230px); }
+.scene .bird { fill: none; stroke: #1d2e40; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.scene :is(.m1, .m2, .m3, .tr, .vale, .lake, .river, .fg, .cl, .hs, .cab, .cab-roof, .strip, .pad) { transition: fill 16s ease 4s, stroke 16s ease 4s; }
+.scene .win, .scene .fireglow { transition: opacity 10s ease 8s; }
+.scene.dawn .dawnsky { opacity: 1; }
+.scene.dawn .stars { opacity: 0; }
+.scene.dawn .moonset { transform: translateY(260px); }
+.scene.dawn .sunrise { transform: translateY(0); }
+.scene.dawn .m1 { fill: #7d90aa; } .scene.dawn .m2 { fill: #64789a; } .scene.dawn .m3 { fill: #52688a; }
+.scene.dawn .tr, .scene.dawn .tr.far { fill: #3a5272; } .scene.dawn .tr.near { fill: #1e2c3d; }
+.scene.dawn .vale { fill: #4b6185; } .scene.dawn .fg { fill: #2a3a50; }
+.scene.dawn .lake { fill: #79a8cc; } .scene.dawn .river { stroke: #79a8cc; }
+.scene.dawn .cl { fill: #f4ddc6; } .scene.dawn .hs { fill: #2c3a4c; }
+.scene.dawn .strip { stroke: #4f7a52; } .scene.dawn .pad { fill: #52688a; }
+.scene.dawn .win { opacity: 0; animation: none; } .scene.dawn .fireglow { opacity: .35; animation: none; }
+.scene.dawn .moonpath { stroke: #fff1c4; }
+.scene.dawn .birds { animation: scBirds 30s linear 14s infinite; }
+@keyframes scBirds { 0% { transform: translate(-120px, 230px); opacity: 0; } 5% { opacity: 1; } 95% { opacity: 1; } 100% { transform: translate(1800px, 150px); opacity: 0; } }

@@ -20,6 +20,8 @@ function build() {
     </div>`;
   fitScene(g.querySelector('svg'));
   if (gateNote) setGateNote(gateNote);
+  // Påskägg: väntar man en stund går månen ner och solen upp
+  setTimeout(() => g.querySelector('svg')?.classList.add('dawn'), 35000);
 }
 
 const offlineAllowed = () => !navigator.onLine && store.get('ulnav.everLoggedIn', false);

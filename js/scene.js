@@ -52,12 +52,16 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <defs>
     <linearGradient id="scSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="sk0"/><stop offset=".62" class="sk1"/><stop offset="1" class="sk2"/></linearGradient>
     <radialGradient id="scGlow" cx=".5" cy=".5" r=".5"><stop offset="0" class="gl0"/><stop offset="1" class="gl1"/></radialGradient>
+    <linearGradient id="scDawn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f6f9e"/><stop offset=".5" stop-color="#9fb6cf"/><stop offset=".78" stop-color="#f1b78a"/><stop offset="1" stop-color="#f7d6a0"/></linearGradient>
+    <radialGradient id="scSunGlow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff1c4" stop-opacity=".7"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>
     <radialGradient id="scFire" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffb347" stop-opacity=".55"/><stop offset=".5" stop-color="#f2b632" stop-opacity=".18"/><stop offset="1" stop-color="#f2b632" stop-opacity="0"/></radialGradient>
   </defs>
   <rect x="-800" width="3200" height="900" fill="url(#scSky)"/>
-  ${stars}
-  <circle cx="1180" cy="330" r="120" fill="url(#scGlow)"/>
-  <circle cx="1180" cy="330" r="30" class="moon"/>
+  <rect x="-800" width="3200" height="900" fill="url(#scDawn)" class="dawnsky"/>
+  <g class="stars">${stars}</g>
+  <g class="moonset"><circle cx="1180" cy="330" r="120" fill="url(#scGlow)"/><circle cx="1180" cy="330" r="30" class="moon"/></g>
+  <g class="sunrise"><circle cx="560" cy="300" r="150" fill="url(#scSunGlow)"/><circle cx="560" cy="300" r="34" class="sun"/></g>
+  <g class="birds"><path class="bird" d="M0 0 q6 -6 12 0 q6 -6 12 0"/><path class="bird" d="M30 14 q5 -5 10 0 q5 -5 10 0"/><path class="bird" d="M-26 18 q5 -5 10 0 q5 -5 10 0"/></g>
 
   <!-- drivande moln -->
   <g class="drift d1"><path class="cl" d="M120 170 q20 -18 46 -8 q14 -20 40 -8 q26 -4 30 16 z"/></g>
@@ -84,18 +88,18 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="ripple-static" d="M420 712 h40 M700 700 h50 M470 740 h60"/>
 
   <!-- gräsfält, hangar, vindstrut -->
-  <path class="strip" d="M1180 760 L1470 742"/>
-  <path class="stripmk" d="M1210 758 l18 -1.2 M1270 754 l18 -1.2 M1330 750 l18 -1.2 M1390 746 l18 -1.2"/>
-  <g transform="translate(1480 734)"><path class="hs" d="M0 0 V-16 Q16 -30 32 -16 V0 Z"/><path class="door" d="M8 0 V-10 H24 V0"/></g>
-  <g transform="translate(1168 752)"><path class="pole" d="M0 0 V-26"/><g class="sock"><path class="sockp" d="M0 -26 L18 -23 L17 -17 L0 -20 Z"/></g></g>
+  <path class="strip" d="M930 772 L1120 760"/>
+  <path class="stripmk" d="M956 770 l16 -1 M1006 767 l16 -1 M1056 764 l16 -1"/>
+  <g transform="translate(1128 756)"><path class="hs" d="M0 0 V-16 Q16 -30 32 -16 V0 Z"/><path class="door" d="M8 0 V-10 H24 V0"/></g>
+  <g transform="translate(918 768)"><path class="pole" d="M0 0 V-26"/><g class="sock"><path class="sockp" d="M0 -26 L18 -23 L17 -17 L0 -20 Z"/></g></g>
 
   <!-- by med tända fönster -->
-  ${house(900, 652, 1)}${house(922, 658, .9)}${house(944, 650, 1.1, false)}${house(968, 660, .85)}${house(880, 664, .8, false)}
+  ${house(1250, 652, 1)}${house(1272, 658, .9)}${house(1294, 650, 1.1, false)}${house(1318, 660, .85)}${house(1230, 664, .8, false)}
 
   <!-- helikopterplatta och helikopter som lyfter -->
-  <ellipse cx="1000" cy="736" rx="22" ry="6" class="pad"/>
-  <path class="padh" d="M995 733 v6 M1005 733 v6 M995 736 h10"/>
-  <g class="heli"><g transform="translate(978 706) scale(.62)">${HELI}</g></g>
+  <ellipse cx="1196" cy="760" rx="22" ry="6" class="pad"/>
+  <path class="padh" d="M1191 757 v6 M1201 757 v6 M1191 760 h10"/>
+  <g class="heli"><g transform="translate(1174 730) scale(.62)">${HELI}</g></g>
 
   <!-- stuga vid sjön med rök, lägereld och förtöjt sjöflygplan -->
   <g transform="translate(486 786)">
