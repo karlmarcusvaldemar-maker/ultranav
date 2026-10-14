@@ -234,7 +234,7 @@ export function renderDrawTab(el) {
     <h3>Sparade (${drawings.length})</h3>
     ${drawings.length ? `<ul class="aplist">${drawings.map((f) => `<li><div class="info"><b class="popinfo">${ic({ point: 'pin', line: 'polyline', polygon: 'polygon' }[f.type], 16)} ${esc(f.name)}</b><span>${describe(f)}</span></div>
       <button class="btn small" onclick="window.ulnavDraw.zoom('${f.id}')">${ic('search')}Visa</button><button class="btn small danger" onclick="window.ulnavDraw.del('${f.id}')" aria-label="Ta bort">${ic('trash')}</button></li>`).join('')}</ul>`
-      : '<div class="muted">Inga ritningar ännu.</div>'}
+      : `<div class="empty">${ic('ruler', 34)}<b>Inget sparat ännu</b><span>Mät en sträcka eller rita en linje, yta eller punkt — de sparas här.</span></div>`}
     <div class="btnrow"><button class="btn" id="dExp">${ic('download')}Exportera GeoJSON</button>
     <label class="btn">${ic('upload')}Importera GeoJSON<input type="file" id="dImp" accept=".geojson,.json,application/geo+json,application/json" hidden></label></div>`;
   el.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { drawActions.closeSide?.(); setMode(b.dataset.m); });

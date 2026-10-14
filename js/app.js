@@ -22,7 +22,7 @@ let currentTab = 'route';
 function applyTheme() {
   document.body.classList.remove('day', 'night', 'dark');
   document.body.classList.add(settings.theme);
-  document.querySelector('meta[name=theme-color]').content = settings.theme === 'day' ? '#faf6ec' : settings.theme === 'night' ? '#050303' : '#16251c';
+  document.querySelector('meta[name=theme-color]').content = settings.theme === 'day' ? '#ffffff' : settings.theme === 'night' ? '#050505' : '#16212d';
 }
 applyTheme();
 applyIcons();
@@ -282,7 +282,7 @@ function renderSettingsTab(el) {
   el.innerHTML = `
   <h3>Visning</h3>
   <div class="field"><span>Tema</span><select data-k="theme">
-    <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Skog (mörkt)</option><option value="day" ${s.theme === 'day' ? 'selected' : ''}>Pergament (ljust, sol)</option>
+    <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Mörkt</option><option value="day" ${s.theme === 'day' ? 'selected' : ''}>Ljust (sol)</option>
     <option value="night" ${s.theme === 'night' ? 'selected' : ''}>Natt (rött)</option></select></div>
   <div class="field"><span>Fartenhet</span><select data-k="speedUnit"><option value="kt" ${s.speedUnit === 'kt' ? 'selected' : ''}>knop (kt)</option>
     <option value="kmh" ${s.speedUnit === 'kmh' ? 'selected' : ''}>km/h</option></select></div>
@@ -376,7 +376,7 @@ window.addEventListener('online', () => toast('Online igen'));
 window.addEventListener('offline', () => toast('Offline — använder sparade data', 4000));
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-14.7';
+export const APP_VERSION = '2026-10-14.8';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {

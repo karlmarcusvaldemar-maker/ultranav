@@ -19,7 +19,7 @@ const listeners = new Set();
 export const onNav = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f(nav));
 
-const PLANE = `<svg viewBox="0 0 56 56"><path d="M28 4 L31 22 L50 30 L50 34 L31 30 L30 44 L36 48 L36 51 L28 49 L20 51 L20 48 L26 44 L25 30 L6 34 L6 30 L25 22 Z" fill="#d8b86e" stroke="#14200f" stroke-width="1.6"/></svg>`;
+const PLANE = `<svg viewBox="0 0 56 56"><path d="M28 4 L31 22 L50 30 L50 34 L31 30 L30 44 L36 48 L36 51 L28 49 L20 51 L20 48 L26 44 L25 30 L6 34 L6 30 L25 22 Z" fill="#f2b632" stroke="#000" stroke-width="1.5"/></svg>`;
 
 export async function initNav() {
   ownLayer.addTo(map);
@@ -170,7 +170,7 @@ function update() {
   const ll = [p.lat, p.lon];
   if (!ownMarker) {
     ownMarker = L.marker(ll, { pane: 'own', interactive: false, icon: L.divIcon({ className: 'own-ship', iconSize: [56, 56], iconAnchor: [28, 28], html: PLANE }) }).addTo(ownLayer);
-    vecLine = L.polyline([], { pane: 'ownPath', color: '#d8b86e', weight: 3, dashArray: '2 6', interactive: false }).addTo(ownLayer);
+    vecLine = L.polyline([], { pane: 'ownPath', color: '#f2b632', weight: 3, dashArray: '2 6', interactive: false }).addTo(ownLayer);
     dtoLine = L.polyline([], { pane: 'route', color: '#ff2fd0', weight: 4, dashArray: '10 8', interactive: false }).addTo(ownLayer);
     glideCircle = L.circle(ll, { pane: 'ownPath', radius: 1, color: '#2ecc71', weight: 2, fill: true, fillOpacity: 0.05, dashArray: '6 6', interactive: false }).addTo(ownLayer);
   }
