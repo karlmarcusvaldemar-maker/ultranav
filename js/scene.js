@@ -52,6 +52,7 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <defs>
     <linearGradient id="scSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="sk0"/><stop offset=".62" class="sk1"/><stop offset="1" class="sk2"/></linearGradient>
     <radialGradient id="scGlow" cx=".5" cy=".5" r=".5"><stop offset="0" class="gl0"/><stop offset="1" class="gl1"/></radialGradient>
+    <radialGradient id="scFire" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffb347" stop-opacity=".55"/><stop offset=".5" stop-color="#f2b632" stop-opacity=".18"/><stop offset="1" stop-color="#f2b632" stop-opacity="0"/></radialGradient>
   </defs>
   <rect x="-800" width="3200" height="900" fill="url(#scSky)"/>
   ${stars}
@@ -73,12 +74,8 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="m3" d="M-800 580 L0 570 C120 540 220 530 330 556 S560 530 700 560 S960 520 1100 552 S1380 530 1600 556 L2400 560 V900 H-800 Z"/>
   ${forest(-40, 1640, (x) => 560 + 12 * Math.sin(x / 90), 120, 0.55, 'tr far')}
 
-  <!-- dal: ängar och åkrar -->
+  <!-- dal -->
   <path class="vale" d="M-800 640 L0 630 C200 610 400 616 620 626 C860 636 1100 612 1600 622 L2400 630 V900 H-800 Z"/>
-  <path class="field f1" d="M1010 660 L1130 650 L1150 676 L1026 688 Z"/>
-  <path class="field f2" d="M1140 648 L1250 640 L1276 664 L1160 674 Z"/>
-  <path class="field f1" d="M1030 694 L1158 682 L1178 712 L1046 726 Z"/>
-  <path class="furrow" d="M1020 668 L1138 657 M1024 678 L1142 667 M1150 656 L1258 648 M1156 666 L1266 657 M1040 704 L1166 692 M1044 716 L1172 704"/>
 
   <!-- sjö och å -->
   <path class="lake" d="M360 700 C420 664 600 654 760 668 C880 678 900 712 800 730 C640 758 450 756 380 736 C340 724 336 712 360 700 Z"/>
@@ -94,18 +91,34 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
 
   <!-- by med tända fönster -->
   ${house(900, 652, 1)}${house(922, 658, .9)}${house(944, 650, 1.1, false)}${house(968, 660, .85)}${house(880, 664, .8, false)}
-  <path class="road" d="M860 672 C900 678 950 680 980 694 C1000 716 1060 748 1180 760"/>
 
   <!-- helikopterplatta och helikopter som lyfter -->
   <ellipse cx="1000" cy="736" rx="22" ry="6" class="pad"/>
   <path class="padh" d="M995 733 v6 M1005 733 v6 M995 736 h10"/>
   <g class="heli"><g transform="translate(978 706) scale(.62)">${HELI}</g></g>
 
-  <!-- sjöflygplan vid brygga -->
-  <path class="dock" d="M648 752 L648 726"/>
-  <g class="bob"><g transform="translate(560 694) scale(.8)">${SEA}</g></g>
-  <ellipse class="ring r1" cx="588" cy="722" rx="30" ry="4"/>
-  <ellipse class="ring r2" cx="588" cy="722" rx="30" ry="4"/>
+  <!-- stuga vid sjön med rök, lägereld och förtöjt sjöflygplan -->
+  <g transform="translate(486 786)">
+    <path class="cab-roof" d="M-4 -18 L18 -34 L40 -18 Z"/>
+    <path class="cab" d="M0 0 V-18 H36 V0 Z"/>
+    <path class="cab-log" d="M0 -6 H36 M0 -12 H36"/>
+    <rect class="cab-chim" x="26" y="-34" width="5" height="10"/>
+    <rect class="win glow-win" x="6" y="-14" width="7" height="6"/>
+    <path class="cab-door" d="M22 0 V-12 H30 V0"/>
+    <path class="smoke" d="M28.5 -36 c-4 -6 4 -10 0 -16 c-4 -6 4 -10 0 -14"/>
+  </g>
+  <ellipse class="fireglow" cx="546" cy="786" rx="46" ry="16" fill="url(#scFire)"/>
+  <g transform="translate(546 787) scale(.8)">
+    <path class="logs" d="M-8 2 L8 -2 M-8 -2 L8 2"/>
+    <g class="flame f1"><path d="M0 -1 C-6 -6 -3 -12 0 -18 C3 -12 6 -6 0 -1 Z"/></g>
+    <g class="flame f2"><path d="M-3 -1 C-7 -5 -5 -9 -3 -12 C-1 -9 1 -5 -3 -1 Z M3 -1 C-1 -5 1 -9 3 -12 C5 -9 7 -5 3 -1 Z"/></g>
+    <circle class="spark k1" cx="0" cy="-16" r="1"/><circle class="spark k2" cx="2" cy="-18" r=".9"/><circle class="spark k3" cx="-2" cy="-17" r=".8"/>
+  </g>
+  <path class="pier" d="M560 778 L572 778 L592 750 L582 750 Z"/>
+  <path class="pier-post" d="M562 778 v5 M571 778 v5 M584 750 v4 M591 750 v4"/>
+  <g class="bob"><g transform="translate(578 718) scale(.72)">${SEA}</g></g>
+  <ellipse class="ring r1" cx="602" cy="742" rx="26" ry="3.5"/>
+  <ellipse class="ring r2" cx="602" cy="742" rx="26" ry="3.5"/>
 
   <!-- förgrund -->
   <path class="fg" d="M-800 900 L-800 780 C-200 800 0 770 160 790 C320 810 420 860 560 900 Z M1080 900 C1180 830 1340 790 1600 800 L2400 790 V900 Z"/>

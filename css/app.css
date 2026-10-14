@@ -429,6 +429,15 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene .sockp { fill: #f2b632; }
 .scene .pad { fill: #22364a; stroke: #8ea2b6; stroke-width: 1.2; } .scene .padh { fill: none; stroke: #f2b632; stroke-width: 1.6; stroke-linecap: round; }
 .scene .dock { fill: none; stroke: #6c5a46; stroke-width: 5; stroke-linecap: round; }
+.scene .dock.thin { stroke-width: 2.5; }
+.scene .cab { fill: #2a2018; } .scene .cab-roof { fill: #14100c; } .scene .cab-chim { fill: #14100c; }
+.scene .cab-log { fill: none; stroke: #3d2f22; stroke-width: 1.2; } .scene .cab-door { fill: #14100c; stroke: none; }
+.scene .smoke { fill: none; stroke: #8ea2b6; stroke-width: 2; stroke-linecap: round; opacity: .35; }
+.scene .logs { fill: none; stroke: #6c5a46; stroke-width: 2.5; stroke-linecap: round; }
+.scene .flame.f1 path { fill: #f2b632; } .scene .flame.f2 path { fill: #ff7a2e; }
+.scene .spark { fill: #ffcf6b; opacity: 0; }
+.scene .fireglow { opacity: .9; }
+.scene .pier { fill: #6c5a46; } .scene .pier-post { stroke: #4a3c2e; stroke-width: 2; stroke-linecap: round; }
 .scene .fg { fill: #0d161f; }
 .scene .ring { fill: none; stroke: #9fc0d8; stroke-width: 1.4; opacity: 0; }
 .scene .ac-body, .scene .ac-wheel { fill: #f2b632; }
@@ -440,6 +449,16 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene .fly, .scene .bobsky, .scene .drift, .scene .heli, .scene .bob, .scene .ring, .scene .sock, .scene .ac-rotor, .scene .star, .scene .shimmer {
   transform-box: fill-box; transform-origin: center; }
 .scene .fly.near { animation: scFly 42s linear infinite; }
+.scene .flame, .scene .spark, .scene .smoke, .scene .fireglow { transform-box: fill-box; }
+.scene .flame { transform-origin: 50% 100%; }
+.scene .flame.f1 { animation: scFlicker .9s ease-in-out infinite; }
+.scene .flame.f2 { animation: scFlicker 1.3s ease-in-out infinite reverse; }
+.scene .fireglow { transform-origin: center; animation: scGlowPulse 1.1s ease-in-out infinite alternate; }
+.scene .spark.k1 { animation: scSpark 2.2s ease-out infinite; --dx: 4px; }
+.scene .spark.k2 { animation: scSpark 2.8s ease-out infinite .9s; --dx: -3px; }
+.scene .spark.k3 { animation: scSpark 2.5s ease-out infinite 1.6s; --dx: 2px; }
+.scene .smoke { animation: scSmoke 6s ease-out infinite; }
+.scene .glow-win { animation: scWin 4s ease-in-out infinite; }
 .scene .fly.far { animation: scFly 95s linear infinite; animation-delay: -40s; opacity: .8; }
 .scene .bobsky { animation: scBob 5s ease-in-out infinite alternate; }
 .scene .drift.d1 { animation: scDrift 80s ease-in-out infinite alternate; }
@@ -455,6 +474,11 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene .star.s0 { animation: scTwinkle 3.1s ease-in-out infinite alternate; }
 .scene .star.s1 { animation: scTwinkle 4.3s ease-in-out infinite alternate; animation-delay: -1.5s; }
 .scene .star.s2 { animation: scTwinkle 5.7s ease-in-out infinite alternate; animation-delay: -3s; }
+@keyframes scFlicker { 0% { transform: scale(1, 1); } 30% { transform: scale(.92, 1.12); } 55% { transform: scale(1.06, .9); } 80% { transform: scale(.96, 1.08); } 100% { transform: scale(1, 1); } }
+@keyframes scGlowPulse { from { opacity: .7; } to { opacity: 1; } }
+@keyframes scSpark { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(var(--dx, 3px), -26px); opacity: 0; } }
+@keyframes scSmoke { 0% { transform: translateY(4px); opacity: 0; } 30% { opacity: .38; } 100% { transform: translate(6px, -14px); opacity: 0; } }
+@keyframes scWin { 0%, 100% { opacity: 1; } 50% { opacity: .78; } }
 @keyframes scFly { from { transform: translateX(-260px); } to { transform: translateX(1900px); } }
 @keyframes scBob { from { transform: translateY(-6px); } to { transform: translateY(6px); } }
 @keyframes scBobSmall { from { transform: translateY(0); } to { transform: translateY(1.6px); } }
