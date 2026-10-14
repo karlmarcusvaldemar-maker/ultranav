@@ -48,7 +48,7 @@
       <div class="grp">
         <button id="btnEdit" title="Planera rutt"><i data-icon="route"></i><small>Rutt</small></button>
         <button id="btnProfile" title="Terrängprofil längs rutten"><i data-icon="mountain"></i><small>Profil</small></button>
-        <button id="btnDraw" title="Mät avstånd, rita linjer, ytor och punkter"><i data-icon="ruler"></i><small>Mät</small></button>
+        <button id="btnDraw" title="Rita och mät: avstånd, linjer, ytor och punkter"><i data-icon="edit"></i><small>Rita</small></button>
       </div>
       <div class="grp">
         <button id="btnLayers" title="Kartor och kartlager"><i data-icon="layers"></i><small>Kartor</small></button>
@@ -76,7 +76,7 @@
       <button data-tab="route" class="active"><i data-icon="route"></i><span>Rutt</span></button>
       <button data-tab="wx"><i data-icon="cloud"></i><span>Väder</span></button>
       <button data-tab="fields"><i data-icon="plane"></i><span>Fält</span></button>
-      <button data-tab="draw"><i data-icon="ruler"></i><span>Mät</span></button>
+      <button data-tab="draw"><i data-icon="edit"></i><span>Rita</span></button>
       <button data-tab="track"><i data-icon="log"></i><span>Logg</span></button>
       <button data-tab="settings"><i data-icon="sliders"></i><span>Inställn.</span></button>
       <button data-tab="account"><i data-icon="user"></i><span>Konto</span></button>
@@ -90,6 +90,9 @@
     <div class="tabbody hidden" id="tab-settings"></div>
     <div class="tabbody hidden" id="tab-account"></div>
   </aside>
+
+  <!-- Inloggningssida -->
+  <div id="gate" class="hidden"></div>
 
   <!-- Modal -->
   <div id="modal" class="hidden"><div class="modalbox"><div id="modalBody"></div><div class="modalbtns"><button id="modalClose">Stäng</button></div></div></div>

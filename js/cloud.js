@@ -3,9 +3,9 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { allItems, findAny, put, remove, setShare, onLibrary, get } from './library.js';
 import { toast, debounce, store } from './util.js';
 
-let client = null;
+let client = null, shareClient = null;
 export let user = null;
-const status = { syncing: false, last: store.get('ulnav.lastSync', null), error: null };
+const status = { syncing: false, last: store.get('ulnav.lastSync', null), error: null, ready: false };
 const listeners = new Set();
 export const onCloud = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f({ user, ...status }));
@@ -25,19 +25,22 @@ function loadLib() {
 /** Starta molndelen: återställ session, lyssna på inloggning och lokala ändringar */
 export async function initCloud({ onPasswordRecovery } = {}) {
   if (!cloudConfigured()) return;
-  try { await loadLib(); } catch (e) { status.error = e.message; emit(); return; }
+  try { await loadLib(); } catch (e) { status.error = e.message; status.ready = true; emit(); return; }
   client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'ulnav.auth' },
   });
   client.auth.onAuthStateChange((event, session) => {
     const was = user?.id;
     user = session?.user || null;
+    if (user) store.set('ulnav.everLoggedIn', true);
     if (event === 'PASSWORD_RECOVERY') onPasswordRecovery?.();
     emit();
     if (user && user.id !== was) sync();
   });
-  const { data } = await client.auth.getSession();
-  user = data.session?.user || null;
+  try { const { data } = await client.auth.getSession(); user = data.session?.user || null; }
+  catch { user = null; }
+  status.ready = true;
+  if (user) store.set('ulnav.everLoggedIn', true);
   emit();
   if (user) sync();
   // Lokala ändringar → synka (fördröjt), samt när appen blir synlig igen och var femte minut
@@ -146,8 +149,11 @@ export async function unshareItem(kind, id) {
 }
 /** Hämta ett delat objekt med kod (fungerar utan inloggning) */
 export async function fetchShared(c) {
-  if (!client) { await loadLib().catch(() => {}); if (!window.supabase || !cloudConfigured()) throw new Error('Delning är inte konfigurerad.'); client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
-  const { data, error } = await client.rpc('get_shared', { code: c });
+  // Egen anonym förbindelse: får aldrig ersätta inloggningsförbindelsen (då skulle inloggningen inte registreras)
+  await loadLib().catch(() => {});
+  if (!window.supabase || !cloudConfigured()) throw new Error('Delning är inte konfigurerad.');
+  shareClient ||= window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'ulnav.share' } });
+  const { data, error } = await shareClient.rpc('get_shared', { code: c });
   if (error) throw new Error(sv(error));
   return data?.[0] || null;
 }

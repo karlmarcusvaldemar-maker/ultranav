@@ -14,40 +14,41 @@ export function renderAccountTab(el) {
   }
   const st = cloudStatus();
   if (st.user) return renderLoggedIn(el, st);
-  el.innerHTML = `<h3>Konto</h3>
-    <div class="seg"><button data-m="login" class="${mode === 'login' ? 'on' : ''}">Logga in</button><button data-m="signup" class="${mode === 'signup' ? 'on' : ''}">Skapa konto</button></div>
-    <form id="accForm" autocomplete="on">
-      <div class="field"><span>E-post</span><input type="email" id="accEmail" autocomplete="username" autocapitalize="off" required></div>
-      <div class="field"><span>Lösenord</span><input type="password" id="accPw" autocomplete="${mode === 'signup' ? 'new-password' : 'current-password'}" minlength="8" required></div>
-      ${mode === 'signup' ? '<div class="field"><span>Upprepa lösenord</span><input type="password" id="accPw2" autocomplete="new-password" minlength="8" required></div>' : ''}
-      <div class="btnrow"><button type="submit" class="btn primary">${ic(mode === 'signup' ? 'user' : 'lock')}${mode === 'signup' ? 'Skapa konto' : 'Logga in'}</button>
-      ${mode === 'login' ? '<button type="button" class="btn" id="accForgot">Glömt lösenord?</button>' : ''}</div>
+  el.innerHTML = '<h3>Konto</h3><div id="accAuth"></div>';
+  renderAuthForm($('#accAuth', el));
+}
+
+/** Inloggnings-/registreringsformulär (används på inloggningssidan och i Konto-fliken) */
+export function renderAuthForm(el) {
+  el.innerHTML = `
+    <div class="seg"><button type="button" data-m="login" class="${mode === 'login' ? 'on' : ''}">Logga in</button><button type="button" data-m="signup" class="${mode === 'signup' ? 'on' : ''}">Skapa konto</button></div>
+    <form class="authform" autocomplete="on">
+      <label class="afield"><span>E-post</span><input type="email" name="email" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>
+      <label class="afield"><span>Lösenord</span><input type="password" name="pw" autocomplete="${mode === 'signup' ? 'new-password' : 'current-password'}" minlength="8" required></label>
+      ${mode === 'signup' ? '<label class="afield"><span>Upprepa lösenord</span><input type="password" name="pw2" autocomplete="new-password" minlength="8" required></label>' : ''}
+      <button type="submit" class="btn primary wide">${ic(mode === 'signup' ? 'user' : 'lock')}${mode === 'signup' ? 'Skapa konto' : 'Logga in'}</button>
+      ${mode === 'login' ? '<button type="button" class="linkbtn" data-forgot>Glömt lösenord?</button>' : '<div class="muted small">Minst 8 tecken. Du får ett mejl för att bekräfta adressen.</div>'}
     </form>
-    <div id="accMsg"></div>
-    <h3>Med ett konto</h3>
-    <ul class="benefits">
-      <li>${ic('sync')}Rutter, ritningar, inställningar och loggbok synkas mellan dina enheter</li>
-      <li>${ic('save')}Säkerhetskopia om iPaden byts eller webbläsardata rensas</li>
-      <li>${ic('layers')}Eget kartmaterial (KML, shapefil, WMS) sparas på kontot</li>
-      <li>${ic('share')}Dela rutter, ritningar, kartlager och flygningar med en länk</li>
-    </ul>`;
-  el.querySelectorAll('.seg [data-m]').forEach((b) => b.onclick = () => { mode = b.dataset.m; renderAccountTab(el); });
-  const msg = (kind, html) => { $('#accMsg', el).innerHTML = note(kind, html); };
-  $('#accForm', el).onsubmit = async (e) => {
+    <div class="authmsg"></div>`;
+  const form = el.querySelector('form'), msgEl = el.querySelector('.authmsg');
+  const msg = (kind, html) => { msgEl.innerHTML = note(kind, html); };
+  el.querySelectorAll('.seg [data-m]').forEach((b) => b.onclick = () => { mode = b.dataset.m; renderAuthForm(el); });
+  form.onsubmit = async (e) => {
     e.preventDefault();
-    const email = $('#accEmail', el).value.trim(), pw = $('#accPw', el).value;
-    const btn = e.submitter || el.querySelector('[type=submit]'); btn.disabled = true;
+    const email = form.email.value.trim(), pw = form.pw.value;
+    const btn = form.querySelector('[type=submit]'); btn.disabled = true;
     try {
       if (mode === 'signup') {
-        if (pw !== $('#accPw2', el).value) throw new Error('Lösenorden är inte lika.');
+        if (pw !== form.pw2.value) throw new Error('Lösenorden är inte lika.');
         const r = await signUp(email, pw);
-        if (r.needsConfirm) msg('ok', `Kontot är skapat. Vi har skickat ett mejl till <b>${esc(email)}</b> — klicka på länken i mejlet och logga sedan in här.`);
+        if (r.needsConfirm) { mode = 'login'; renderAuthForm(el); el.querySelector('form').email.value = email;
+          el.querySelector('.authmsg').innerHTML = note('ok', `Kontot är skapat. Vi har skickat ett mejl till <b>${esc(email)}</b> — klicka på länken i mejlet och logga sedan in.`); }
       } else await signIn(email, pw);
     } catch (err) { msg('bad', esc(err.message)); }
     finally { btn.disabled = false; }
   };
-  $('#accForgot', el)?.addEventListener('click', async () => {
-    const email = $('#accEmail', el).value.trim();
+  el.querySelector('[data-forgot]')?.addEventListener('click', async () => {
+    const email = form.email.value.trim();
     if (!email) { msg('warn', 'Skriv in din e-postadress först.'); return; }
     try { await resetPassword(email); msg('ok', `Om det finns ett konto för <b>${esc(email)}</b> har vi skickat en länk för att välja nytt lösenord.`); }
     catch (err) { msg('bad', esc(err.message)); }

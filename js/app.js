@@ -5,6 +5,7 @@ import { initCloud, onCloud, cloudConfigured, cloudStatus, shareItem, unshareIte
 import { renderAccountTab, askNewPassword } from './account.js';
 import { initCustomLayers, addSharedLayer } from './customlayers.js';
 import { renderLogbook, showFlight } from './logbook.js';
+import { initLogin, setGateNote } from './login.js';
 import { $, $$, esc, toast, modal, note, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store } from './util.js';
 import { initMap, map, renderLayerPanel, testCurrentBase } from './map.js';
 import { initAero, actions, airportHtml, mapInfoPopup, openAirport, airportNear } from './aero.js';
@@ -464,6 +465,7 @@ lib.onLibrary((kind, source, item) => {
   if (source !== 'local' && !$('#side').classList.contains('hidden')) renderTab();
 });
 onCloud(() => { if (currentTab === 'account' && !$('#side').classList.contains('hidden')) renderTab(); });
+initLogin();
 initCloud({ onPasswordRecovery: () => askNewPassword() });
 
 const KIND_SV = { route: 'rutten', drawing: 'ritningen', layer: 'kartlagret', flight: 'flygningen' };
@@ -495,6 +497,7 @@ function openTab(tab) {
     const it = await fetchShared(code);
     if (!it) { toast('Länken är ogiltig eller delningen har avslutats', 5000); return; }
     const what = { route: 'en rutt', drawing: 'en ritning', layer: 'kartmaterial', flight: 'en flygning' }[it.kind] || 'något';
+    setGateNote(note('ok', `Någon har delat ${what} med dig: <b>${esc(it.name)}</b>. Logga in eller skapa ett konto för att spara det.`, 'share'));
     modal(`<h3>Delat med dig</h3><div>Någon har delat ${what}: <b>${esc(it.name)}</b></div>
       <div class="btnrow"><button class="btn primary" id="shImp">${ic('download')}Spara i min Ultranav</button></div>`);
     $('#shImp').onclick = async () => {
@@ -503,13 +506,13 @@ function openTab(tab) {
       else if (it.kind === 'drawing') { await lib.put('drawing', { id, name: it.name, data: it.data }); }
       else if (it.kind === 'layer') await addSharedLayer(it.name, it.data);
       else if (it.kind === 'flight') { await lib.put('flight', { id, name: it.name, data: it.data }); showFlight(id); }
-      $('#modal').classList.add('hidden'); toast(`${it.name} är sparad`);
+      $('#modal').classList.add('hidden'); setGateNote(''); toast(`${it.name} är sparad`);
     };
   } catch (e) { toast('Kunde inte öppna delningen: ' + e.message, 5000); }
 })();
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-15.2';
+export const APP_VERSION = '2026-10-15.3';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {

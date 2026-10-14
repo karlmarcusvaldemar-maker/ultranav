@@ -382,3 +382,93 @@ body.side-open #profilePanel { left: calc(min(470px, 94vw) + 10px); }
 .benefits { list-style: none; margin: 0; padding: 0; }
 .benefits li { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; font-size: 15px; }
 .benefits .ic { color: var(--accent); margin-top: 1px; }
+
+/* ---------- Inloggningssida ---------- */
+#gate { position: fixed; inset: 0; z-index: 5000; background: var(--bg); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+#gate .scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.gatecard { position: relative; width: min(420px, calc(100vw - 32px)); background: color-mix(in srgb, var(--panel) 94%, transparent);
+  border: 1px solid var(--line-strong); border-radius: 22px; padding: 24px 24px 20px; box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); margin-bottom: 18vh; }
+@media (orientation: portrait) { .gatecard { margin-bottom: 30vh; } }
+.gatecard .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.gatecard .brand img { border-radius: 12px; }
+.gatecard h1 { margin: 0; font: 700 26px/1.1 var(--display); letter-spacing: -.01em; }
+.gatecard p { margin: 3px 0 0; color: var(--muted); font-size: 14px; }
+.authform { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.afield { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.afield input { min-height: 48px; font-size: 17px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--bg); color: var(--text); padding: 0 12px; }
+.afield input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.btn.wide { width: 100%; min-height: 52px; font-size: 16px; margin-top: 4px; }
+.linkbtn { background: none; border: 0; color: var(--accent); font-weight: 600; min-height: 40px; align-self: center; }
+.muted.small { font-size: 12px; text-align: center; }
+body.gated #fab, body.gated #instruments { visibility: hidden; }
+
+/* ---------- Landskap på inloggningssidan (skymning, stiliserat, med rörelse) ---------- */
+#gate { background: #0b121a; }
+.scene .sk0 { stop-color: #0a1018; } .scene .sk1 { stop-color: #16273a; } .scene .sk2 { stop-color: #2a4157; }
+.scene .gl0 { stop-color: #f2b632; stop-opacity: .22; } .scene .gl1 { stop-color: #f2b632; stop-opacity: 0; }
+.scene .moon { fill: #f4d58d; }
+.scene .star { fill: #dfe7ef; }
+.scene .cl { fill: #2a3f55; opacity: .55; }
+.scene .m1 { fill: #31475e; } .scene .snow { fill: none; stroke: #9fb3c6; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: .8; }
+.scene .m2 { fill: #263a4f; } .scene .m3 { fill: #1d2e40; }
+.scene .tr { fill: #16263a; } .scene .tr.far { fill: #18293b; } .scene .tr.near { fill: #0a121a; }
+.scene .vale { fill: #19293a; }
+.scene .field.f1 { fill: #22364a; } .scene .field.f2 { fill: #283f53; }
+.scene .furrow { fill: none; stroke: #304a62; stroke-width: 1.5; }
+.scene .lake { fill: #2b4d68; } .scene .river { fill: none; stroke: #2b4d68; stroke-width: 9; stroke-linecap: round; }
+.scene .moonpath { fill: none; stroke: #f4d58d; stroke-width: 2.5; stroke-linecap: round; }
+.scene .ripple-static { fill: none; stroke: #6f93b1; stroke-width: 1.5; stroke-linecap: round; opacity: .45; }
+.scene .strip { fill: none; stroke: #2f4a3c; stroke-width: 10; stroke-linecap: round; }
+.scene .stripmk { fill: none; stroke: #8ea2b6; stroke-width: 1.5; stroke-linecap: round; opacity: .7; }
+.scene .hs { fill: #101c27; } .scene .door { fill: none; stroke: #2c3d50; stroke-width: 1.5; }
+.scene .win { fill: #f2b632; }
+.scene .road { fill: none; stroke: #2c3d50; stroke-width: 2.5; stroke-dasharray: 2 5; stroke-linecap: round; }
+.scene .pole { stroke: #8ea2b6; stroke-width: 2; }
+.scene .sockp { fill: #f2b632; }
+.scene .pad { fill: #22364a; stroke: #8ea2b6; stroke-width: 1.2; } .scene .padh { fill: none; stroke: #f2b632; stroke-width: 1.6; stroke-linecap: round; }
+.scene .dock { fill: none; stroke: #6c5a46; stroke-width: 5; stroke-linecap: round; }
+.scene .fg { fill: #0d161f; }
+.scene .ring { fill: none; stroke: #9fc0d8; stroke-width: 1.4; opacity: 0; }
+.scene .ac-body, .scene .ac-wheel { fill: #f2b632; }
+.scene .ac-line { fill: none; stroke: #6b4a00; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.scene .ac-hub { fill: #6b4a00; }
+.scene .ac-rotor { fill: none; stroke: #f2b632; stroke-width: 2.4; stroke-linecap: round; }
+
+/* rörelse */
+.scene .fly, .scene .bobsky, .scene .drift, .scene .heli, .scene .bob, .scene .ring, .scene .sock, .scene .ac-rotor, .scene .star, .scene .shimmer {
+  transform-box: fill-box; transform-origin: center; }
+.scene .fly.near { animation: scFly 42s linear infinite; }
+.scene .fly.far { animation: scFly 95s linear infinite; animation-delay: -40s; opacity: .8; }
+.scene .bobsky { animation: scBob 5s ease-in-out infinite alternate; }
+.scene .drift.d1 { animation: scDrift 80s ease-in-out infinite alternate; }
+.scene .drift.d2 { animation: scDrift 110s ease-in-out infinite alternate-reverse; }
+.scene .drift.d3 { animation: scDrift 95s ease-in-out infinite alternate; }
+.scene .heli { animation: scHeli 16s ease-in-out infinite; }
+.scene .ac-rotor { animation: scRotor .22s linear infinite alternate; }
+.scene .bob { animation: scBobSmall 3.2s ease-in-out infinite alternate; }
+.scene .ring.r1 { animation: scRing 5s ease-out infinite; }
+.scene .ring.r2 { animation: scRing 5s ease-out infinite; animation-delay: 2.5s; }
+.scene .sock { transform-origin: left center; animation: scSock 2.6s ease-in-out infinite alternate; }
+.scene .shimmer { animation: scShimmer 3.5s ease-in-out infinite alternate; }
+.scene .star.s0 { animation: scTwinkle 3.1s ease-in-out infinite alternate; }
+.scene .star.s1 { animation: scTwinkle 4.3s ease-in-out infinite alternate; animation-delay: -1.5s; }
+.scene .star.s2 { animation: scTwinkle 5.7s ease-in-out infinite alternate; animation-delay: -3s; }
+@keyframes scFly { from { transform: translateX(-260px); } to { transform: translateX(1900px); } }
+@keyframes scBob { from { transform: translateY(-6px); } to { transform: translateY(6px); } }
+@keyframes scBobSmall { from { transform: translateY(0); } to { transform: translateY(1.6px); } }
+@keyframes scDrift { from { transform: translateX(-90px); } to { transform: translateX(90px); } }
+@keyframes scRotor { from { transform: scaleX(.35); } to { transform: scaleX(1); } }
+@keyframes scRing { 0% { transform: scale(.5); opacity: .7; } 100% { transform: scale(1.8); opacity: 0; } }
+@keyframes scSock { from { transform: rotate(-7deg); } to { transform: rotate(5deg); } }
+@keyframes scShimmer { from { opacity: .2; } to { opacity: .75; } }
+@keyframes scTwinkle { from { opacity: .25; } to { opacity: 1; } }
+@keyframes scHeli {
+  0%, 12% { transform: translateY(0); }
+  40% { transform: translateY(-64px); }
+  48% { transform: translateY(-60px); } 56% { transform: translateY(-66px); } 64% { transform: translateY(-60px); } 72% { transform: translateY(-64px); }
+  92%, 100% { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } .scene .fly.near { transform: translateX(420px); } .scene .fly.far { transform: translateX(1000px); } }
+#gateNote:not(:empty) { margin-bottom: 6px; }
