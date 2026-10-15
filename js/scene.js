@@ -19,6 +19,15 @@ const SEA = `<g class="ac">
   <path class="ac-line" d="M24 20 L22 27 M48 20 L50 27"/>
   <path class="ac-body" d="M8 27 H58 Q65 27 66 31 H12 Q7 31 8 27 Z"/>
 </g>`;
+const SKI = `<g class="ac">
+  <path class="ac-body" d="M0 13 L5 1 L12 1 L17 9 L51 8 Q60 9 63 14 L60 19 L17 20 L3 18 Z"/>
+  <path class="ac-body" d="M17 4 H52 V7.5 H17 Z"/>
+  <path class="ac-line" d="M26 19 L36 7.5 M44 19 L48 7.5 M44 10.5 H54 L57 14 H44 Z"/>
+  <path class="ac-line" d="M64 6 V22"/>
+  <path class="ac-line" d="M34 20 L37 26 M44 20 L41 26 M3 19 L4 22"/>
+  <path class="ac-ski" d="M24 26 H54 Q60 26 61.5 22.5 L63 23.2 Q61 28.2 54 28.2 H24 Z"/>
+  <path class="ac-ski" d="M-2 22 H8 Q10 22 10.5 21 L11 21.4 Q10.5 23.2 8 23.2 H-2 Z"/>
+</g>`;
 const HELI = `<g class="ac">
   <path class="ac-body" d="M24 14 Q24 2 40 2 L48 2 Q62 2 64 15 Q63 22 50 22 L32 22 Q24 22 24 14 Z"/>
   <path class="ac-line" d="M50 4 Q60 5 61 13 H50 Z"/>
@@ -30,7 +39,9 @@ const HELI = `<g class="ac">
 </g>`;
 
 // ---------- landskapselement ----------
-const tree = (x, y, s = 1, cls = 'tr') => `<path class="${cls}" d="M${x} ${y - 22 * s} l${-7 * s} ${12 * s} h${3 * s} l${-5 * s} ${9 * s} h${18 * s} l${-5 * s} ${-9 * s} h${3 * s} z"/>`;
+const r1 = (v) => Math.round(v * 10) / 10;
+const treeD = (x, y, s = 1) => `M${r1(+x)} ${r1(y - 22 * s)}l${r1(-7 * s)} ${r1(12 * s)}h${r1(3 * s)}l${r1(-5 * s)} ${r1(9 * s)}h${r1(18 * s)}l${r1(-5 * s)} ${r1(-9 * s)}h${r1(3 * s)}z`;
+const tree = (x, y, s = 1, cls = 'tr') => `<path class="${cls}" d="${treeD(x, y, s)}"/>`;
 /** Skog: många små träd längs en linje (deterministisk "slump") */
 function forest(x0, x1, yFn, n, s = 1, cls = 'tr') {
   let out = '', seed = Math.abs(x0 * 7 + n);
@@ -41,6 +52,27 @@ function forest(x0, x1, yFn, n, s = 1, cls = 'tr') {
   }
   return out;
 }
+/** Höjd längs en polylinje [[x,y],...] */
+const along = (pts) => (x) => {
+  for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; return y0 + (y1 - y0) * (x - x0) / (x1 - x0); }
+  return pts[pts.length - 1][1];
+};
+/** Skogsklädd sluttning: träd i rader från strax under kammen ned till yMax, glesare mot trädgränsen */
+function slopeForest(x0, x1, ridge, yMax, { dx = 8, dy = 9, s = 0.6, cls = 'tr', seed = 1, line = 18 } = {}) {
+  let out = '', sd = seed; // alla träd i en enda bana — betydligt lättare att rita
+  const rnd = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
+  for (let x = x0; x <= x1; x += dx) {
+    const top = ridge(x) + line * (0.6 + rnd() * 0.8);
+    for (let y = top; y <= yMax; y += dy) {
+      const xx = x + (rnd() - 0.5) * dx, yy = y + (rnd() - 0.5) * 3;
+      if (y - top < dy && rnd() < 0.45) continue; // ojämn trädgräns
+      out += treeD(xx, yy + 22 * s, s * (0.8 + rnd() * 0.4));
+    }
+  }
+  return `<path class="${cls}" d="${out}"/>`;
+}
+const M2 = [[-800, 520], [0, 510], [80, 470], [170, 500], [260, 440], [360, 490], [460, 455], [580, 500], [700, 430], [800, 480], [900, 450], [1020, 500], [1130, 445], [1230, 490], [1330, 460], [1440, 505], [1600, 470], [2400, 500]];
+const M3 = [[-800, 580], [0, 570], [120, 548], [220, 536], [330, 556], [450, 541], [560, 538], [700, 560], [830, 536], [960, 527], [1100, 552], [1240, 537], [1380, 532], [1600, 556], [2400, 560]];
 const house = (x, y, s = 1, lit = true) => `<g transform="translate(${x} ${y}) scale(${s})"><path class="hs" d="M0 0 V-10 L8 -17 L16 -10 V0 Z"/>${lit ? '<rect class="win" x="5" y="-8" width="3" height="3"/>' : ''}</g>`;
 
 const stars = Array.from({ length: 34 }, (_, i) => {
@@ -75,9 +107,10 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="m1" d="M-800 470 L-300 440 L0 455 L110 400 L190 430 L300 350 L380 395 L470 340 L560 390 L660 320 L740 372 L850 300 L960 380 L1040 342 L1150 395 L1250 330 L1340 386 L1430 350 L1540 400 L1600 380 L2400 420 V900 H-800 Z"/>
   <path class="snow" d="M282 364 L300 350 L318 365 M452 354 L470 340 L486 352 M640 336 L660 320 L680 334 M830 316 L850 300 L870 316 M1232 344 L1250 330 L1268 344"/>
   <path class="m2" d="M-800 520 L0 510 L80 470 L170 500 L260 440 L360 490 L460 455 L580 500 L700 430 L800 480 L900 450 L1020 500 L1130 445 L1230 490 L1330 460 L1440 505 L1600 470 L2400 500 V900 H-800 Z"/>
+  ${slopeForest(-40, 1640, along(M2), 548, { dx: 11, dy: 11, s: 0.6, cls: 'tr mid', seed: 7, line: 22 })}
   <g class="helifar"><g class="bobsky"><g transform="translate(0 452) scale(.3)">${HELI}</g></g></g>
   <path class="m3" d="M-800 580 L0 570 C120 540 220 530 330 556 S560 530 700 560 S960 520 1100 552 S1380 530 1600 556 L2400 560 V900 H-800 Z"/>
-  ${forest(-40, 1640, (x) => 560 + 12 * Math.sin(x / 90), 120, 0.55, 'tr far')}
+  ${slopeForest(-40, 1640, along(M3), 612, { dx: 10, dy: 10, s: 0.66, cls: 'tr far', seed: 3, line: 4 })}
 
   <!-- dal -->
   <path class="vale" d="M-800 640 L0 630 C200 610 400 616 620 626 C860 636 1100 612 1600 622 L2400 630 V900 H-800 Z"/>
@@ -136,16 +169,16 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
     <circle class="head" cx="0" cy="-11.5" r="2.6"/>
     <path class="hat" d="M-3 -12.5 H3 L2 -15 H-2 Z"/>
     <g class="rod"><path class="rodp" d="M2 -6 L18 -19"/><path class="fline" d="M18 -19 L21 1"/><circle class="bobber" cx="21" cy="1" r="1.3"/>
-      <ellipse class="fring" cx="21" cy="2" rx="5" ry="1"/></g>
+      <ellipse class="fring" cx="21" cy="2" rx="5" ry="1"/><ellipse class="hole" cx="21" cy="2" rx="3.2" ry="1"/></g>
   </g></g></g></g>
   <path class="pier" d="M560 778 L572 778 L592 750 L582 750 Z"/>
   <path class="pier-post" d="M562 778 v5 M571 778 v5 M584 750 v4 M591 750 v4"/>
-  <g class="bob"><g transform="translate(578 718) scale(.72)">${SEA}</g></g>
-  <ellipse class="ring r1" cx="602" cy="742" rx="26" ry="3.5"/>
-  <ellipse class="ring r2" cx="602" cy="742" rx="26" ry="3.5"/>
+  <g class="plane pfl"><g class="bob"><g transform="translate(578 718) scale(.72)">${SEA}</g></g>
+    <ellipse class="ring r1" cx="602" cy="742" rx="26" ry="3.5"/><ellipse class="ring r2" cx="602" cy="742" rx="26" ry="3.5"/></g>
+  <g class="plane psk"><g transform="translate(578 721) scale(.72)">${SKI}</g></g>
 
 
-  <!-- påskägg (andra dagen): en älg kliver fram och dricker ur ån -->
+  <!-- påskägg (andra dagen): en älg kliver fram till ån -->
   <g class="mooseo"><g class="moose"><g transform="translate(786 800)">
     <path class="mo-leg l1" d="M13 20 V38"/><path class="mo-leg l2" d="M19 20 V38"/><path class="mo-leg l1" d="M38 20 V38"/><path class="mo-leg l2" d="M44 20 V38"/>
     <path class="mo" d="M6 16 Q5 8 16 7 H34 Q39 3 44 7 Q48 10 47 19 Q40 24 30 23 H14 Q6 23 6 16 Z"/>
@@ -157,6 +190,8 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
       <circle class="mo-eye" cx="56" cy="5" r=".9"/>
     </g>
   </g></g></g>
+  <!-- snöfall vinternätter -->
+  <g class="snowfall"><circle class="flake f0" cx="0" cy="-20" r="1.8"/><circle class="flake f1" cx="397" cy="-151" r="1.2"/><circle class="flake f2" cx="794" cy="-282" r="1.2"/><circle class="flake f0" cx="1191" cy="-113" r="1.2"/><circle class="flake f1" cx="1588" cy="-244" r="1.8"/><circle class="flake f2" cx="385" cy="-75" r="1.2"/><circle class="flake f0" cx="782" cy="-206" r="1.2"/><circle class="flake f1" cx="1179" cy="-37" r="1.2"/><circle class="flake f2" cx="1576" cy="-168" r="1.8"/><circle class="flake f0" cx="373" cy="-299" r="1.2"/><circle class="flake f1" cx="770" cy="-130" r="1.2"/><circle class="flake f2" cx="1167" cy="-261" r="1.2"/><circle class="flake f0" cx="1564" cy="-92" r="1.8"/><circle class="flake f1" cx="361" cy="-223" r="1.2"/><circle class="flake f2" cx="758" cy="-54" r="1.2"/><circle class="flake f0" cx="1155" cy="-185" r="1.2"/><circle class="flake f1" cx="1552" cy="-316" r="1.8"/><circle class="flake f2" cx="349" cy="-147" r="1.2"/><circle class="flake f0" cx="746" cy="-278" r="1.2"/><circle class="flake f1" cx="1143" cy="-109" r="1.2"/><circle class="flake f2" cx="1540" cy="-240" r="1.8"/><circle class="flake f0" cx="337" cy="-71" r="1.2"/><circle class="flake f1" cx="734" cy="-202" r="1.2"/><circle class="flake f2" cx="1131" cy="-33" r="1.2"/><circle class="flake f0" cx="1528" cy="-164" r="1.8"/><circle class="flake f1" cx="325" cy="-295" r="1.2"/><circle class="flake f2" cx="722" cy="-126" r="1.2"/><circle class="flake f0" cx="1119" cy="-257" r="1.2"/><circle class="flake f1" cx="1516" cy="-88" r="1.8"/><circle class="flake f2" cx="313" cy="-219" r="1.2"/><circle class="flake f0" cx="710" cy="-50" r="1.2"/><circle class="flake f1" cx="1107" cy="-181" r="1.2"/><circle class="flake f2" cx="1504" cy="-312" r="1.8"/><circle class="flake f0" cx="301" cy="-143" r="1.2"/><circle class="flake f1" cx="698" cy="-274" r="1.2"/><circle class="flake f2" cx="1095" cy="-105" r="1.2"/><circle class="flake f0" cx="1492" cy="-236" r="1.8"/><circle class="flake f1" cx="289" cy="-67" r="1.2"/><circle class="flake f2" cx="686" cy="-198" r="1.2"/><circle class="flake f0" cx="1083" cy="-29" r="1.2"/><circle class="flake f1" cx="1480" cy="-160" r="1.8"/><circle class="flake f2" cx="277" cy="-291" r="1.2"/><circle class="flake f0" cx="674" cy="-122" r="1.2"/><circle class="flake f1" cx="1071" cy="-253" r="1.2"/><circle class="flake f2" cx="1468" cy="-84" r="1.8"/><circle class="flake f0" cx="265" cy="-215" r="1.2"/><circle class="flake f1" cx="662" cy="-46" r="1.2"/><circle class="flake f2" cx="1059" cy="-177" r="1.2"/><circle class="flake f0" cx="1456" cy="-308" r="1.8"/><circle class="flake f1" cx="253" cy="-139" r="1.2"/><circle class="flake f2" cx="650" cy="-270" r="1.2"/><circle class="flake f0" cx="1047" cy="-101" r="1.2"/><circle class="flake f1" cx="1444" cy="-232" r="1.8"/><circle class="flake f2" cx="241" cy="-63" r="1.2"/><circle class="flake f0" cx="638" cy="-194" r="1.2"/><circle class="flake f1" cx="1035" cy="-25" r="1.2"/><circle class="flake f2" cx="1432" cy="-156" r="1.8"/><circle class="flake f0" cx="229" cy="-287" r="1.2"/><circle class="flake f1" cx="626" cy="-118" r="1.2"/><circle class="flake f2" cx="1023" cy="-249" r="1.2"/><circle class="flake f0" cx="1420" cy="-80" r="1.8"/><circle class="flake f1" cx="217" cy="-211" r="1.2"/><circle class="flake f2" cx="614" cy="-42" r="1.2"/><circle class="flake f0" cx="1011" cy="-173" r="1.2"/><circle class="flake f1" cx="1408" cy="-304" r="1.8"/><circle class="flake f2" cx="205" cy="-135" r="1.2"/><circle class="flake f0" cx="602" cy="-266" r="1.2"/><circle class="flake f1" cx="999" cy="-97" r="1.2"/><circle class="flake f2" cx="1396" cy="-228" r="1.8"/><circle class="flake f0" cx="193" cy="-59" r="1.2"/></g>
   <!-- förgrund -->
   <path class="fg" d="M-800 900 L-800 780 C-200 800 0 770 160 790 C320 810 420 860 560 900 Z M1080 900 C1180 830 1340 790 1600 800 L2400 790 V900 Z"/>
   ${forest(-60, 300, (x) => 812 + 18 * Math.sin(x / 60), 16, 1.3, 'tr near')}

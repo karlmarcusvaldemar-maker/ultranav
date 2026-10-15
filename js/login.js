@@ -27,16 +27,33 @@ function build() {
 
 /** Dygnet i landskapet: solen går upp efter 8 s (gubben dyker upp i båten, ror ut och fiskar, brasan slocknar),
  *  efter 16 s blir det natt (han ror hem och försvinner, brasan tänds). Upprepas.
- *  Påskägg: andra dagen kliver en älg fram och dricker ur ån. */
+ *  Årstider i fyra dagar: dag 1 sommar (sjöflygplanet lyfter före solnedgången), dag 2 blir det vinter
+ *  (samma plan med skidor landar på isen, och en älg kliver fram), dag 3 lyfter skidplanet,
+ *  dag 4 blir det sommar igen och sjöflygplanet landar. */
 function dayCycle(svg) {
   if (!svg || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const c = svg.classList, at = (ms, fn) => setTimeout(fn, ms);
   const row = () => { c.add('rowing'); at(5400, () => c.remove('rowing')); };
+  // p = 'fl' (flottörer) eller 'sk' (skidor), kind = 'dep' (lyfter) eller 'arr' (landar)
+  const fly = (p, kind, delay) => at(delay, () => {
+    if (kind === 'arr') c.remove(p + '-away');
+    c.add(p + '-' + kind);
+    at(kind === 'dep' ? 5100 : 6100, () => { c.remove(p + '-' + kind); if (kind === 'dep') c.add(p + '-away'); });
+  });
+  c.add('sk-away');
   let days = 0;
   const run = () => {
     at(8000, () => {
+      const ph = days++ % 4;
+      if (ph === 1) c.add('winter');
+      if (ph === 3) c.remove('winter');
+      c.toggle('arrday', ph === 1 || ph === 3);
       c.add('day'); row(); at(5600, () => { if (c.contains('day')) c.add('fishing'); });
-      if (++days === 2) c.add('egg');
+      if (days === 2) c.add('egg');
+      if (ph === 0) fly('fl', 'dep', 1800);
+      if (ph === 1) fly('sk', 'arr', 500);
+      if (ph === 2) fly('sk', 'dep', 1800);
+      if (ph === 3) fly('fl', 'arr', 500);
     });
     at(16000, () => {
       c.remove('day', 'fishing'); row();

@@ -516,7 +516,7 @@ function openTab(tab) {
 })();
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-15.14';
+export const APP_VERSION = '2026-10-15.15';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {

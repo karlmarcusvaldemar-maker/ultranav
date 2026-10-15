@@ -530,6 +530,7 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene .rod { opacity: 0; transition: opacity .8s ease; }
 .scene .rower { transition: transform 5s ease-in-out; }
 .scene.day .rower { transform: translate(-100px, -38px); }
+.scene.day.arrday .rower { transform: translate(150px, -30px); } /* landningsdagar: håll undan från planet som kommer från vänster */
 /* gubben finns bara i båten på dagen och medan han ror; båten ligger tom vid bryggan på natten */
 .scene .crew { opacity: 0; transform-box: fill-box; transform-origin: 50% 100%; }
 .scene.day .crew, .scene.rowing .crew { opacity: 1; }
@@ -573,3 +574,50 @@ details.danger-zone summary { cursor: pointer; font-weight: 600; color: var(--ba
 @keyframes scMooseWalk { 0% { transform: translateX(-230px); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateX(0); opacity: 1; } }
 @keyframes scLeg { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
 @keyframes scDrink { from { transform: rotate(0); } to { transform: rotate(48deg); } }
+
+/* skogsklädda berg */
+.scene .tr.mid { fill: #1a2b3d; } .scene .tr.far { fill: #132232; }
+.scene.day .tr.mid { fill: #45597a; } .scene.day .tr.far { fill: #34496a; }
+
+/* flygplanen vid sjön: sjöflygplan på sommaren, skidor på vintern */
+.scene .ac-ski { fill: #f2b632; }
+.scene .plane { transform-box: fill-box; transform-origin: center; }
+.scene.fl-away .pfl, .scene.sk-away .psk { opacity: 0; }
+.scene.fl-dep .pfl, .scene.sk-dep .psk { animation: scDepart 5s ease-in both; }
+.scene.fl-arr .pfl, .scene.sk-arr .psk { animation: scArrive 6s ease-out both; }
+.scene.fl-dep .ring, .scene.fl-arr .ring, .scene.fl-away .ring { visibility: hidden; }
+@keyframes scDepart {
+  0% { transform: translate(0, 0) rotate(0); }
+  45% { transform: translate(170px, -2px) rotate(0); }
+  56% { transform: translate(235px, -14px) rotate(-7deg); }
+  100% { transform: translate(1150px, -340px) rotate(-10deg); }
+}
+@keyframes scArrive {
+  0% { transform: translate(-950px, -300px) rotate(7deg); }
+  55% { transform: translate(-215px, -10px) rotate(3deg); }
+  63% { transform: translate(-175px, 0) rotate(-2deg); }
+  70% { transform: translate(-130px, 0) rotate(0); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+
+/* vinter (från andra soluppgången, växlar med sommar) */
+.scene .hole, .scene .snowfall { opacity: 0; }
+.scene :is(.m1, .m2, .m3, .tr, .vale, .lake, .river, .fg, .strip, .cab-roof) { transition: fill 3s ease, stroke 3s ease; }
+.scene.winter .m1 { fill: #4a6079; } .scene.winter .m2 { fill: #3d536b; } .scene.winter .m3 { fill: #34485e; }
+.scene.winter .vale { fill: #2f4256; } .scene.winter .fg { fill: #27384b; }
+.scene.winter .lake { fill: #4b6480; } .scene.winter .river { stroke: #4b6480; }
+.scene.winter .strip { stroke: #5a7088; } .scene.winter .cab-roof { fill: #8fa3b8; }
+.scene.winter.day .m1 { fill: #b9c8d7; } .scene.winter.day .m2 { fill: #c6d3df; } .scene.winter.day .m3 { fill: #d4dee8; }
+.scene.winter.day .vale { fill: #e3ebf2; } .scene.winter.day .fg { fill: #cbd8e4; }
+.scene.winter.day .lake { fill: #f1f6fa; } .scene.winter.day .river { stroke: #f1f6fa; }
+.scene.winter.day .strip { stroke: #f6f9fb; } .scene.winter.day .cab-roof { fill: #f6f9fb; }
+.scene.winter.day .tr.mid { fill: #3e566c; } .scene.winter.day .tr.far { fill: #304a5f; } .scene.winter.day .tr, .scene.winter.day .tr.near { fill: #22384a; }
+.scene.winter.day .cl { fill: #ffffff; }
+.scene.winter :is(.moonpath, .ripple-static, .boat, .oar) { visibility: hidden; }
+.scene.winter .hole { opacity: 1; fill: #1d2e40; }
+.scene.winter .fring { visibility: hidden; }
+.scene.winter:not(.day) .snowfall { opacity: 1; }
+.scene .snowfall { transition: opacity 2s ease; }
+.scene .flake { fill: #e8f0f7; transform-box: fill-box; animation: scSnow 9s linear infinite; }
+.scene .flake.f1 { animation-duration: 12s; animation-delay: -4s; } .scene .flake.f2 { animation-duration: 15s; animation-delay: -9s; }
+@keyframes scSnow { from { transform: translate(0, 0); } to { transform: translate(-40px, 960px); } }
