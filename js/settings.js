@@ -6,9 +6,6 @@ export const DEFAULT_TILES = {
   osm: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   otm: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
   esri: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  ofmAero: 'https://nwy-tiles-api.prod.newaydata.com/tiles/{z}/{x}/{y}.png?path=latest/aero/latest',
-  ofmBase: 'https://nwy-tiles-api.prod.newaydata.com/tiles/{z}/{x}/{y}.png?path=latest/base/latest',
-  openaip: 'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey={key}',
   terrain: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
 };
 

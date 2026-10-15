@@ -19,8 +19,6 @@ function fill(tpl, z, x, y) {
 export function routeTiles({ corridor = 8, zMin = 7, zMax = 12 } = {}, vecTpl = null) {
   const sources = [];
   if (vecTpl) sources.push({ tpl: vecTpl, max: 14 });
-  if (overlayOn('ofmAero')) sources.push({ tpl: settings.tiles.ofmAero, max: 12 });
-  if (overlayOn('openaipTiles') && oaipKey()) sources.push({ tpl: settings.tiles.openaip, max: 14 });
   sources.push({ tpl: settings.tiles.terrain, max: 10, only: 10 });
   const urls = new Set();
   const w = route.wps;
@@ -48,7 +46,7 @@ export async function downloadRoute(onProgress) {
   if (!('caches' in window)) { toast('Webbläsaren saknar stöd för offline-cache'); return; }
   let vecTpl = null;
   try { vecTpl = (await (await fetch('https://tiles.openfreemap.org/planet')).json()).tiles?.[0] || null; }
-  catch { toast('Kunde inte nå Standardkartan — sparar bara flygkartlager och terräng', 5000); }
+  catch { toast('Kunde inte nå Standardkartan — sparar bara terräng', 5000); }
   const urls = routeTiles({}, vecTpl);
   if (urls.length > 8000) { toast(`För många kartbilder (${urls.length}). Korta rutten eller dela upp den.`); return; }
   if (currentBase() !== 'vecLiberty') toast('Offline sparas Standardkartan (övriga baskartor tillåter inte förladdning). Byt till Standardkartan under flygningen.', 6000);

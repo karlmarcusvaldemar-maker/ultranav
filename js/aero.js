@@ -13,14 +13,12 @@ export const actions = { editMode: () => false, drawActive: () => false, drawTap
 
 const asLayer = L.layerGroup();
 const apLayer = L.layerGroup();
-const rpLayer = L.layerGroup();
-const on = { airspace: false, fields: false, rp: false };
+const on = { airspace: false, fields: false };
 const renderer = L.canvas({ padding: 0.3, tolerance: 10 }); // större träffyta för fingrar
 
 export function initAero() {
   registerOverlay('airspace', 'Luftrum', '', (v) => toggle('airspace', asLayer, v));
   registerOverlay('fields', 'Flygfält', '', (v) => toggle('fields', apLayer, v));
-  registerOverlay('rp', 'Rapportpunkter', '', (v) => toggle('rp', rpLayer, v));
   const refresh = debounce(() => { fetchView(); drawAll(); }, 250);
   map.on('moveend zoomend', refresh);
   onOpenAipData(() => { drawAirspace(); drawAll(); });
@@ -35,7 +33,7 @@ function toggle(id, layer, v) {
 }
 
 function fetchView() {
-  if (!(on.airspace || on.fields || on.rp)) return;
+  if (!(on.airspace || on.fields)) return;
   if (map.getZoom() < 7) return;
   loadBounds(map.getBounds().pad(0.2));
 }
@@ -80,23 +78,6 @@ function drawAll() {
         if (actions.drawActive()) actions.drawTap({ lat: a.lat, lng: a.lon });
         else if (actions.editMode()) actions.addWaypoint({ lat: a.lat, lon: a.lon, name: a.icao || a.name, elevFt: a.elevFt });
         else openAirport(a);
-      });
-    }
-  }
-  rpLayer.clearLayers();
-  if (on.rp && z >= 9) {
-    for (const r of reportingPoints.values()) {
-      const [lon, lat] = r.geometry.coordinates;
-      if (!b.contains([lat, lon])) continue;
-      const m = L.marker([lat, lon], { bubblingMouseEvents: false, icon: L.divIcon({ className: '', iconSize: [18, 18], iconAnchor: [9, 12],
-        html: `<svg width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 L17 16 L1 16 Z" fill="${r.compulsory ? '#1a4fb4' : '#fff'}" stroke="#1a4fb4" stroke-width="2"/></svg>` }) }).addTo(rpLayer);
-      if (z >= 10) m.bindTooltip(esc(r.name), { permanent: true, direction: 'right', className: 'ap-label', offset: [8, 0] });
-      m.on('click', () => {
-        const name = r.name;
-        if (actions.drawActive()) actions.drawTap({ lat, lng: lon });
-        else if (actions.editMode()) actions.addWaypoint({ lat, lon, name });
-        else L.popup().setLatLng([lat, lon]).setContent(`<h4 class="popinfo">${ic('triangle', 18)} ${esc(name)}</h4><div>${r.compulsory ? 'Obligatorisk' : 'Vid anmodan'} rapportpunkt</div>
-          <div class="muted">${fmtLatLon(lat, lon)}</div>${btns({ lat, lon, name })}`).openOn(map);
       });
     }
   }

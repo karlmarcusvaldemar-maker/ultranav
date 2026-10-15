@@ -16,8 +16,8 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 - **Fältinfo**: tryck på (eller nära) ett flygfält för banor, frekvenser, sol, och METAR/TAF som hämtas automatiskt.
 - **Spårlogg** med GPX-export. **GPX-import och -export** av rutter, och sparade rutter.
 - **Simulering** av rutten för träning på marken.
-- **NOTAM**: knappen NOTAM öppnar LFV:s officiella AROWeb (NOTAM under AIS).
-- **Offline**: spara Standardkartan, terräng och flygkartlager längs rutten. Luftrum och fält cachas i IndexedDB.
+- **NOTAM**: knappen NOTAM öppnar LFV:s drönarkarta (dronechart.lfv.se) med aktuella NOTAM och AIP SUP.
+- **Offline**: spara Standardkartan och terräng längs rutten. Luftrum och fält cachas i IndexedDB.
 - Teman: mörkt, ljust (sol) och natt (rött). Egna linjeikoner i [`js/icons.js`](js/icons.js), grupperade kontroller och stora tryckytor.
 
 ## Datakällor (öppna)
@@ -26,7 +26,6 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 | OpenStreetMap / OpenTopoMap | Vägkarta och topografikarta | – |
 | OpenFreeMap (OSM-vektordata) | Standardkarta (MapLibre, förvald) | – |
 | Esri World Imagery | Satellit | – |
-| open flightmaps | VFR-karta där OFM har täckning | – |
 | OpenAIP | Luftrum, fält (inkl. UL), rapportpunkter | Gratis API-nyckel |
 | OurAirports | Fält, banor och frekvenser (public domain) | – |
 | Open-Meteo | Vind på höjd och prognos | – |

@@ -5,7 +5,7 @@ import { vectorLayer } from './vector.js';
 import { ic } from './icons.js';
 
 export let map;
-const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspace', 'fields', 'rp'], opacity: {}, v: 2 });
+const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspace', 'fields'], opacity: {}, v: 2 });
 // Migrering: tidigare versioner sparade lagernamn som inte längre finns, vilket stängde av luftrum/fält
 {
   const MAP = { openaipVec: ['airspace', 'rp'], oa: ['fields'], route: [] };
@@ -29,8 +29,6 @@ export const BASES = {
 };
 
 export const OVERLAYS = {
-  ofmAero: { name: 'OpenFlightMaps VFR', opacity: 1, make: () => L.tileLayer(settings.tiles.ofmAero, { maxNativeZoom: 12, maxZoom: 19, attribution: '© open flightmaps' }) },
-  openaipTiles: { name: 'OpenAIP-karta', needsKey: true, opacity: 1, make: () => L.tileLayer(settings.tiles.openaip.replace('{key}', encodeURIComponent(oaipKey())), { maxNativeZoom: 14, maxZoom: 19, attribution: '© OpenAIP (CC BY-NC 4.0)' }) },
   radar: { name: 'Nederbördsradar', opacity: 0.6, make: makeRadar },
 };
 
@@ -155,7 +153,7 @@ export function registerCustomLayers(provider) { custom = provider; }
 
 // ---------- Lagerpanel ----------
 const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', osm: 'mapRoad', esri: 'satellite' };
-const OVERLAY_ORDER = ['airspace', 'fields', 'rp', 'metar', 'radar', 'ofmAero', 'openaipTiles', 'drawings'];
+const OVERLAY_ORDER = ['airspace', 'fields', 'metar', 'radar', 'drawings'];
 
 export function renderLayerPanel() {
   const el = $('#layerPanel');

@@ -106,8 +106,8 @@ fab('#btnProfile', () => { $('#profilePanel').classList.toggle('hidden'); drawPr
 fab('#btnEditUndo', () => { if (route.wps.length) removeWp(route.wps.length - 1); });
 fab('#btnEditDone', () => setEdit(false));
 fab('#btnNearest', showNearest);
-// NOTAM: LFV:s officiella AROWeb (NOTAM finns under AIS i menyn)
-fab('#btnNotam', () => window.open('https://aro.lfv.se/', '_blank', 'noopener'));
+// NOTAM: LFV:s drönarkarta visar aktuella NOTAM och AIP SUP på en karta
+fab('#btnNotam', () => window.open('https://dronechart.lfv.se/', '_blank', 'noopener'));
 fab('#btnLayers', () => { const p = $('#layerPanel'); p.classList.toggle('hidden'); if (!p.classList.contains('hidden')) renderLayerPanel(); syncFab(); });
 fab('#btnZoomIn', () => map.zoomIn());
 fab('#btnZoomOut', () => map.zoomOut());
@@ -378,7 +378,7 @@ function renderSettingsTab(el) {
   <div class="btnrow"><button class="btn" id="tProxy">${ic('search')}Testa CORS-proxy</button></div><div id="tProxyRes"></div>
 
   <h3>Offline</h3>
-  <div class="muted">Spara Standardkartan (zoom 7–12, ±8 NM), terräng och aktiva flygkartlager längs aktuell rutt. Övriga baskartor tillåter inte förladdning. Data för luftrum och flygfält sparas automatiskt när de visas.</div>
+  <div class="muted">Spara Standardkartan (zoom 7–12, ±8 NM) och terräng längs aktuell rutt. Övriga baskartor tillåter inte förladdning. Data för luftrum och flygfält sparas automatiskt när de visas.</div>
   <div class="btnrow"><button class="btn primary" id="offDl">${ic('download')}Spara rutten offline</button><button class="btn danger" id="offClr">${ic('trash')}Töm kartcache</button></div>
   <div id="offInfo" class="muted"></div>
 
@@ -399,7 +399,7 @@ function renderSettingsTab(el) {
   <div class="btnrow"><button class="btn" id="forceUpd">${ic('refresh')}Tvinga uppdatering</button></div>
   <div class="muted" style="line-height:1.5">
   Kartdata © OpenStreetMap-bidragsgivare (ODbL) · OpenFreeMap/OpenMapTiles · MapLibre GL (BSD-3) · OpenTopoMap (CC-BY-SA) · Esri World Imagery ·
-  open flightmaps · OpenAIP (CC BY-NC 4.0) · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
+  OpenAIP (CC BY-NC 4.0) · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
   RainViewer · AWS Terrain Tiles (SRTM, GMTED, ETOPO m.fl.) · Leaflet (BSD-2).<br><br>
   <b>Viktigt:</b> Appen är ett hjälpmedel för planering och lägesuppfattning. Den ersätter inte officiell AIP, ICAO-karta, NOTAM,
   briefing eller godkänd navigationsutrustning. Data från öppna källor kan vara ofullständiga eller inaktuella. Befälhavaren ansvarar alltid.</div>`;
