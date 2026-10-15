@@ -128,8 +128,8 @@ function renderChip() {
     document.getElementById('map').parentElement.appendChild(el);
   }
   const user = cloudStatus().user;
-  // Visas när GPS är på eller när delning är vald, så att läget alltid syns när det spelar roll
-  const show = !!user && (nav.tracking || sharingWanted());
+  // Visas alltid för inloggade, så att det aldrig råder tvekan om positionen delas
+  const show = !!user;
   el.hidden = !show;
   if (!show) return;
   const active = sharingActive(), wanted = sharingWanted();
