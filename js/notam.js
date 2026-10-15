@@ -45,13 +45,18 @@ async function faaSearch(locs, offset = 0) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 30000);
   try {
     const r = await fetch(withProxy(FAA, proxyUrl()), { method: 'POST', body, signal: ctl.signal });
-    if (!r.ok) throw new Error(`HTTP ${r.status}${r.status === 403 || r.status === 405 ? ' (uppdatera CORS-proxyn, se README)' : ''}`);
-    const j = await r.json();
+    if (!r.ok) {
+      const msg = (await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+      throw new Error(`HTTP ${r.status}${msg ? ': ' + msg : ''}`);
+    }
+    const text = await r.text();
+    let j;
+    try { j = JSON.parse(text); } catch { throw new Error('FAA svarade inte med NOTAM-data: ' + text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)); }
     if (j?.error) throw new Error(j.error);
     if (!Array.isArray(j?.notamList)) throw new Error('oväntat svar från FAA');
     return j;
   } catch (e) {
-    throw new Error(e.name === 'AbortError' ? 'tidsgräns' : /Failed to fetch|Load failed/.test(e.message) ? 'ingen kontakt (proxy?)' : e.message);
+    throw new Error(e.name === 'AbortError' ? 'tidsgräns' : /Failed to fetch|Load failed|NetworkError/.test(e.message) ? 'ingen kontakt med proxyn eller svar utan CORS' : e.message);
   } finally { clearTimeout(t); }
 }
 
@@ -202,13 +207,22 @@ export function notamListHtml(list, empty = '') {
   return `<details class="notams"><summary><b>NOTAM (${list.length})</b></summary>${list.map(notamHtml).join('')}</details>`;
 }
 
-/** Felsökning: hämta NOTAM för FIR ESAA */
+/** Felsökning: kontrollera proxyn steg för steg och hämta NOTAM för FIR ESAA */
 export async function testNotam() {
+  const rows = [];
+  const row = (ok, txt) => rows.push(`<div class="${ok ? 'okbox' : 'badbox'}"><div>${txt}</div></div>`);
+  const proxy = proxyUrl();
+  // 1) svarar proxyn, och är det den nya versionen (som tillåter NOTAM)?
+  try {
+    const r = await fetch(withProxy('https://aviationweather.gov/api/data/metar?ids=ESSA&format=json', proxy));
+    const ver = r.headers.get('X-Ultranav-Proxy');
+    row(r.ok, `Proxyn svarar (HTTP ${r.status})${ver ? `, version ${esc(ver)}` : ' — <b>gammal version</b>: klistra in den senaste koden i Cloudflare'}.`);
+  } catch (e) { row(false, `Proxyn svarar inte: ${esc(e.message)}. Adress: ${esc(proxy)}`); return rows.join(''); }
+  // 2) NOTAM via proxyn
   const t0 = performance.now();
   try {
     const list = await fetchNotams(FIR);
-    return `<div class="okbox"><div>NOTAM fungerar: ${list.length} gällande NOTAM för ${FIR.join(', ')} (${Math.round(performance.now() - t0)} ms).</div></div>`;
-  } catch (e) {
-    return `<div class="badbox"><div>NOTAM: ${esc(e.message)}. Kontrollera att CORS-proxyn är uppdaterad (README › CORS-proxy).</div></div>`;
-  }
+    row(true, `NOTAM fungerar: ${list.length} gällande NOTAM för ${FIR.join(', ')} (${Math.round(performance.now() - t0)} ms).`);
+  } catch (e) { row(false, `NOTAM: ${esc(e.message)}`); }
+  return rows.join('');
 }

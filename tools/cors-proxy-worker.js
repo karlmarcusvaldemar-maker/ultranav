@@ -44,12 +44,25 @@ export default {
       return new Response('Metoden är inte tillåten', { status: 405, headers: cors });
     }
 
-    const headers0 = { 'User-Agent': 'Ultranav (+https://www.ultranav.se)' };
-    const upstream = await fetch(url.toString(), post
-      ? { method: 'POST', body: await request.text(), headers: { ...headers0, 'Content-Type': request.headers.get('Content-Type') || 'application/x-www-form-urlencoded' } }
-      : { headers: headers0, cf: { cacheTtl: 120, cacheEverything: true } }); // METAR uppdateras sällan oftare än så
+    // Webbläsarlika huvuden: vissa källor (t.ex. FAA:s NOTAM-sökning) avvisar okända klienter
+    const headers0 = {
+      'User-Agent': 'Mozilla/5.0 (compatible; Ultranav/1.0; +https://www.ultranav.se)',
+      Accept: 'application/json, text/plain, */*',
+      ...(post ? { Origin: url.origin, Referer: url.origin + '/notamSearch/nsapp.html' } : {}),
+    };
+    let upstream;
+    try {
+      upstream = await fetch(url.toString(), post
+        ? { method: 'POST', body: await request.text(), headers: { ...headers0, 'Content-Type': request.headers.get('Content-Type') || 'application/x-www-form-urlencoded' } }
+        : { headers: headers0, cf: { cacheTtl: 120, cacheEverything: true } }); // METAR uppdateras sällan oftare än så
+    } catch (e) {
+      // Svara med CORS-huvuden även vid fel, så att appen kan visa orsaken
+      return new Response('Proxyn nådde inte källan: ' + (e?.message || e), { status: 502, headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8', 'X-Ultranav-Proxy': '2' } });
+    }
     const headers = new Headers(upstream.headers);
     for (const [k, v] of Object.entries(cors)) headers.set(k, v);
+    headers.set('X-Ultranav-Proxy', '2');
+    headers.set('Access-Control-Expose-Headers', 'X-Ultranav-Proxy');
     return new Response(upstream.body, { status: upstream.status, headers });
   },
 };
