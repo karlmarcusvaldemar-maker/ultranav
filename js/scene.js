@@ -83,14 +83,6 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="vale" d="M-800 640 L0 630 C200 610 400 616 620 626 C860 636 1100 612 1600 622 L2400 630 V900 H-800 Z"/>
 
 
-  <!-- flygplatser i fjärran: Vilhelmina (vänster) och Lycksele (höger) -->
-  <g class="faraf" transform="translate(500 627)"><path class="far-rwy" d="M-34 2 L30 -1"/><path class="far-rl" d="M-34 2 L30 -1"/>
-    <path class="hs" d="M34 -1 V-6 Q38 -9 42 -6 V-1 Z"/><path class="far-twr" d="M-40 2 V-7 M-42 -7 H-38"/><circle class="beacon" cx="-40" cy="-8.5" r="1.3"/>
-    <text class="far-lbl" x="-2" y="-8" text-anchor="middle">Vilhelmina</text></g>
-  <g class="faraf" transform="translate(1094 624)"><path class="far-rwy" d="M-30 -1 L34 2"/><path class="far-rl" d="M-30 -1 L34 2"/>
-    <path class="hs" d="M-42 -1 V-6 Q-38 -9 -34 -6 V-1 Z"/><path class="far-twr" d="M40 2 V-7 M38 -7 H42"/><circle class="beacon b2" cx="40" cy="-8.5" r="1.3"/>
-    <text class="far-lbl" x="2" y="-8" text-anchor="middle">Lycksele</text></g>
-
   <!-- sjö och å -->
   <path class="lake" d="M360 700 C420 664 600 654 760 668 C880 678 900 712 800 730 C640 758 450 756 380 736 C340 724 336 712 360 700 Z"/>
   <path class="river" d="M800 726 C860 744 880 770 860 800 C840 830 880 860 960 900"/>
@@ -102,21 +94,22 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="stripmk" d="M956 770 l16 -1 M1006 767 l16 -1 M1056 764 l16 -1"/>
   <g transform="translate(1128 756)"><path class="hs" d="M0 0 V-16 Q16 -30 32 -16 V0 Z"/><path class="door" d="M8 0 V-10 H24 V0"/></g>
   <!-- klubbstuga vid fältet: faluröd med vita knutar, varmt ljus, veranda och radiomast -->
-  <g transform="translate(964 824)">
-    <ellipse class="club-glow" cx="40" cy="-4" rx="62" ry="16" fill="url(#scFire)"/>
-    <g class="mast"><path class="mast-l" d="M71 -36 L74 -66 L77 -36 M72 -44 L76 -44 M72.4 -51 L75.6 -51 M72.8 -58 L75.2 -58 M71.5 -40 L76 -48 M72 -48 L76.5 -40 M72.5 -55 L75.5 -51 M73 -51 L75.4 -55"/>
-      <path class="mast-l" d="M74 -66 V-71"/><circle class="mast-light" cx="74" cy="-71.5" r="1.8"/></g>
-    <path class="cab-roof club-roof" d="M-6 -26 L42 -41 L90 -26 Z"/>
-    <path class="club-wall" d="M0 0 V-26 H84 V0 Z"/>
-    <path class="club-trim" d="M0.8 0 V-26 M83.2 0 V-26 M0 -26 H84"/>
-    <rect class="clubsign" x="5" y="-24" width="74" height="10" rx="1.5"/>
-    <text class="clubtxt" x="42" y="-16.6" text-anchor="middle">ÅSELE FLYGKLUBB</text>
-    <rect class="club-win" x="8" y="-12" width="9" height="7"/><rect class="club-win" x="21" y="-12" width="9" height="7"/><rect class="club-win" x="43" y="-12" width="9" height="7"/>
-    <path class="club-trim" d="M12.5 -12 V-5 M8 -8.5 H17 M25.5 -12 V-5 M21 -8.5 H30 M47.5 -12 V-5 M43 -8.5 H52"/>
-    <path class="cab-door club-door" d="M62 0 V-14 H72 V0"/>
-    <circle class="club-lamp" cx="76" cy="-15" r="1.4"/>
-    <path class="club-porch" d="M57 0 H80 M57 0 V-1.6 H80"/>
-    <path class="club-flower" d="M8 -4.5 h9 M21 -4.5 h9 M43 -4.5 h9"/>
+  <g transform="translate(978 824)">
+    <ellipse class="club-glow" cx="27" cy="-4" rx="46" ry="14" fill="url(#scFire)"/>
+    <g class="mast"><path class="mast-l" d="M43 -33 L46 -61 L49 -33 M44 -41 L48 -41 M44.4 -48 L47.6 -48 M44.8 -55 L47.2 -55 M43.5 -37 L48 -45 M44 -45 L48.5 -37 M44.5 -52 L47.5 -48 M45 -48 L47.4 -52"/>
+      <path class="mast-l" d="M46 -61 V-66"/><circle class="mast-light" cx="46" cy="-66.5" r="1.7"/></g>
+    <path class="cab-roof club-roof" d="M-5 -26 L27 -38 L59 -26 Z"/>
+    <path class="club-wall" d="M0 0 V-26 H54 V0 Z"/>
+    <path class="club-trim" d="M0.8 0 V-26 M53.2 0 V-26 M0 -26 H54"/>
+    <rect class="clubsign" x="4" y="-24.5" width="34" height="12" rx="1.5"/>
+    <text class="clubtxt" x="21" y="-19.6" text-anchor="middle">ÅSELE</text>
+    <text class="clubtxt" x="21" y="-14.4" text-anchor="middle">FLYGKLUBB</text>
+    <rect class="club-win" x="5" y="-10" width="7" height="6"/><rect class="club-win" x="16" y="-10" width="7" height="6"/><rect class="club-win" x="27" y="-10" width="7" height="6"/>
+    <path class="club-trim" d="M8.5 -10 V-4 M5 -7 H12 M19.5 -10 V-4 M16 -7 H23 M30.5 -10 V-4 M27 -7 H34"/>
+    <path class="cab-door club-door" d="M41 0 V-14 H50 V0"/>
+    <circle class="club-lamp" cx="52" cy="-15.5" r="1.2"/>
+    <path class="club-porch" d="M38 0 H54 M38 0 V-1.4 H54"/>
+    <path class="club-flower" d="M5 -3 h7 M16 -3 h7 M27 -3 h7"/>
   </g>
   <g transform="translate(918 768)"><path class="pole" d="M0 0 V-26"/><g class="sock"><path class="sockp" d="M0 -26 L18 -23 L17 -17 L0 -20 Z"/></g></g>
 
@@ -186,16 +179,20 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
     </g>
   </g></g></g>
 
-  <!-- tredje natten: en björn lunkar förbi -->
-  <g class="bear"><g transform="translate(0 842)"><g class="bearbob">
-    <path class="br-leg l1" d="M10 14 V26"/><path class="br-leg l2" d="M16 14 V26"/><path class="br-leg l1" d="M34 14 V26"/><path class="br-leg l2" d="M40 14 V26"/>
-    <path class="br" d="M6 14 Q2 4 14 1 Q24 -4 34 1 Q44 2 47 9 Q48 15 42 17 H10 Q6 17 6 14 Z"/>
-    <path class="br" d="M44 6 Q50 3 55 6 L60 9 Q61 11 58 12 L52 13 Q47 13 45 11 Z"/>
-    <circle class="br" cx="49" cy="3.8" r="2"/>
-    <circle class="br-eye" cx="54" cy="7.5" r=".7"/>
-  </g></g></g>
   <!-- förgrund -->
   <path class="fg" d="M-800 900 L-800 780 C-200 800 0 770 160 790 C320 810 420 860 560 900 Z M1080 900 C1180 830 1340 790 1600 800 L2400 790 V900 Z"/>
+
+  <!-- tredje natten: en björn smyger förbi mellan träden -->
+  <g class="bear"><g transform="translate(612 815) scale(.9)"><g class="bearbob">
+    <path class="br-leg l1" d="M11 15 V24"/><path class="br-leg l2" d="M18 15 V24"/><path class="br-leg l1" d="M35 15 V24"/><path class="br-leg l2" d="M41 15 V24"/>
+    <path class="br" d="M4 16 C2 9 8 4 16 4 C22 1 28 1 32 3 C38 2 44 5 46 10 L47 16 C45 19 40 19 36 18 H10 C6 19 4 18 4 16 Z"/>
+    <path class="br" d="M42 7 C46 4 51 4 54 7 L59 10 C60 12 58 13.5 56 13.5 L50 14 C46 14 43 12 42 10 Z"/>
+    <circle class="br" cx="47.5" cy="4.6" r="1.9"/>
+    <path class="br-muz" d="M55 9.6 L59 10 C60 12 58 13.5 56 13.5 Z"/>
+    <circle class="br-eye" cx="53.4" cy="8.4" r=".7"/>
+  </g></g></g>
+  <!-- liten trädgrupp mitt i bild som björnen smyger bakom -->
+  ${tree(640, 842, 1.7, 'tr near')}${tree(662, 836, 1.95, 'tr near')}${tree(688, 846, 1.75, 'tr near')}${tree(714, 838, 1.9, 'tr near')}${tree(738, 845, 1.6, 'tr near')}${tree(760, 840, 1.45, 'tr near')}
   ${forest(-60, 300, (x) => 812 + 18 * Math.sin(x / 60), 16, 1.3, 'tr near')}
   ${forest(1240, 1660, (x) => 820 - 10 * Math.sin(x / 70), 18, 1.3, 'tr near')}
 

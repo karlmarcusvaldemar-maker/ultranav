@@ -46,8 +46,8 @@ function dayCycle(svg) {
       c.remove('day', 'fishing', 'chop');
       if (!chopped) row();
       if (c.contains('egg')) { c.add('eggout'); at(3000, () => c.remove('egg', 'eggout')); }
-      // tredje natten lunkar en björn förbi
-      if (++nights === 3) { at(1500, () => c.add('bear-on')); at(17000, () => c.remove('bear-on')); }
+      // tredje natten smyger en björn förbi mellan träden
+      if (++nights === 3) { at(500, () => c.add('bear-on')); at(7800, () => c.remove('bear-on')); }
       run();
     });
   };
