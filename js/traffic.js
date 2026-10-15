@@ -12,6 +12,7 @@ const SEND_MS = 5000, STALE_MS = 25000, DROP_MS = 90000;
 const others = new Map();   // id → senaste position
 const markers = new Map();  // id → Leaflet-markör
 let channel = null, subscribed = false, viewOn = false, lastSent = 0, joinedAs = null;
+const stat = { status: 'ej ansluten', err: '', sent: 0, recv: 0 }; // för statusraden i dialogen
 const layer = L.layerGroup();
 const listeners = new Set();
 export const onTraffic = (fn) => listeners.add(fn);
@@ -31,21 +32,29 @@ export function initTraffic() {
 }
 
 // ---------- kanal ----------
-function ensureChannel() {
+async function ensureChannel() {
   const client = supa(), user = cloudStatus().user;
   const need = !!(client && user && (viewOn || sharingWanted()));
   if (need && joinedAs !== user.id) {
     leave();
     joinedAs = user.id;
+    stat.status = 'ansluter'; stat.err = '';
+    // Privata kanaler kräver inloggningsbeviset i realtidsanslutningen
+    try { const { data } = await client.auth.getSession(); if (data.session) await client.realtime.setAuth(data.session.access_token); }
+    catch (e) { stat.err = 'setAuth: ' + (e?.message || e); }
+    if (joinedAs !== user.id) return;
     channel = client.channel('traffic', { config: { private: true, broadcast: { self: false } } })
       .on('broadcast', { event: 'pos' }, ({ payload: p }) => {
         if (!p || p.id === user.id || typeof p.lat !== 'number') return;
+        stat.recv++;
         others.set(p.id, { ...p, rx: Date.now() });
         draw(); emit();
       })
       .on('broadcast', { event: 'bye' }, ({ payload: p }) => { if (p?.id) { others.delete(p.id); draw(); emit(); } })
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         subscribed = status === 'SUBSCRIBED';
+        stat.status = { SUBSCRIBED: 'ansluten', CHANNEL_ERROR: 'fel', TIMED_OUT: 'tidsgräns', CLOSED: 'stängd' }[status] || status;
+        if (err) stat.err = err.message || String(err);
         if (status === 'CHANNEL_ERROR') toast('Trafik: kunde inte ansluta (är realtidsreglerna installerade? se README)', 6000);
         if (subscribed) { lastSent = 0; maybeSend(); }
         renderChip();
@@ -54,7 +63,7 @@ function ensureChannel() {
 }
 function leave() {
   if (channel) { try { channel.send({ type: 'broadcast', event: 'bye', payload: { id: joinedAs } }); } catch { /* ignorera */ } supa()?.removeChannel(channel); }
-  channel = null; joinedAs = null; subscribed = false;
+  channel = null; joinedAs = null; subscribed = false; stat.status = 'ej ansluten';
 }
 
 function maybeSend() {
@@ -63,6 +72,7 @@ function maybeSend() {
   if (now - lastSent < SEND_MS) return;
   lastSent = now;
   const p = nav.pos;
+  stat.sent++;
   channel.send({ type: 'broadcast', event: 'pos', payload: {
     id: joinedAs, call: (settings.shareCallsign || '').slice(0, 12), lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5),
     alt: p.altFt != null ? Math.round(p.altFt) : null, gs: p.gsKt != null ? Math.round(p.gsKt) : null,
@@ -128,6 +138,7 @@ function renderChip() {
     : !sharingWanted() ? `${ic('eyeOff', 16)}Delar inte position`
     : nav.simulating ? `${ic('eyeOff', 16)}Simulering — delas inte`
     : !nav.tracking || !nav.pos ? `${ic('gps', 16)}Delning på — väntar på GPS`
+    : stat.status === 'fel' || stat.status === 'tidsgräns' ? `${ic('alert', 16)}Delning på — kunde inte ansluta`
     : `${ic('sync', 16)}Delning på — ansluter…`;
 }
 
@@ -146,6 +157,7 @@ export function openShareDialog() {
     <div class="field"><span>Anropssignal eller registrering<small>Visas för andra, t.ex. SE-VXA</small></span>
       <input type="text" id="shCall" maxlength="12" autocapitalize="characters" value="${esc(settings.shareCallsign || '')}"></div>
     <div class="muted">Hjälpmedel för lägesuppfattning — inte ett antikollisionssystem. Bara piloter som själva delar syns.</div>
+    <div class="muted small" style="text-align:left;margin-top:6px">Status: ${esc(stat.status)} · skickade ${stat.sent} · mottagna ${stat.recv} · piloter på kartan ${others.size}${stat.err ? ' · fel: ' + esc(stat.err) : ''}${viewOn ? '' : ' · lagret Trafik är av'}</div>
     <div class="btnrow">${on
       ? `<button class="btn danger" id="shOff">${ic('close')}Sluta dela min position</button><button class="btn" id="shSave">${ic('check')}Spara</button>`
       : `<button class="btn primary" id="shOn">${ic('gps')}Ja, dela min position</button>`}</div>`);
