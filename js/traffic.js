@@ -23,7 +23,7 @@ export const sharingWanted = () => !!settings.shareTraffic;
 export const sharingActive = () => sharingWanted() && nav.tracking && !nav.simulating && !!nav.pos && subscribed;
 
 export function initTraffic() {
-  registerOverlay('traffic', 'Trafik (Ultranav-piloter)', '', (v) => { viewOn = v; if (v) layer.addTo(map); else map.removeLayer(layer); ensureChannel(); draw(); });
+  registerOverlay('traffic', 'Andra Ultranav-piloter', '', (v) => { viewOn = v; if (v) layer.addTo(map); else map.removeLayer(layer); ensureChannel(); draw(); });
   onCloud(() => ensureChannel());
   onNav(() => { maybeSend(); renderChip(); });
   setInterval(() => { prune(); draw(); renderChip(); }, 5000);
@@ -157,7 +157,7 @@ export function openShareDialog() {
     <div class="field"><span>Anropssignal eller registrering<small>Visas för andra, t.ex. SE-VXA</small></span>
       <input type="text" id="shCall" maxlength="12" autocapitalize="characters" value="${esc(settings.shareCallsign || '')}"></div>
     <div class="muted">Hjälpmedel för lägesuppfattning — inte ett antikollisionssystem. Bara piloter som själva delar syns.</div>
-    <div class="muted small" style="text-align:left;margin-top:6px">Status: ${esc(stat.status)} · skickade ${stat.sent} · mottagna ${stat.recv} · piloter på kartan ${others.size}${stat.err ? ' · fel: ' + esc(stat.err) : ''}${viewOn ? '' : ' · lagret Trafik är av'}</div>
+    <div class="muted small" style="text-align:left;margin-top:6px">Status: ${esc(stat.status)} · skickade ${stat.sent} · mottagna ${stat.recv} · piloter på kartan ${others.size}${stat.err ? ' · fel: ' + esc(stat.err) : ''}${viewOn ? '' : ' · lagret Andra Ultranav-piloter är av'}</div>
     <div class="btnrow">${on
       ? `<button class="btn danger" id="shOff">${ic('close')}Sluta dela min position</button><button class="btn" id="shSave">${ic('check')}Spara</button>`
       : `<button class="btn primary" id="shOn">${ic('gps')}Ja, dela min position</button>`}</div>`);
