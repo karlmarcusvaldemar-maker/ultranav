@@ -132,14 +132,18 @@ function renderChip() {
   const show = !!user && (nav.tracking || sharingWanted());
   el.hidden = !show;
   if (!show) return;
-  const active = sharingActive();
-  el.className = active ? 'on' : sharingWanted() ? 'wait' : '';
-  el.innerHTML = active ? `<span class="dot"></span>Delar position${settings.shareCallsign ? ' · ' + esc(settings.shareCallsign) : ''}`
-    : !sharingWanted() ? `${ic('eyeOff', 16)}Delar inte position`
-    : nav.simulating ? `${ic('eyeOff', 16)}Simulering — delas inte`
-    : !nav.tracking || !nav.pos ? `${ic('gps', 16)}Delning på — väntar på GPS`
-    : stat.status === 'fel' || stat.status === 'tidsgräns' ? `${ic('alert', 16)}Delning på — kunde inte ansluta`
-    : `${ic('sync', 16)}Delning på — ansluter…`;
+  const active = sharingActive(), wanted = sharingWanted();
+  const err = stat.status === 'fel' || stat.status === 'tidsgräns';
+  const [cls, icon, title, sub] = active ? ['on', '', 'Delar position', settings.shareCallsign ? `Andra ser dig som ${esc(settings.shareCallsign)}` : 'Andra piloter ser dig']
+    : !wanted ? ['off', 'eyeOff', 'Delar inte position', 'Tryck för att dela med andra piloter']
+    : nav.simulating ? ['off', 'eyeOff', 'Delar inte position', 'Simulering delas aldrig']
+    : !nav.tracking || !nav.pos ? ['wait', 'gps', 'Delning på', 'Väntar på GPS-position']
+    : err ? ['err', 'alert', 'Delning på', 'Kunde inte ansluta — tryck för detaljer']
+    : ['wait', 'sync', 'Delning på', 'Ansluter…'];
+  el.className = cls;
+  el.setAttribute('aria-label', `${title}. ${sub}`);
+  el.innerHTML = `<span class="shIco">${active ? '<span class="dot"></span>' : ic(icon, 20)}</span>
+    <span class="shTxt"><b>${title}</b><small>${sub}</small></span><span class="shSw" aria-hidden="true"></span>`;
 }
 
 export function openShareDialog() {
