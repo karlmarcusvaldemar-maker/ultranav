@@ -22,16 +22,16 @@ const save = () => store.set('ulnav.layers', state);
 const tileOpts = (extra) => ({ maxZoom: 19, crossOrigin: false, className: 'basemap', ...extra });
 
 export const BASES = {
-  otm: { name: 'Topografikarta', make: () => L.tileLayer(settings.tiles.otm, tileOpts({ maxNativeZoom: 17, subdomains: 'abc', attribution: '© OpenStreetMap, SRTM | © OpenTopoMap (CC-BY-SA)' })) },
   vecLiberty: { name: 'Standardkarta', make: () => vectorLayer('liberty', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
   osm: { name: 'Vägkarta', make: () => L.tileLayer(settings.tiles.osm, tileOpts({ maxNativeZoom: 19, attribution: '© OpenStreetMap-bidragsgivare' })) },
-  kartverket: { name: 'Norgekarta', make: () => L.tileLayer(settings.tiles.kartverket, tileOpts({ maxNativeZoom: 18, attribution: '© Kartverket (CC BY 4.0)' })) },
+  otm: { name: 'Topografikarta', make: () => L.tileLayer(settings.tiles.otm, tileOpts({ maxNativeZoom: 17, subdomains: 'abc', attribution: '© OpenStreetMap, SRTM | © OpenTopoMap (CC-BY-SA)' })) },
   esri: { name: 'Satellitkarta', make: () => L.tileLayer(settings.tiles.esri, tileOpts({ maxNativeZoom: 18, attribution: 'Bild © Esri, Maxar, Earthstar Geographics' })) },
+  kartverket: { name: 'Norgekarta', make: () => L.tileLayer(settings.tiles.kartverket, tileOpts({ maxNativeZoom: 18, attribution: '© Kartverket (CC BY 4.0)' })) },
 };
 
 export const OVERLAYS = {
   radar: { name: 'Nederbördsradar', opacity: 0.6, make: makeRadar },
-  protected: { name: 'Skyddade områden', opacity: 0.7, make: makeProtected },
+  protected: { name: 'Skyddade områden Natur', opacity: 0.7, make: makeProtected },
 };
 
 let baseLayer;
