@@ -180,10 +180,23 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <!-- förgrund -->
   <path class="fg" d="M-800 900 L-800 780 C-200 800 0 770 160 790 C320 810 420 860 560 900 Z M1080 900 C1180 830 1340 790 1600 800 L2400 790 V900 Z"/>
 
+
+  <!-- tredje natten: en björn smyger förbi mellan träden -->
+  <g class="bear"><g transform="translate(612 815) scale(.9)"><g class="bearbob">
+    <path class="br-leg l1" d="M11 15 V24"/><path class="br-leg l2" d="M18 15 V24"/><path class="br-leg l1" d="M35 15 V24"/><path class="br-leg l2" d="M41 15 V24"/>
+    <path class="br" d="M4 16 C2 9 8 4 16 4 C22 1 28 1 32 3 C38 2 44 5 46 10 L47 16 C45 19 40 19 36 18 H10 C6 19 4 18 4 16 Z"/>
+    <path class="br" d="M42 7 C46 4 51 4 54 7 L59 10 C60 12 58 13.5 56 13.5 L50 14 C46 14 43 12 42 10 Z"/>
+    <circle class="br" cx="47.5" cy="4.6" r="1.9"/>
+    <path class="br-muz" d="M55 9.6 L59 10 C60 12 58 13.5 56 13.5 Z"/>
+    <circle class="br-eye" cx="53.4" cy="8.4" r=".7"/>
+  </g></g></g>
+  <!-- liten trädgrupp mitt i bild som björnen smyger bakom -->
+  ${tree(640, 842, 1.7, 'tr near')}${tree(662, 836, 1.95, 'tr near')}${tree(688, 846, 1.75, 'tr near')}${tree(714, 838, 1.9, 'tr near')}${tree(738, 845, 1.6, 'tr near')}${tree(760, 840, 1.45, 'tr near')}
+  ${forest(-60, 300, (x) => 812 + 18 * Math.sin(x / 60), 16, 1.3, 'tr near')}
   <!-- lägereld i skogsbrynet till vänster: tre personer sitter och grillar på natten -->
-  ${tree(312, 812, 1.5, 'tr near')}${tree(330, 806, 1.25, 'tr near')}${tree(352, 810, 1.35, 'tr near')}
-  <g class="fireup"><ellipse class="fireglow" cx="336" cy="822" rx="58" ry="20" fill="url(#scFire)"/></g>
-  <g transform="translate(336 826)">
+  ${tree(262, 808, 1.45, 'tr near')}${tree(284, 803, 1.25, 'tr near')}${tree(306, 807, 1.3, 'tr near')}
+  <g class="fireup"><ellipse class="fireglow" cx="288" cy="812" rx="58" ry="20" fill="url(#scFire)"/></g>
+  <g transform="translate(288 816)">
     <g class="campers">
       <g transform="translate(0 -9) scale(.85)">${camper('#2f6f8f', 0)}</g>
     </g>
@@ -201,19 +214,6 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
       <g transform="translate(15 1) scale(-1 1)">${camper('#c9a227', 1)}</g>
     </g>
   </g>
-
-  <!-- tredje natten: en björn smyger förbi mellan träden -->
-  <g class="bear"><g transform="translate(612 815) scale(.9)"><g class="bearbob">
-    <path class="br-leg l1" d="M11 15 V24"/><path class="br-leg l2" d="M18 15 V24"/><path class="br-leg l1" d="M35 15 V24"/><path class="br-leg l2" d="M41 15 V24"/>
-    <path class="br" d="M4 16 C2 9 8 4 16 4 C22 1 28 1 32 3 C38 2 44 5 46 10 L47 16 C45 19 40 19 36 18 H10 C6 19 4 18 4 16 Z"/>
-    <path class="br" d="M42 7 C46 4 51 4 54 7 L59 10 C60 12 58 13.5 56 13.5 L50 14 C46 14 43 12 42 10 Z"/>
-    <circle class="br" cx="47.5" cy="4.6" r="1.9"/>
-    <path class="br-muz" d="M55 9.6 L59 10 C60 12 58 13.5 56 13.5 Z"/>
-    <circle class="br-eye" cx="53.4" cy="8.4" r=".7"/>
-  </g></g></g>
-  <!-- liten trädgrupp mitt i bild som björnen smyger bakom -->
-  ${tree(640, 842, 1.7, 'tr near')}${tree(662, 836, 1.95, 'tr near')}${tree(688, 846, 1.75, 'tr near')}${tree(714, 838, 1.9, 'tr near')}${tree(738, 845, 1.6, 'tr near')}${tree(760, 840, 1.45, 'tr near')}
-  ${forest(-60, 300, (x) => 812 + 18 * Math.sin(x / 60), 16, 1.3, 'tr near')}
   ${forest(1240, 1660, (x) => 820 - 10 * Math.sin(x / 70), 18, 1.3, 'tr near')}
 
   <!-- bushflygplanet flyger förbi -->
