@@ -39,7 +39,7 @@ const overlayLayers = {};  // id → aktivt lager
 const external = {};       // vektorlager som andra moduler registrerar
 
 export function initMap() {
-  const start = store.get('ulnav.view', { lat: 59.33, lon: 18.07, z: 8 });
+  const start = store.get('ulnav.view', { lat: 64.1592, lon: 17.2744, z: 10 }); // standard: Åsele flygfält (ESUS)
   map = L.map('map', {
     zoomControl: false, attributionControl: true, rotate: true, bearing: 0,
     touchRotate: false, rotateControl: false, shiftKeyRotate: false, compassBearing: false,
