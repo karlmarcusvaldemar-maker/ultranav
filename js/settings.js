@@ -7,6 +7,8 @@ export const DEFAULT_TILES = {
   otm: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
   esri: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   terrain: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
+  kartverket: 'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',
+  protected: 'https://geodata.naturvardsverket.se/naturvardsregistret/wms',
 };
 
 const DEFAULTS = {

@@ -25,6 +25,8 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 |---|---|---|
 | OpenStreetMap / OpenTopoMap | Vägkarta och topografikarta | – |
 | OpenFreeMap (OSM-vektordata) | Standardkarta (MapLibre, förvald) | – |
+| Kartverket (Norge) | Norgekarta, topografisk (CC BY 4.0) | – |
+| Naturvårdsverket | Skyddade områden: nationalparker, naturreservat m.m. (WMS) | – |
 | Esri World Imagery | Satellit | – |
 | OpenAIP | Luftrum, fält (inkl. UL), rapportpunkter | Gratis API-nyckel |
 | OurAirports | Fält, banor och frekvenser (public domain) | – |

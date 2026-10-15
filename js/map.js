@@ -25,11 +25,13 @@ export const BASES = {
   otm: { name: 'Topografikarta', make: () => L.tileLayer(settings.tiles.otm, tileOpts({ maxNativeZoom: 17, subdomains: 'abc', attribution: '© OpenStreetMap, SRTM | © OpenTopoMap (CC-BY-SA)' })) },
   vecLiberty: { name: 'Standardkarta', make: () => vectorLayer('liberty', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
   osm: { name: 'Vägkarta', make: () => L.tileLayer(settings.tiles.osm, tileOpts({ maxNativeZoom: 19, attribution: '© OpenStreetMap-bidragsgivare' })) },
+  kartverket: { name: 'Norgekarta', make: () => L.tileLayer(settings.tiles.kartverket, tileOpts({ maxNativeZoom: 18, attribution: '© Kartverket (CC BY 4.0)' })) },
   esri: { name: 'Satellitkarta', make: () => L.tileLayer(settings.tiles.esri, tileOpts({ maxNativeZoom: 18, attribution: 'Bild © Esri, Maxar, Earthstar Geographics' })) },
 };
 
 export const OVERLAYS = {
   radar: { name: 'Nederbördsradar', opacity: 0.6, make: makeRadar },
+  protected: { name: 'Skyddade områden', opacity: 0.7, make: makeProtected },
 };
 
 let baseLayer;
@@ -136,6 +138,37 @@ function makeRadar() {
   return grp;
 }
 
+// ---------- Naturvårdsverkets skyddade områden (WMS) ----------
+// Lagernamnen läses ur tjänstens GetCapabilities (sparas en vecka). Reserv: kända INSPIRE-lager.
+const PROTECTED_FALLBACK = { url: 'https://geodata.naturvardsverket.se/inspire/ps-nvr/ows', layers: 'PS.ProtectedSites.NR,PS.ProtectedSites.DVO', version: '1.3.0' };
+const PROTECTED_MATCH = /nationalpark|naturreservat|djur.*växt|växt.*djur|naturvårdsområde|naturminne|fågel/i;
+async function protectedLayers() {
+  const cached = store.get('ulnav.protectedWms', null);
+  if (cached && cached.url === settings.tiles.protected && Date.now() - cached.t < 7 * 864e5) return cached;
+  try {
+    const url = settings.tiles.protected;
+    const xml = await fetchX(url + (url.includes('?') ? '&' : '?') + 'service=WMS&request=GetCapabilities', { as: 'text', proxy: proxyUrl(), timeout: 20000 });
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    const child = (el, n) => [...el.children].find((c) => c.localName === n)?.textContent || '';
+    const named = [...doc.getElementsByTagNameNS('*', 'Layer')].map((l) => ({ name: child(l, 'Name'), title: child(l, 'Title') })).filter((l) => l.name);
+    const pick = named.filter((l) => PROTECTED_MATCH.test(l.title) || PROTECTED_MATCH.test(l.name));
+    if (!pick.length) throw new Error('inga lager');
+    const res = { t: Date.now(), url, layers: pick.map((l) => l.name).join(','), titles: pick.map((l) => l.title), version: doc.documentElement.getAttribute('version') || '1.3.0' };
+    store.set('ulnav.protectedWms', res);
+    return res;
+  } catch (e) { console.warn('skyddade områden', e); return PROTECTED_FALLBACK; }
+}
+function makeProtected() {
+  const grp = L.layerGroup();
+  let wms = null;
+  protectedLayers().then((c) => {
+    wms = L.tileLayer.wms(c.url, { layers: c.layers, format: 'image/png', transparent: true, version: c.version, maxZoom: 19, zIndex: 40,
+      opacity: state.opacity.protected ?? 0.7, attribution: 'Skyddade områden © Naturvårdsverket' }).addTo(grp);
+  });
+  grp.setOpacity = (o) => wms?.setOpacity(o);
+  return grp;
+}
+
 // ---------- test av baskarta ----------
 export async function testCurrentBase() {
   const id = state.base, b = BASES[id];
@@ -143,7 +176,7 @@ export async function testCurrentBase() {
   if (id.startsWith('vec')) return testTile('https://tiles.openfreemap.org/styles/liberty', b.name, true);
   const c = map.getCenter(), z = Math.min(Math.round(map.getZoom()), 12), n = 2 ** z, φ = c.lat * Math.PI / 180;
   const x = Math.floor((c.lng + 180) / 360 * n), y = Math.floor((1 - Math.log(Math.tan(φ) + 1 / Math.cos(φ)) / Math.PI) / 2 * n);
-  const tpl = { otm: settings.tiles.otm, osm: settings.tiles.osm, esri: settings.tiles.esri }[id];
+  const tpl = { otm: settings.tiles.otm, osm: settings.tiles.osm, esri: settings.tiles.esri, kartverket: settings.tiles.kartverket }[id];
   return testTile(tpl.replace('{s}', 'a').replace('{z}', z).replace('{x}', x).replace('{y}', y), b.name);
 }
 
@@ -152,8 +185,8 @@ let custom = null;
 export function registerCustomLayers(provider) { custom = provider; }
 
 // ---------- Lagerpanel ----------
-const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', osm: 'mapRoad', esri: 'satellite' };
-const OVERLAY_ORDER = ['airspace', 'fields', 'metar', 'radar', 'drawings'];
+const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', osm: 'mapRoad', kartverket: 'mapTopo', esri: 'satellite' };
+const OVERLAY_ORDER = ['airspace', 'fields', 'protected', 'metar', 'radar', 'drawings'];
 
 export function renderLayerPanel() {
   const el = $('#layerPanel');
