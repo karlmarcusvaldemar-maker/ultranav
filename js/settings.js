@@ -34,6 +34,8 @@ const DEFAULTS = {
   oaCountries: 'SE,NO,DK,FI',
   oaIncludeHeli: false,
   wxAutoStations: true,
+  shareTraffic: false,    // dela min position med andra Ultranav-piloter (av som standard, per enhet)
+  shareCallsign: '',
   arrivalRadius: 0.5,     // NM för automatisk växling till nästa punkt
   tiles: { ...DEFAULT_TILES },
 };

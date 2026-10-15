@@ -22,6 +22,7 @@ import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
 import { sunInfo } from './sun.js';
 import { testOpenAip, testProxy, testWeather, testOverlays } from './diag.js';
 import { oaipStatus, resetOpenAip } from './openaip.js';
+import { initTraffic, openShareDialog } from './traffic.js';
 import { applyIcons, icon, ic } from './icons.js';
 
 let editing = false;
@@ -42,6 +43,7 @@ initMap();
 initAero();
 initCustomLayers();
 initWxOverlay();
+initTraffic();
 initRoute();
 initNav();
 initDraw();
@@ -369,6 +371,10 @@ function renderSettingsTab(el) {
   ${num('variation', 'Magnetisk variation (°)', 'ost = +, väst = −. Hämta från aktuell karta/AIP', 0.5)}
   ${num('arrivalRadius', 'Ankomstradie (NM)', 'byt till nästa punkt', 0.1)}
 
+  <h3>Positionsdelning</h3>
+  <div class="field"><span>Dela min position med andra piloter<small>${s.shareTraffic ? `<b>På</b> på den här enheten${s.shareCallsign ? ' som ' + esc(s.shareCallsign) : ''} — delas medan GPS:en är igång` : '<b>Av</b> — andra ser inte var du är'}</small></span>
+    <button class="btn" id="shareBtn">${ic(s.shareTraffic ? 'gps' : 'eyeOff')}${s.shareTraffic ? 'Ändra' : 'Slå på…'}</button></div>
+
   <h3>Offline</h3>
   <div class="muted">Spara Standardkartan (zoom 7–12, ±8 NM) och terräng längs aktuell rutt. Övriga baskartor tillåter inte förladdning. Data för luftrum och flygfält sparas automatiskt när de visas.</div>
   <div class="btnrow"><button class="btn primary" id="offDl">${ic('download')}Spara rutten offline</button><button class="btn danger" id="offClr">${ic('trash')}Töm kartcache</button></div>
@@ -439,6 +445,7 @@ function renderSettingsTab(el) {
       : 'OpenAIP: ingen nyckel.'; };
     showStat();
   }
+  $('#shareBtn', el).onclick = () => openShareDialog();
   $('#forceUpd', el).onclick = async () => {
     // Töm appens programcache (inte kartor eller dina data) och ladda om från servern
     const keys = await caches.keys();
@@ -465,14 +472,15 @@ window.addEventListener('offline', () => toast('Offline — använder sparade da
 
 // ---------- konto, synk och delning ----------
 // Inställningarna synkas (utom tema, som är en preferens per enhet)
-const syncableSettings = () => { const { theme, ...rest } = settings; return JSON.parse(JSON.stringify(rest)); };
+// Tema och positionsdelning gäller per enhet (delning ska väljas aktivt på varje enhet) och synkas inte
+const syncableSettings = () => { const { theme, shareTraffic, ...rest } = settings; return JSON.parse(JSON.stringify(rest)); };
 let applyingRemote = false;
 if (!lib.get('settings', 'settings')) lib.put('settings', { id: 'settings', name: 'Inställningar', data: syncableSettings() }, { source: 'meta', updated: 1 });
 onSettings(() => { if (!applyingRemote) lib.put('settings', { id: 'settings', name: 'Inställningar', data: syncableSettings() }); });
 lib.onLibrary((kind, source, item) => {
   if (kind === 'settings' && source === 'remote' && item.data) {
     applyingRemote = true;
-    const { theme, ...rest } = item.data;
+    const { theme, shareTraffic, ...rest } = item.data;
     try { saveSettings(rest); } finally { applyingRemote = false; }
     recompute(); updateInstruments();
   }

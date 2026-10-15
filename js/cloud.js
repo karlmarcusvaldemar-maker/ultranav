@@ -11,6 +11,8 @@ export const onCloud = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f({ user, ...status }));
 export const cloudStatus = () => ({ user, ...status });
 export const cloudConfigured = () => !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+/** Supabase-klienten (för realtidsfunktioner) — null tills molnet startat */
+export const supa = () => client;
 
 let libLoading;
 function loadLib() {

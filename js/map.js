@@ -215,7 +215,7 @@ export function registerCustomLayers(provider) { custom = provider; }
 
 // ---------- Lagerpanel ----------
 const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', osm: 'mapRoad', kartverket: 'mapTopo', esri: 'satellite' };
-const OVERLAY_ORDER = ['airspace', 'fields', 'protected', 'wind', 'hillshade', 'metar', 'radar', 'clouds', 'drawings'];
+const OVERLAY_ORDER = ['traffic', 'airspace', 'fields', 'protected', 'wind', 'hillshade', 'metar', 'radar', 'clouds', 'drawings'];
 
 export function renderLayerPanel() {
   const el = $('#layerPanel');

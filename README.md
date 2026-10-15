@@ -64,6 +64,10 @@ Egen proxy:
 Lägg en OpenAIP-nyckel som `OPENAIP_KEY` i [`js/config.js`](js/config.js), så slipper användarna skaffa en egen.
 Användare kan fortfarande ange en egen nyckel under Inställningar.
 
+## Trafik: se andra Ultranav-piloter
+Kartlagret **Trafik (Ultranav-piloter)** visar andra inloggade piloter som delar sin position. Delning är frivillig, avstängd som standard och väljs per enhet (Inställningar › Positionsdelning, eller statusrutan uppe till vänster när GPS:en är på). Positionerna skickas var femte sekund via Supabase Realtime i en privat kanal och sparas inte. Simulerade flygningar delas aldrig.
+Kräver realtidsreglerna i `supabase/schema.sql` (avsnittet Trafik) — kör filen igen om databasen skapades tidigare.
+
 ## Konto och synk (Supabase)
 Konton (e-post och lösenord), synk mellan enheter, säkerhetskopia, eget kartmaterial, loggbok och delning med länk använder [Supabase](https://supabase.com) (gratisnivå). Appen fungerar fullt ut utan konto, och då sparas allt bara på enheten.
 
