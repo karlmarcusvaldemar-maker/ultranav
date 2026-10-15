@@ -41,6 +41,15 @@ function forest(x0, x1, yFn, n, s = 1, cls = 'tr') {
   }
   return out;
 }
+/** Sittande person som grillar korv. side=1: från sidan, vänd åt höger mot elden. side=0: bakom elden. */
+const camper = (jacket, side) => side ? `
+  <path class="cmp-leg" d="M0 0 H6 L7 2.5"/>
+  <path d="M-3 0 V-7.5 Q0 -10 3 -7.5 V0 Z" fill="${jacket}"/>
+  <circle class="head" cx="0" cy="-12" r="2.6"/><path class="hat" d="M-2.8 -13 H2.8 L2 -15.6 H-2 Z"/>
+  <path class="stick" d="M2 -5.5 L13 -9.5"/><ellipse class="sausage" cx="13.4" cy="-9.6" rx="1.6" ry=".8" transform="rotate(-20 13.4 -9.6)"/>` : `
+  <path d="M-3 0 V-7.5 Q0 -10 3 -7.5 V0 Z" fill="${jacket}"/>
+  <circle class="head" cx="0" cy="-12" r="2.6"/><path class="hair" d="M-2.6 -12.6 Q0 -16 2.6 -12.6 Q0 -14 -2.6 -12.6 Z"/>
+  <path class="stick" d="M1.5 -5 L3 2"/><ellipse class="sausage" cx="3.1" cy="2.6" rx=".8" ry="1.5"/>`;
 const house = (x, y, s = 1, lit = true) => `<g transform="translate(${x} ${y}) scale(${s})"><path class="hs" d="M0 0 V-10 L8 -17 L16 -10 V0 Z"/>${lit ? '<rect class="win" x="5" y="-8" width="3" height="3"/>' : ''}</g>`;
 
 const stars = Array.from({ length: 34 }, (_, i) => {
@@ -127,17 +136,6 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
     <path class="cab-door" d="M22 0 V-12 H30 V0"/>
     <path class="smoke" d="M28.5 -36 c-4 -6 4 -10 0 -16 c-4 -6 4 -10 0 -14"/>
   </g>
-  <g class="fireup"><ellipse class="fireglow" cx="546" cy="786" rx="46" ry="16" fill="url(#scFire)"/></g>
-  <g transform="translate(546 787) scale(.8)">
-    <path class="logs" d="M-8 2 L8 -2 M-8 -2 L8 2"/>
-    <g class="fireup">
-    <g class="flame f1"><path d="M0 -1 C-6 -6 -3 -12 0 -18 C3 -12 6 -6 0 -1 Z"/></g>
-    <g class="flame f2"><path d="M-3 -1 C-7 -5 -5 -9 -3 -12 C-1 -9 1 -5 -3 -1 Z M3 -1 C-1 -5 1 -9 3 -12 C5 -9 7 -5 3 -1 Z"/></g>
-    <circle class="spark k1" cx="0" cy="-16" r="1"/><circle class="spark k2" cx="2" cy="-18" r=".9"/><circle class="spark k3" cx="-2" cy="-17" r=".8"/>
-    </g>
-    <path class="smoke ember" d="M0 -3 c-4 -6 4 -10 0 -16 c-4 -6 4 -10 0 -14"/>
-  </g>
-
 
   <!-- andra dagen: gubben klyver ved vid stugan -->
   <g class="chopper" transform="translate(452 792)">
@@ -181,6 +179,28 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
 
   <!-- förgrund -->
   <path class="fg" d="M-800 900 L-800 780 C-200 800 0 770 160 790 C320 810 420 860 560 900 Z M1080 900 C1180 830 1340 790 1600 800 L2400 790 V900 Z"/>
+
+  <!-- lägereld i skogsbrynet till vänster: tre personer sitter och grillar på natten -->
+  ${tree(312, 812, 1.5, 'tr near')}${tree(330, 806, 1.25, 'tr near')}${tree(352, 810, 1.35, 'tr near')}
+  <g class="fireup"><ellipse class="fireglow" cx="336" cy="822" rx="58" ry="20" fill="url(#scFire)"/></g>
+  <g transform="translate(336 826)">
+    <g class="campers">
+      <g transform="translate(0 -9) scale(.85)">${camper('#2f6f8f', 0)}</g>
+    </g>
+    <g transform="scale(.8)">
+      <path class="logs" d="M-8 2 L8 -2 M-8 -2 L8 2"/>
+      <g class="fireup">
+      <g class="flame f1"><path d="M0 -1 C-6 -6 -3 -12 0 -18 C3 -12 6 -6 0 -1 Z"/></g>
+      <g class="flame f2"><path d="M-3 -1 C-7 -5 -5 -9 -3 -12 C-1 -9 1 -5 -3 -1 Z M3 -1 C-1 -5 1 -9 3 -12 C5 -9 7 -5 3 -1 Z"/></g>
+      <circle class="spark k1" cx="0" cy="-16" r="1"/><circle class="spark k2" cx="2" cy="-18" r=".9"/><circle class="spark k3" cx="-2" cy="-17" r=".8"/>
+      </g>
+      <path class="smoke ember" d="M0 -3 c-4 -6 4 -10 0 -16 c-4 -6 4 -10 0 -14"/>
+    </g>
+    <g class="campers">
+      <g transform="translate(-15 1)">${camper('#b5482f', 1)}</g>
+      <g transform="translate(15 1) scale(-1 1)">${camper('#c9a227', 1)}</g>
+    </g>
+  </g>
 
   <!-- tredje natten: en björn smyger förbi mellan träden -->
   <g class="bear"><g transform="translate(612 815) scale(.9)"><g class="bearbob">

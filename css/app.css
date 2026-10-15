@@ -650,3 +650,11 @@ body.gated #shareChip { display: none; }
   background: var(--panel2, var(--raise)); color: var(--text); font-size: 12px; font-weight: 600; min-height: 76px; }
 .symbtn.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
 .symbtn svg { filter: drop-shadow(0 0 1.5px rgba(0,0,0,.6)); }
+
+/* lägerelden: personer som grillar på natten, försvinner på dagen */
+.scene .campers { transition: opacity 1.6s ease; }
+.scene.day .campers { opacity: 0; }
+.scene .stick { fill: none; stroke: #8a6a48; stroke-width: .9; stroke-linecap: round; }
+.scene .sausage { fill: #c2603d; }
+.scene .cmp-leg { fill: none; stroke: #2c3d50; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.scene .hair { fill: #3d2b1f; }
