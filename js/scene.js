@@ -102,23 +102,24 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="strip" d="M930 772 L1120 760"/>
   <path class="stripmk" d="M956 770 l16 -1 M1006 767 l16 -1 M1056 764 l16 -1"/>
   <g transform="translate(1128 756)"><path class="hs" d="M0 0 V-16 Q16 -30 32 -16 V0 Z"/><path class="door" d="M8 0 V-10 H24 V0"/></g>
-  <!-- klubbstuga vid fältet: faluröd med vita knutar, varmt ljus, veranda och radiomast -->
-  <g transform="translate(978 824)">
-    <ellipse class="club-glow" cx="27" cy="-4" rx="46" ry="14" fill="url(#scFire)"/>
-    <g class="mast"><path class="mast-l" d="M43 -33 L46 -61 L49 -33 M44 -41 L48 -41 M44.4 -48 L47.6 -48 M44.8 -55 L47.2 -55 M43.5 -37 L48 -45 M44 -45 L48.5 -37 M44.5 -52 L47.5 -48 M45 -48 L47.4 -52"/>
-      <path class="mast-l" d="M46 -61 V-66"/><circle class="mast-light" cx="46" cy="-66.5" r="1.7"/></g>
-    <path class="cab-roof club-roof" d="M-5 -26 L27 -38 L59 -26 Z"/>
-    <path class="club-wall" d="M0 0 V-26 H54 V0 Z"/>
-    <path class="club-trim" d="M0.8 0 V-26 M53.2 0 V-26 M0 -26 H54"/>
-    <rect class="clubsign" x="4" y="-24.5" width="34" height="12" rx="1.5"/>
-    <text class="clubtxt" x="21" y="-19.6" text-anchor="middle">ÅSELE</text>
-    <text class="clubtxt" x="21" y="-14.4" text-anchor="middle">FLYGKLUBB</text>
-    <rect class="club-win" x="5" y="-10" width="7" height="6"/><rect class="club-win" x="16" y="-10" width="7" height="6"/><rect class="club-win" x="27" y="-10" width="7" height="6"/>
-    <path class="club-trim" d="M8.5 -10 V-4 M5 -7 H12 M19.5 -10 V-4 M16 -7 H23 M30.5 -10 V-4 M27 -7 H34"/>
-    <path class="cab-door club-door" d="M41 0 V-14 H50 V0"/>
-    <circle class="club-lamp" cx="52" cy="-15.5" r="1.2"/>
-    <path class="club-porch" d="M38 0 H54 M38 0 V-1.4 H54"/>
-    <path class="club-flower" d="M5 -3 h7 M16 -3 h7 M27 -3 h7"/>
+  <!-- klubbhus vid fältet: lågt rött hus med utkikstorn (glaskupol), vindstrut och antenn -->
+  <g transform="translate(972 824)">
+    <ellipse class="club-glow" cx="30" cy="-4" rx="50" ry="15" fill="url(#scFire)"/>
+    <path class="club-roof" d="M-4 -20 L60 -20 L56 -24 L0 -24 Z"/>
+    <path class="club-wall" d="M0 0 V-20 H56 V0 Z"/>
+    <path class="club-trim" d="M0.7 0 V-20 M55.3 0 V-20"/>
+    <rect class="club-wall" x="20" y="-34" width="16" height="10"/><path class="club-trim" d="M20.6 -24 V-34 M35.4 -24 V-34"/>
+    <path class="club-glass" d="M17 -34 L39 -34 L36 -42 L20 -42 Z"/>
+    <path class="club-trim" d="M17 -34 H39 M22 -34 L23 -42 M28 -34 V-42 M34 -34 L33 -42"/>
+    <path class="club-roof" d="M19 -42 L37 -42 L35 -44.5 L21 -44.5 Z"/>
+    <path class="mast-l" d="M28 -44.5 V-52"/><circle class="mast-light" cx="28" cy="-52.6" r="1.2"/>
+    <g transform="translate(35 -44.5)"><path class="pole" d="M0 0 V-9" style="stroke-width:.7"/><g class="sock"><path class="club-sock" d="M0 -9 L7 -8 L6.6 -6 L0 -7 Z"/></g></g>
+    <rect class="club-win" x="4" y="-12" width="7" height="7"/><rect class="club-win" x="14" y="-12" width="7" height="7"/><rect class="club-win" x="35" y="-12" width="7" height="7"/>
+    <path class="club-trim" d="M7.5 -12 V-5 M4 -8.5 H11 M17.5 -12 V-5 M14 -8.5 H21 M38.5 -12 V-5 M35 -8.5 H42"/>
+    <path class="club-door" d="M25 0 V-12 H32 V0"/><circle class="club-lamp" cx="33.5" cy="-13" r="1"/>
+    <rect class="clubsign" x="6" y="-19" width="44" height="6.4" rx="1.2"/>
+    <text class="clubtxt sm" x="28" y="-14.4" text-anchor="middle">ÅSELE FLYGKLUBB</text>
+    <path class="club-flower" d="M44 -3 h9"/>
   </g>
   <g transform="translate(918 768)"><path class="pole" d="M0 0 V-26"/><g class="sock"><path class="sockp" d="M0 -26 L18 -23 L17 -17 L0 -20 Z"/></g></g>
 

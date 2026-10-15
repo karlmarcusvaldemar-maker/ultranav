@@ -661,3 +661,9 @@ body.gated #shareChip { display: none; }
 .scene .sausage { fill: #c2603d; }
 .scene .cmp-leg { fill: none; stroke: #2c3d50; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .scene .hair { fill: #3d2b1f; }
+
+/* klubbhuset med utkikstorn */
+.scene .club-glass { fill: #ffd98a; opacity: .95; transition: fill 2s ease; } .scene.day .club-glass { fill: #9fc4e0; opacity: .85; }
+.scene .club-sock { fill: #f28c28; }
+.scene .club-door { fill: #2b1a12; }
+.scene .clubtxt.sm { font-size: 4.2px; letter-spacing: .2px; }
