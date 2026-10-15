@@ -2,6 +2,7 @@
 import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES, onSettings, oaipKey, proxyUrl } from './settings.js';
 import * as lib from './library.js';
 import { OPENAIP_KEY } from './config.js';
+import { APP_VERSION } from './version.js';
 import { initCloud, onCloud, cloudConfigured, cloudStatus, shareItem, unshareItem, fetchShared, copyText } from './cloud.js';
 import { renderAccountTab, askNewPassword } from './account.js';
 import { initCustomLayers, addSharedLayer } from './customlayers.js';
@@ -516,7 +517,6 @@ function openTab(tab) {
 })();
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-15.16';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {

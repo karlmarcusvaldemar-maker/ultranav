@@ -5,6 +5,7 @@ import { renderAuthForm, TERMS_VERSION } from './account.js';
 import { cloudConfigured, onCloud, cloudStatus } from './cloud.js';
 import { store, $, modal } from './util.js';
 import { ic } from './icons.js';
+import { APP_VERSION } from './version.js';
 
 let built = false, gateNote = '';
 /** Visa ett meddelande på inloggningssidan (t.ex. om delat innehåll) */
@@ -18,7 +19,7 @@ function build() {
       <div class="brand"><img src="icons/icon.svg" alt="" width="52" height="52"><div><h1 id="gateTitle">Ultranav</h1><p>VFR-navigering för ultralätt flyg</p></div></div>
       <div id="gateNote"></div>
       <div id="gateBody"><div class="muted">Startar…</div></div>
-      <div class="gatefoot"><a href="integritet.html" target="_blank" rel="noopener">Integritetspolicy och villkor</a></div>
+      <div class="gatefoot"><a href="integritet.html" target="_blank" rel="noopener">Integritetspolicy och villkor</a> · <span class="muted">version ${APP_VERSION}</span></div>
     </div>`;
   fitScene(g.querySelector('svg'));
   if (gateNote) setGateNote(gateNote);
