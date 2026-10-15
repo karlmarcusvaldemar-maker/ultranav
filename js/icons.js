@@ -49,6 +49,7 @@ const P = {
   download: '<path d="M12 4v11M7 10.5l5 5 5-5M4.5 19.5h15"/>',
   upload: '<path d="M12 15.5V4.5M7 9l5-5 5 5M4.5 19.5h15"/>',
   trash: '<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/>',
+  drawMeasure: '<path d="M6 12.5L14.5 4 17 6.5 8.5 15H6z"/><path d="M12.8 5.7l2.5 2.5"/><path d="M3 15.5h18v4.5H3z"/><path d="M7 15.5v2M11 15.5v2.6M15 15.5v2M18.5 15.5v1.6"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/>',
