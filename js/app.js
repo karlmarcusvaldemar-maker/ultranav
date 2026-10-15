@@ -23,6 +23,7 @@ import { sunInfo } from './sun.js';
 import { testOpenAip, testProxy, testWeather, testOverlays } from './diag.js';
 import { oaipStatus, resetOpenAip } from './openaip.js';
 import { initTraffic, openShareDialog } from './traffic.js';
+import { SYMBOLS, symbolSvg } from './aircraft.js';
 import { applyIcons, icon, ic } from './icons.js';
 
 let editing = false;
@@ -352,6 +353,8 @@ function renderSettingsTab(el) {
   <div class="field"><span>Tema</span><select data-k="theme">
     <option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Mörkt</option><option value="day" ${s.theme === 'day' ? 'selected' : ''}>Ljust (sol)</option>
     <option value="night" ${s.theme === 'night' ? 'selected' : ''}>Natt (rött)</option></select></div>
+  <div class="field" style="flex-direction:column;align-items:stretch"><span>Min symbol på kartan<small>Visas för din GPS-position — och för andra piloter om du delar position</small></span>
+    <div class="symgrid">${Object.entries(SYMBOLS).map(([id, sy]) => `<button type="button" class="symbtn ${s.ownSymbol === id ? 'on' : ''}" data-sym="${id}" aria-pressed="${s.ownSymbol === id}">${symbolSvg(id, { size: 36 })}<span>${esc(sy.name)}</span></button>`).join('')}</div></div>
   <div class="field"><span>Fartenhet</span><select data-k="speedUnit"><option value="kt" ${s.speedUnit === 'kt' ? 'selected' : ''}>knop (kt)</option>
     <option value="kmh" ${s.speedUnit === 'kmh' ? 'selected' : ''}>km/h</option></select></div>
 
@@ -446,6 +449,7 @@ function renderSettingsTab(el) {
     showStat();
   }
   $('#shareBtn', el).onclick = () => openShareDialog();
+  el.querySelectorAll('[data-sym]').forEach((b) => b.onclick = () => { saveSettings({ ownSymbol: b.dataset.sym }); renderSettingsTab(el); toast(`Symbol: ${SYMBOLS[b.dataset.sym].name}`); });
   $('#forceUpd', el).onclick = async () => {
     // Töm appens programcache (inte kartor eller dina data) och ladda om från servern
     const keys = await caches.keys();

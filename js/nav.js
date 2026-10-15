@@ -1,7 +1,8 @@
 // GPS, rörlig karta, aktiv sträcka, direkt-till, glidräckvidd, spårlogg och varningar
 import { map } from './map.js';
 import { ic } from './icons.js';
-import { settings, spdOut, spdUnit, oaipKey, proxyUrl } from './settings.js';
+import { symbolSvg, symbolOf } from './aircraft.js';
+import { settings, onSettings, spdOut, spdUnit, oaipKey, proxyUrl } from './settings.js';
 import { route, onRouteChange, getLegs } from './route.js';
 import { airspacesAt, limitFt, asLabel, fmtLimit } from './openaip.js';
 import { elevationFt } from './terrain.js';
@@ -19,17 +20,14 @@ const listeners = new Set();
 export const onNav = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f(nav));
 
-// Egen position: lågvingat experimental-/UL-flygplan (nos uppåt, roteras efter färdriktningen)
-const PLANE = `<svg viewBox="0 0 40 40"><g fill="#f2b632" stroke="#000" stroke-width="1.3" stroke-linejoin="round">
-  <path d="M20 12.2 L36.5 15.6 Q38 16 37.6 17.6 L37.2 19.4 L20 19.6 L2.8 19.4 L2.4 17.6 Q2 16 3.5 15.6 Z"/>
-  <path d="M18.6 5.4 Q20 2.2 21.4 5.4 L22 27 L20.8 36 H19.2 L18 27 Z"/>
-  <path d="M13.6 32 L26.4 32 Q27 32 27 32.8 L26.6 34.6 H13.4 L13 32.8 Q13 32 13.6 32 Z"/>
-  <ellipse cx="20" cy="11" rx="1.4" ry="2.6" fill="#17212c" stroke="none"/></g></svg>`;
+// Egen position: vald luftfarkost (Inställningar › Visning), standard lågvingat experimental
+const planeHtml = () => symbolSvg(settings.ownSymbol, { size: 40 });
 
 export async function initNav() {
   ownLayer.addTo(map);
   nav.log = (await idb.get('tracklog')) || [];
   onRouteChange(() => { if (nav.pos) { pickLeg(); update(); } });
+  onSettings((s, patch) => { if ('ownSymbol' in patch && ownMarker) { ownMarker.setIcon(L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: planeHtml() })); update(); } });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && nav.tracking) requestWake(); });
   map.on('dragstart', () => { if (nav.follow && nav.tracking) { nav.follow = false; emit(); } });
 }
@@ -174,7 +172,7 @@ function update() {
   if (!p) { emit(); return; }
   const ll = [p.lat, p.lon];
   if (!ownMarker) {
-    ownMarker = L.marker(ll, { pane: 'own', interactive: false, icon: L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: PLANE }) }).addTo(ownLayer);
+    ownMarker = L.marker(ll, { pane: 'own', interactive: false, icon: L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: planeHtml() }) }).addTo(ownLayer);
     vecLine = L.polyline([], { pane: 'ownPath', color: '#f2b632', weight: 3, dashArray: '2 6', interactive: false }).addTo(ownLayer);
     dtoLine = L.polyline([], { pane: 'route', color: '#ff2fd0', weight: 4, dashArray: '10 8', interactive: false }).addTo(ownLayer);
     glideCircle = L.circle(ll, { pane: 'ownPath', radius: 1, color: '#2ecc71', weight: 2, fill: true, fillOpacity: 0.05, dashArray: '6 6', interactive: false }).addTo(ownLayer);
@@ -182,7 +180,7 @@ function update() {
   ownMarker.setLatLng(ll);
   const svg = ownMarker.getElement()?.querySelector('svg');
   const mb = map.getBearing ? map.getBearing() : 0;
-  if (svg) svg.style.transform = `rotate(${(p.trk ?? 0) + mb}deg)`;
+  if (svg) svg.style.transform = symbolOf(settings.ownSymbol).rotate === false ? '' : `rotate(${(p.trk ?? 0) + mb}deg)`;
   // fartvektor 5 min
   if (p.trk != null && p.gsKt > 10) vecLine.setLatLngs([ll, Object.values(destPoint(p, p.trk, p.gsKt * 5 / 60))]);
   else vecLine.setLatLngs([]);

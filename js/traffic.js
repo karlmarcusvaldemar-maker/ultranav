@@ -7,6 +7,7 @@ import { supa, onCloud, cloudStatus } from './cloud.js';
 import { nav, onNav } from './nav.js';
 import { esc, toast, modal, $, distNM, bearing, fmtDeg } from './util.js';
 import { ic } from './icons.js';
+import { symbolSvg } from './aircraft.js';
 
 const SEND_MS = 5000, STALE_MS = 25000, DROP_MS = 90000;
 const others = new Map();   // id → senaste position
@@ -74,7 +75,7 @@ function maybeSend() {
   const p = nav.pos;
   stat.sent++;
   channel.send({ type: 'broadcast', event: 'pos', payload: {
-    id: joinedAs, call: (settings.shareCallsign || '').slice(0, 12), lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5),
+    id: joinedAs, call: (settings.shareCallsign || '').slice(0, 12), sym: settings.ownSymbol, lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5),
     alt: p.altFt != null ? Math.round(p.altFt) : null, gs: p.gsKt != null ? Math.round(p.gsKt) : null,
     trk: p.trk != null ? Math.round(p.trk) : null, t: now,
   } });
@@ -86,8 +87,7 @@ function prune() {
 }
 
 // ---------- ritning ----------
-const planeSvg = (trk, stale) => `<svg width="34" height="34" viewBox="-17 -17 34 34" style="transform:rotate(${trk ?? 0}deg);opacity:${stale ? 0.45 : 1}">
-  <path d="M0 -13 L2.2 -4 L12 1 L12 3.5 L2.2 1.5 L1.6 9 L5 11.5 L5 13 L0 12 L-5 13 L-5 11.5 L-1.6 9 L-2.2 1.5 L-12 3.5 L-12 1 L-2.2 -4 Z" fill="#e8590c" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+const planeSvg = (o, stale) => symbolSvg(o.sym, { fill: '#e8590c', stroke: '#fff', size: 34, rot: o.trk ?? 0, opacity: stale ? 0.45 : 1 });
 function label(o) {
   const own = nav.pos?.altFt, d = o.alt != null && own != null ? Math.round((o.alt - own) / 100) * 100 : null;
   return `${esc(o.call || 'Okänd')}${d != null ? ` ${d >= 0 ? '+' : '−'}${Math.abs(d)} ft${d > 0 ? ' ↑' : d < 0 ? ' ↓' : ''}` : o.alt != null ? ` ${o.alt} ft` : ''}`;
@@ -98,7 +98,7 @@ function draw() {
   for (const [id, m] of markers) if (!others.has(id)) { layer.removeLayer(m); markers.delete(id); }
   for (const [id, o] of others) {
     const stale = now - o.rx > STALE_MS;
-    const icon = L.divIcon({ className: 'traffic-ic', iconSize: [34, 34], iconAnchor: [17, 17], html: planeSvg(o.trk, stale) });
+    const icon = L.divIcon({ className: 'traffic-ic', iconSize: [34, 34], iconAnchor: [17, 17], html: planeSvg(o, stale) });
     let m = markers.get(id);
     if (!m) {
       m = L.marker([o.lat, o.lon], { icon, pane: 'own', bubblingMouseEvents: false }).addTo(layer);
