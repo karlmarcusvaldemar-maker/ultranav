@@ -1,5 +1,5 @@
 // Service worker: appskal offline, kartbilder cache-först, API-data nätverk-först
-const APP = 'ulnav-app-v58';
+const APP = 'ulnav-app-v59';
 const TILES = 'ulnav-tiles-v1';
 const DATA = 'ulnav-data-v1';
 const SHELL = [
