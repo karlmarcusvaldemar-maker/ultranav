@@ -427,7 +427,6 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene .road { fill: none; stroke: #2c3d50; stroke-width: 2.5; stroke-dasharray: 2 5; stroke-linecap: round; }
 .scene .pole { stroke: #8ea2b6; stroke-width: 2; }
 .scene .sockp { fill: #f2b632; }
-.scene .pad { fill: #22364a; stroke: #8ea2b6; stroke-width: 1.2; } .scene .padh { fill: none; stroke: #f2b632; stroke-width: 1.6; stroke-linecap: round; }
 .scene .dock { fill: none; stroke: #6c5a46; stroke-width: 5; stroke-linecap: round; }
 .scene .dock.thin { stroke-width: 2.5; }
 .scene .cab { fill: #2a2018; } .scene .cab-roof { fill: #14100c; } .scene .cab-chim { fill: #14100c; }
@@ -446,7 +445,7 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene .ac-rotor { fill: none; stroke: #f2b632; stroke-width: 2.4; stroke-linecap: round; }
 
 /* rörelse */
-.scene .fly, .scene .bobsky, .scene .drift, .scene .heli, .scene .bob, .scene .ring, .scene .sock, .scene .ac-rotor, .scene .star, .scene .shimmer {
+.scene .fly, .scene .bobsky, .scene .drift, .scene .helifar, .scene .bob, .scene .ring, .scene .sock, .scene .ac-rotor, .scene .star, .scene .shimmer {
   transform-box: fill-box; transform-origin: center; }
 .scene .fly.near { animation: scFly 42s linear infinite; }
 .scene .flame, .scene .spark, .scene .smoke, .scene .fireglow { transform-box: fill-box; }
@@ -464,7 +463,7 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene .drift.d1 { animation: scDrift 80s ease-in-out infinite alternate; }
 .scene .drift.d2 { animation: scDrift 110s ease-in-out infinite alternate-reverse; }
 .scene .drift.d3 { animation: scDrift 95s ease-in-out infinite alternate; }
-.scene .heli { animation: scHeli 16s ease-in-out infinite; }
+.scene .helifar { animation: scFly 80s linear infinite; animation-delay: -28s; opacity: .9; }
 .scene .ac-rotor { animation: scRotor .22s linear infinite alternate; }
 .scene .bob { animation: scBobSmall 3.2s ease-in-out infinite alternate; }
 .scene .ring.r1 { animation: scRing 5s ease-out infinite; }
@@ -488,12 +487,6 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 @keyframes scSock { from { transform: rotate(-7deg); } to { transform: rotate(5deg); } }
 @keyframes scShimmer { from { opacity: .2; } to { opacity: .75; } }
 @keyframes scTwinkle { from { opacity: .25; } to { opacity: 1; } }
-@keyframes scHeli {
-  0%, 12% { transform: translateY(0); }
-  40% { transform: translateY(-64px); }
-  48% { transform: translateY(-60px); } 56% { transform: translateY(-66px); } 64% { transform: translateY(-60px); } 72% { transform: translateY(-64px); }
-  92%, 100% { transform: translateY(0); }
-}
 @media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } .scene .fly.near { transform: translateX(420px); } .scene .fly.far { transform: translateX(1000px); } }
 #gateNote:not(:empty) { margin-bottom: 6px; }
 
@@ -505,7 +498,7 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene .sun { fill: #ffe39a; }
 .scene .birds { opacity: 0; }
 .scene .bird { fill: none; stroke: #1d2e40; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.scene :is(.m1, .m2, .m3, .tr, .vale, .lake, .river, .fg, .cl, .hs, .cab, .cab-roof, .strip, .pad) { transition: fill 3s ease, stroke 3s ease; }
+.scene :is(.m1, .m2, .m3, .tr, .vale, .lake, .river, .fg, .cl, .hs, .cab, .cab-roof, .strip) { transition: fill 3s ease, stroke 3s ease; }
 .scene .win { transition: opacity 2s ease; }
 .scene .fireup { transition: opacity 1.6s ease; }
 .scene .smoke.ember { opacity: 0; animation: none; transition: opacity 2s ease; }
@@ -518,7 +511,7 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene.day .vale { fill: #4b6185; } .scene.day .fg { fill: #2a3a50; }
 .scene.day .lake { fill: #79a8cc; } .scene.day .river { stroke: #79a8cc; }
 .scene.day .cl { fill: #f4ddc6; } .scene.day .hs { fill: #2c3a4c; }
-.scene.day .strip { stroke: #4f7a52; } .scene.day .pad { fill: #52688a; }
+.scene.day .strip { stroke: #4f7a52; }
 .scene.day .win { opacity: 0; animation: none; }
 .scene.day .fireup { opacity: 0; }
 .scene.day .smoke.ember { opacity: 1; animation: scSmoke 3.5s ease-out infinite; }
@@ -547,16 +540,6 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene.fishing .fring { animation: scRing 2.6s ease-out infinite; }
 @keyframes scOar { from { transform: rotate(-28deg); } to { transform: rotate(22deg); } }
 
-/* flygplanet vid hangaren startar åt vänster, mot vinden */
-.scene .tko { transform-box: fill-box; transform-origin: center; animation: scPark 1.6s ease both; }
-.scene.takeoff .tko { animation: scTakeoff 4s ease-in both; }
-@keyframes scPark { from { opacity: 0; } to { opacity: 1; } }
-@keyframes scTakeoff {
-  0% { transform: translate(0, 0) rotate(0); }
-  50% { transform: translate(-118px, 7px) rotate(0); }
-  62% { transform: translate(-165px, 4px) rotate(9deg); }
-  100% { transform: translate(-760px, -300px) rotate(16deg); }
-}
 @media (prefers-reduced-motion: reduce) { .scene .rower, .scene * { transition: none !important; } }
 
 /* NOTAM i popup-fönster */
@@ -575,3 +558,18 @@ details.danger-zone summary { cursor: pointer; font-weight: 600; color: var(--ba
 /* klubbstugan vid fältet */
 .scene .clubsign { fill: #0b121a; stroke: #3a4c5e; stroke-width: .8; }
 .scene .clubtxt { fill: #f2b632; font: 700 7.4px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; letter-spacing: .35px; }
+
+/* påskägg: älgen (andra dagen) */
+.scene .mo { fill: #3b2a1e; } .scene .mo-ant { fill: #c9b79a; } .scene .mo-eye { fill: #0b121a; }
+.scene .mo-leg { fill: none; stroke: #3b2a1e; stroke-width: 2.8; stroke-linecap: round; transform-box: fill-box; transform-origin: 50% 0; }
+.scene .mo-head { transform-box: fill-box; transform-origin: 24% 85%; }
+.scene .mooseo { transition: opacity 2.5s ease; }
+.scene .moose { opacity: 0; }
+.scene.egg .moose { animation: scMooseWalk 6s ease-out both; }
+.scene.egg .mo-leg.l1 { animation: scLeg .5s ease-in-out 12 alternate; }
+.scene.egg .mo-leg.l2 { animation: scLeg .5s ease-in-out 12 alternate-reverse; }
+.scene.egg .mo-head { animation: scDrink 1.2s ease-in-out 6.2s both; }
+.scene.eggout .mooseo { opacity: 0; }
+@keyframes scMooseWalk { 0% { transform: translateX(-230px); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateX(0); opacity: 1; } }
+@keyframes scLeg { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
+@keyframes scDrink { from { transform: rotate(0); } to { transform: rotate(48deg); } }

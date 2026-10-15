@@ -75,6 +75,7 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="m1" d="M-800 470 L-300 440 L0 455 L110 400 L190 430 L300 350 L380 395 L470 340 L560 390 L660 320 L740 372 L850 300 L960 380 L1040 342 L1150 395 L1250 330 L1340 386 L1430 350 L1540 400 L1600 380 L2400 420 V900 H-800 Z"/>
   <path class="snow" d="M282 364 L300 350 L318 365 M452 354 L470 340 L486 352 M640 336 L660 320 L680 334 M830 316 L850 300 L870 316 M1232 344 L1250 330 L1268 344"/>
   <path class="m2" d="M-800 520 L0 510 L80 470 L170 500 L260 440 L360 490 L460 455 L580 500 L700 430 L800 480 L900 450 L1020 500 L1130 445 L1230 490 L1330 460 L1440 505 L1600 470 L2400 500 V900 H-800 Z"/>
+  <g class="helifar"><g class="bobsky"><g transform="translate(0 452) scale(.3)">${HELI}</g></g></g>
   <path class="m3" d="M-800 580 L0 570 C120 540 220 530 330 556 S560 530 700 560 S960 520 1100 552 S1380 530 1600 556 L2400 560 V900 H-800 Z"/>
   ${forest(-40, 1640, (x) => 560 + 12 * Math.sin(x / 90), 120, 0.55, 'tr far')}
 
@@ -100,16 +101,11 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
     <rect class="win" x="9" y="-11" width="8" height="6"/><rect class="win" x="22" y="-11" width="8" height="6"/><rect class="win" x="44" y="-11" width="8" height="6"/>
     <path class="cab-door" d="M64 0 V-13 H74 V0"/>
   </g>
-  <g class="tko"><g transform="translate(1102 752) scale(-.3 .3)">${BUSH}</g></g>
   <g transform="translate(918 768)"><path class="pole" d="M0 0 V-26"/><g class="sock"><path class="sockp" d="M0 -26 L18 -23 L17 -17 L0 -20 Z"/></g></g>
 
   <!-- by med tända fönster -->
   ${house(1250, 652, 1)}${house(1272, 658, .9)}${house(1294, 650, 1.1, false)}${house(1318, 660, .85)}${house(1230, 664, .8, false)}
 
-  <!-- helikopterplatta och helikopter som lyfter -->
-  <ellipse cx="1196" cy="760" rx="22" ry="6" class="pad"/>
-  <path class="padh" d="M1191 757 v6 M1201 757 v6 M1191 760 h10"/>
-  <g class="heli"><g transform="translate(1174 730) scale(.62)">${HELI}</g></g>
 
   <!-- stuga vid sjön med rök, lägereld och förtöjt sjöflygplan -->
   <g transform="translate(486 786)">
@@ -133,23 +129,34 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   </g>
 
   <!-- roddbåt: ror ut och fiskar när solen gått upp, ror hem när det blir natt -->
-  <g class="rower"><g transform="translate(560 752)"><g class="bob">
+  <g class="rower"><g transform="translate(560 752)"><g class="bob"><g class="crew">
     <path class="boat" d="M-13 -1 H13 L9 4 H-9 Z"/>
-    <g class="crew">
     <path class="oar" d="M-10 7 L1 -3"/>
     <path class="person" d="M-3 -1 V-8 Q0 -10 3 -8 V-1 Z"/>
     <circle class="head" cx="0" cy="-11.5" r="2.6"/>
     <path class="hat" d="M-3 -12.5 H3 L2 -15 H-2 Z"/>
     <g class="rod"><path class="rodp" d="M2 -6 L18 -19"/><path class="fline" d="M18 -19 L21 1"/><circle class="bobber" cx="21" cy="1" r="1.3"/>
       <ellipse class="fring" cx="21" cy="2" rx="5" ry="1"/></g>
-    </g>
-  </g></g></g>
+  </g></g></g></g>
   <path class="pier" d="M560 778 L572 778 L592 750 L582 750 Z"/>
   <path class="pier-post" d="M562 778 v5 M571 778 v5 M584 750 v4 M591 750 v4"/>
   <g class="bob"><g transform="translate(578 718) scale(.72)">${SEA}</g></g>
   <ellipse class="ring r1" cx="602" cy="742" rx="26" ry="3.5"/>
   <ellipse class="ring r2" cx="602" cy="742" rx="26" ry="3.5"/>
 
+
+  <!-- påskägg (andra dagen): en älg kliver fram och dricker ur ån -->
+  <g class="mooseo"><g class="moose"><g transform="translate(786 800)">
+    <path class="mo-leg l1" d="M13 20 V38"/><path class="mo-leg l2" d="M19 20 V38"/><path class="mo-leg l1" d="M38 20 V38"/><path class="mo-leg l2" d="M44 20 V38"/>
+    <path class="mo" d="M6 16 Q5 8 16 7 H34 Q39 3 44 7 Q48 10 47 19 Q40 24 30 23 H14 Q6 23 6 16 Z"/>
+    <path class="mo" d="M5 12 l-3 4 l3 1 z"/>
+    <g class="mo-head">
+      <path class="mo" d="M42 10 L49 3 Q53 0 57 3 L63 7 Q65 9 62 11 L57 11 L52 15 L46 18 Z"/>
+      <path class="mo" d="M52 13 l0 6 l3 -5 z"/>
+      <path class="mo-ant" d="M49 2 C44 0 40 -5 42 -8 C44 -5 46 -5 48 -7 C48 -4 50 -2 51 0 Z M53 1 C55 -3 59 -7 62 -6 C60 -4 59 -2 55 2 Z"/>
+      <circle class="mo-eye" cx="56" cy="5" r=".9"/>
+    </g>
+  </g></g></g>
   <!-- förgrund -->
   <path class="fg" d="M-800 900 L-800 780 C-200 800 0 770 160 790 C320 810 420 860 560 900 Z M1080 900 C1180 830 1340 790 1600 800 L2400 790 V900 Z"/>
   ${forest(-60, 300, (x) => 812 + 18 * Math.sin(x / 60), 16, 1.3, 'tr near')}

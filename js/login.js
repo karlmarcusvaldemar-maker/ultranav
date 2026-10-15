@@ -25,16 +25,24 @@ function build() {
   dayCycle(g.querySelector('svg'));
 }
 
-/** Dygnet i landskapet: solen går upp efter 8 s (gubben ror ut och fiskar, brasan slocknar),
- *  planet startar efter 12 s, efter 16 s blir det natt (gubben ror hem, brasan tänds). Upprepas. */
+/** Dygnet i landskapet: solen går upp efter 8 s (gubben dyker upp i båten, ror ut och fiskar, brasan slocknar),
+ *  efter 16 s blir det natt (han ror hem och försvinner, brasan tänds). Upprepas.
+ *  Påskägg: andra dagen kliver en älg fram och dricker ur ån. */
 function dayCycle(svg) {
   if (!svg || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const c = svg.classList, at = (ms, fn) => setTimeout(fn, ms);
   const row = () => { c.add('rowing'); at(5400, () => c.remove('rowing')); };
+  let days = 0;
   const run = () => {
-    at(8000, () => { c.add('day'); row(); at(5600, () => { if (c.contains('day')) c.add('fishing'); }); });
-    at(12000, () => c.add('takeoff'));
-    at(16000, () => { c.remove('day', 'fishing', 'takeoff'); row(); run(); });
+    at(8000, () => {
+      c.add('day'); row(); at(5600, () => { if (c.contains('day')) c.add('fishing'); });
+      if (++days === 2) c.add('egg');
+    });
+    at(16000, () => {
+      c.remove('day', 'fishing'); row();
+      if (c.contains('egg')) { c.add('eggout'); at(3000, () => c.remove('egg', 'eggout')); }
+      run();
+    });
   };
   run();
 }
