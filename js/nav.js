@@ -19,7 +19,12 @@ const listeners = new Set();
 export const onNav = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f(nav));
 
-const PLANE = `<svg viewBox="0 0 56 56"><path d="M28 4 L31 22 L50 30 L50 34 L31 30 L30 44 L36 48 L36 51 L28 49 L20 51 L20 48 L26 44 L25 30 L6 34 L6 30 L25 22 Z" fill="#f2b632" stroke="#000" stroke-width="1.5"/></svg>`;
+// Egen position: lågvingat experimental-/UL-flygplan (nos uppåt, roteras efter färdriktningen)
+const PLANE = `<svg viewBox="0 0 40 40"><g fill="#f2b632" stroke="#000" stroke-width="1.3" stroke-linejoin="round">
+  <path d="M20 12.2 L36.5 15.6 Q38 16 37.6 17.6 L37.2 19.4 L20 19.6 L2.8 19.4 L2.4 17.6 Q2 16 3.5 15.6 Z"/>
+  <path d="M18.6 5.4 Q20 2.2 21.4 5.4 L22 27 L20.8 36 H19.2 L18 27 Z"/>
+  <path d="M13.6 32 L26.4 32 Q27 32 27 32.8 L26.6 34.6 H13.4 L13 32.8 Q13 32 13.6 32 Z"/>
+  <ellipse cx="20" cy="11" rx="1.4" ry="2.6" fill="#17212c" stroke="none"/></g></svg>`;
 
 export async function initNav() {
   ownLayer.addTo(map);
@@ -169,7 +174,7 @@ function update() {
   if (!p) { emit(); return; }
   const ll = [p.lat, p.lon];
   if (!ownMarker) {
-    ownMarker = L.marker(ll, { pane: 'own', interactive: false, icon: L.divIcon({ className: 'own-ship', iconSize: [56, 56], iconAnchor: [28, 28], html: PLANE }) }).addTo(ownLayer);
+    ownMarker = L.marker(ll, { pane: 'own', interactive: false, icon: L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: PLANE }) }).addTo(ownLayer);
     vecLine = L.polyline([], { pane: 'ownPath', color: '#f2b632', weight: 3, dashArray: '2 6', interactive: false }).addTo(ownLayer);
     dtoLine = L.polyline([], { pane: 'route', color: '#ff2fd0', weight: 4, dashArray: '10 8', interactive: false }).addTo(ownLayer);
     glideCircle = L.circle(ll, { pane: 'ownPath', radius: 1, color: '#2ecc71', weight: 2, fill: true, fillOpacity: 0.05, dashArray: '6 6', interactive: false }).addTo(ownLayer);

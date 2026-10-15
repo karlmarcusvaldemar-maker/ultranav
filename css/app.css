@@ -130,8 +130,8 @@ body.night .leaflet-popup-content .pbtns button.sec { background: transparent; c
 .wp-label::before, .leg-label::before, .draw-label::before, .draw-seg::before, .ap-label::before { display: none; }
 .ap-label { background: transparent; border: 0; box-shadow: none; color: #0b2a6b; font: 700 11px var(--sans);
   text-shadow: 0 0 3px #fff, 0 0 3px #fff; padding: 0; }
-.own-ship { width: 56px; height: 56px; }
-.own-ship svg { width: 56px; height: 56px; filter: drop-shadow(0 0 2px rgba(0, 0, 0, .8)); transition: transform .3s linear; }
+.own-ship { width: 40px; height: 40px; }
+.own-ship svg { width: 40px; height: 40px; filter: drop-shadow(0 0 2px rgba(0, 0, 0, .8)); transition: transform .3s linear; }
 .wxdot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 3px #000; }
 .dvert { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 3px solid #ff375f; color: #111;
   font: 700 10px/16px var(--sans); text-align: center; box-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
