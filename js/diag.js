@@ -159,7 +159,8 @@ export async function testOverlays() {
     const d = await probe(u), v = d.ok || !proxyUrl() ? null : await probe(withProxy(u, proxyUrl()));
     const res = d.ok ? d : v || d;
     const what = res.ok ? (/xml|text/.test(res.type || '') ? `fel från tjänsten: ${esc((res.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140))}` : `bild ${Math.round((res.text?.length || 0) / 1024)} kB`) : esc(res.msg);
-    rows.push(`<b>${name}</b>: lager <code>${esc(s.layers)}</code> — ${what}${!d.ok && v?.ok ? ' (via proxy)' : ''}`);
+    rows.push(`<b>${name}</b>: lager <code>${esc(s.layers)}</code>${s.titles ? ` (${esc(s.titles.join(', '))})` : ''} — ${what}${!d.ok && v?.ok ? ' (via proxy)' : ''}`);
+    if (id === 'wind' && s.all) rows.push(`<span class="muted">Tjänstens lager: ${esc(s.all.join(' · '))}${s.narrowed ? '' : ' — <b>hittade inget lager för enbart uppförda verk</b>'}</span>`);
   }
   const { settings } = await import('./settings.js');
   const z = 10, n = 2 ** z, φ = c.lat * Math.PI / 180;

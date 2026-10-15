@@ -75,7 +75,7 @@ export function initMap() {
 /** För felsökning: vilka WMS-adresser och lager som används */
 export const overlaySources = async () => ({
   protected: await wmsDiscover('protected', settings.tiles.protected, /nationalpark|naturreservat|djur.*växt|växt.*djur|naturvårdsområde|naturminne|fågel/i, null),
-  wind: await wmsDiscover('wind', settings.tiles.wind, /vindkraftverk|verk\b|turbin/i, null),
+  wind: await wmsDiscover('wind2', settings.tiles.wind, /vindkraftverk|verk\b|turbin/i, null, WIND_BUILT),
   clouds: await cloudLayer(),
 });
 
@@ -151,7 +151,7 @@ function makeRadar() {
 
 // ---------- WMS-lager med lagernamn ur tjänstens GetCapabilities ----------
 // Lagernamnen väljs efter titel/namn och sparas en vecka. Om lagerlistan inte går att hämta används en reserv.
-async function wmsDiscover(key, url, match, fallback) {
+async function wmsDiscover(key, url, match, fallback, prefer = null) {
   const cached = store.get('ulnav.wms.' + key, null);
   if (cached && cached.url === url && Date.now() - cached.t < 7 * 864e5) return cached;
   try {
@@ -159,9 +159,12 @@ async function wmsDiscover(key, url, match, fallback) {
     const doc = new DOMParser().parseFromString(xml, 'application/xml');
     const child = (el, n) => [...el.children].find((c) => c.localName === n)?.textContent || '';
     const named = [...doc.getElementsByTagNameNS('*', 'Layer')].map((l) => ({ name: child(l, 'Name'), title: child(l, 'Title') })).filter((l) => l.name);
-    const pick = named.filter((l) => match.test(l.title) || match.test(l.name));
+    let pick = named.filter((l) => match.test(l.title) || match.test(l.name));
+    // prefer: snävare urval (t.ex. bara uppförda vindkraftverk) om tjänsten har sådana lager
+    const narrow = prefer ? pick.filter((l) => prefer.test(l.title) || prefer.test(l.name)) : [];
+    if (narrow.length) pick = narrow;
     if (!pick.length) throw new Error('inga matchande lager');
-    const res = { t: Date.now(), url, layers: pick.map((l) => l.name).join(','), version: doc.documentElement.getAttribute('version') || '1.3.0' };
+    const res = { t: Date.now(), url, layers: pick.map((l) => l.name).join(','), titles: pick.map((l) => l.title), all: named.map((l) => l.title), narrowed: !!narrow.length, version: doc.documentElement.getAttribute('version') || '1.3.0' };
     store.set('ulnav.wms.' + key, res);
     return res;
   } catch (e) { console.warn('WMS ' + key, e); return fallback; }
@@ -183,7 +186,9 @@ function makeProtected() { return wmsOverlay('protected', () => wmsDiscover('pro
   { url: 'https://geodata.naturvardsverket.se/inspire/ps-nvr/ows', layers: 'PS.ProtectedSites.NR,PS.ProtectedSites.DVO', version: '1.3.0' }),
   { attribution: 'Skyddade områden © Naturvårdsverket' }); }
 // Länsstyrelsernas Vindbrukskollen: vindkraftverk (uppdateras dagligen)
-function makeWind() { return wmsOverlay('wind', () => wmsDiscover('wind', settings.tiles.wind, /vindkraftverk|verk\b|turbin/i, { url: settings.tiles.wind, layers: '0', version: '1.3.0' }),
+// Bara uppförda (byggda) verk — inte beviljade, avslagna, överklagade eller inte påbörjade projekt
+const WIND_BUILT = /uppför/i;
+function makeWind() { return wmsOverlay('wind', () => wmsDiscover('wind2', settings.tiles.wind, /vindkraftverk|verk\b|turbin/i, { url: settings.tiles.wind, layers: '0', version: '1.3.0' }, WIND_BUILT),
   { attribution: 'Vindkraftverk © Länsstyrelsen (Vindbrukskollen)' }); }
 // EUMETSAT: senaste satellitbild (infrarött 10,8 µm, Meteosat) — moln syns ljusa, även på natten
 // EUMETSAT byter satelliter (MSG → MTG), så lagret letas upp i respektive arbetsyta, nyaste först.
