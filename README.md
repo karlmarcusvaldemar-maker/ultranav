@@ -31,7 +31,7 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 | OurAirports | Fält, banor och frekvenser (public domain) | – |
 | Open-Meteo | Vind på höjd och prognos | – |
 | aviationweather.gov (NOAA) | METAR/TAF | – (kan kräva CORS-proxy) |
-| FAA NOTAM API | NOTAM för Sverige (FIR ESAA och flygplatser) | Gratis nyckel, läggs i CORS-proxyn |
+| SkyLink NOTAM API (RapidAPI) | NOTAM (FIR ESAA och flygplatser) | Gratis nyckel, läggs i CORS-proxyn |
 | RainViewer | Radar | – |
 | AWS Terrain Tiles | Terränghöjd | – |
 
@@ -58,11 +58,12 @@ Egen proxy:
 3. Kopiera adressen, t.ex. `https://ultranav-proxy.<namn>.workers.dev`.
 4. Ange adressen i Ultranav under **Inställn. › CORS-proxy**, eller som `DEFAULT_PROXY` i `js/config.js`.
 
-## NOTAM (FAA NOTAM API)
-NOTAM hämtas från FAA:s NOTAM-API, som även har internationella NOTAM. FAA:s webbsökning stänger ute serveranrop, så API:t används.
-1. Registrera dig gratis på FAA:s API-portal (https://api.faa.gov) och ansök om åtkomst till **NOTAM API**. Du får ett *client_id* och ett *client_secret*.
-2. I Cloudflare: öppna workern › **Settings › Variables and Secrets › Add**. Lägg till två hemligheter (typ *Secret*): `FAA_CLIENT_ID` och `FAA_CLIENT_SECRET`. Tryck **Deploy**.
-3. Kontrollera med `https://<proxy>/?ping`, som ska visa `FAA-nyckel: ja`. Tryck sedan **Testa NOTAM** i appen.
+## NOTAM (SkyLink)
+NOTAM hämtas från [SkyLink NOTAM API](https://github.com/SkyLink-API/notam-api) (FAA:s globala NOTAM-flöde) via RapidAPI. Gratisnivån ger 1 000 anrop per månad, så appen hushållar: kartan hämtar bara FIR ESAA en gång i timmen, flygplats-NOTAM hämtas när man öppnar fältinfon, och proxyn delar svaren mellan alla användare i en timme.
+1. Skapa ett gratiskonto på https://rapidapi.com, sök upp **SkyLink API** och prenumerera på gratisnivån (Basic).
+2. Kopiera din **X-RapidAPI-Key** (visas i API:ts kodexempel).
+3. I Cloudflare: workern › **Settings › Variables and Secrets › Add**, typ *Secret*, namn `SKYLINK_KEY`, värde = nyckeln. Tryck **Deploy**.
+4. Kontrollera med `https://<proxy>/?ping` (ska visa `ultranav-proxy 5` och `NOTAM-nyckel: ja`) och tryck **Testa NOTAM** i appen.
 
 ## OpenAIP-nyckel
 Lägg en OpenAIP-nyckel som `OPENAIP_KEY` i [`js/config.js`](js/config.js), så slipper användarna skaffa en egen.

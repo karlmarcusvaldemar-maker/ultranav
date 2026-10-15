@@ -399,7 +399,7 @@ function renderSettingsTab(el) {
   <div class="btnrow"><button class="btn" id="forceUpd">${ic('refresh')}Tvinga uppdatering</button></div>
   <div class="muted" style="line-height:1.5">
   Kartdata © OpenStreetMap-bidragsgivare (ODbL) · OpenFreeMap/OpenMapTiles · MapLibre GL (BSD-3) · OpenTopoMap (CC-BY-SA) · Esri World Imagery ·
-  open flightmaps · OpenAIP (CC BY-NC 4.0) · NOTAM via FAA NOTAM API · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
+  open flightmaps · OpenAIP (CC BY-NC 4.0) · NOTAM via SkyLink (FAA NOTAM-flöde) · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
   RainViewer · AWS Terrain Tiles (SRTM, GMTED, ETOPO m.fl.) · Leaflet (BSD-2).<br><br>
   <b>Viktigt:</b> Appen är ett hjälpmedel för planering och lägesuppfattning. Den ersätter inte officiell AIP, ICAO-karta, NOTAM,
   briefing eller godkänd navigationsutrustning. Data från öppna källor kan vara ofullständiga eller inaktuella. Befälhavaren ansvarar alltid.</div>`;
