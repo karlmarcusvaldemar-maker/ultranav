@@ -1,12 +1,12 @@
-// NOTAM-lager: aktuella NOTAM för Sverige från FAA:s NOTAM-sökning (som även har internationella NOTAM).
+// NOTAM-lager: aktuella NOTAM för Sverige från FAA:s NOTAM-API (som även har internationella NOTAM).
 // Hämtar FIR ESAA (luftrumsrestriktioner, varningar, hinder m.m.) och flygplatserna i kartvyn.
-// FAA skickar inga CORS-huvuden, så anropen går alltid via CORS-proxyn.
+// Anropen går via CORS-proxyn, som lägger på FAA-nyckeln (den syns aldrig i appen).
 import { map, registerOverlay } from './map.js';
 import { proxyUrl } from './settings.js';
 import { nearestAirports } from './airports.js';
 import { esc, toast, withProxy, debounce, idb, distNM } from './util.js';
 
-const FAA = 'https://notams.aim.faa.gov/notamSearch/search';
+const FAA = 'https://external-api.faa.gov/notamapi/v1/notams';
 const FIR = ['ESAA'];
 const TTL = 15 * 60e3;          // hämta om efter 15 min
 const MAX_LOWER_FL = 95;        // visa inte områden som börjar över FL095 på kartan
@@ -31,43 +31,47 @@ export function initNotam() {
 }
 
 // ---------- hämtning ----------
-async function faaSearch(locs, offset = 0) {
-  const body = new URLSearchParams({
-    searchType: '0', designatorsForLocation: locs.join(','), designatorForAccountable: '',
-    latDegrees: '', latMinutes: '0', latSeconds: '0', longDegrees: '', longMinutes: '0', longSeconds: '0', radius: '10',
-    sortColumns: '5 false', sortDirection: 'true', designatorForNotamNumberSearch: '', notamNumber: '',
-    radiusSearchOnDesignator: 'false', radiusSearchDesignator: '', latitudeDirection: 'N', longitudeDirection: 'W',
-    freeFormText: '', flightPathText: '', flightPathDivertAirfields: '', flightPathBuffer: '4', flightPathIncludeNavaids: 'true',
-    flightPathIncludeArtcc: 'false', flightPathIncludeTfr: 'true', flightPathIncludeRegulatory: 'false', flightPathResultsType: 'All NOTAMs',
-    archiveDate: '', archiveDesignator: '', offset: String(offset), notamsOnly: 'false', filters: '',
-    minRunwayLength: '', minRunwayWidth: '', runwaySurfaceTypes: '', predefinedAbraka: '', predefinedDabraka: '', flightPathAddlBuffer: '', recaptchaToken: '',
-  });
+const clean = (t) => t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+async function faaPage(loc, page) {
+  const url = `${FAA}?icaoLocation=${encodeURIComponent(loc)}&responseFormat=geoJson&pageSize=1000&pageNum=${page}`;
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 30000);
   try {
-    const r = await fetch(withProxy(FAA, proxyUrl()), { method: 'POST', body, signal: ctl.signal });
-    if (!r.ok) {
-      const msg = (await r.text().catch(() => '')).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
-      throw new Error(`HTTP ${r.status}${msg ? ': ' + msg : ''}`);
-    }
+    const r = await fetch(withProxy(url, proxyUrl()), { signal: ctl.signal });
     const text = await r.text();
+    if (!r.ok) throw new Error(`HTTP ${r.status}${text ? ': ' + clean(text).slice(0, 160) : ''}`);
     let j;
-    try { j = JSON.parse(text); } catch { throw new Error('FAA svarade inte med NOTAM-data: ' + text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)); }
-    if (j?.error) throw new Error(j.error);
-    if (!Array.isArray(j?.notamList)) throw new Error('oväntat svar från FAA');
+    try { j = JSON.parse(text); } catch { throw new Error('FAA svarade inte med NOTAM-data: ' + clean(text).slice(0, 120)); }
+    if (!Array.isArray(j?.items)) throw new Error(j?.error || j?.message || 'oväntat svar från FAA');
     return j;
   } catch (e) {
-    throw new Error(e.name === 'AbortError' ? 'tidsgräns' : /Failed to fetch|Load failed|NetworkError/.test(e.message) ? 'ingen kontakt med proxyn eller svar utan CORS' : e.message);
+    throw new Error(e.name === 'AbortError' ? 'tidsgräns' : /Failed to fetch|Load failed|NetworkError/.test(e.message) ? 'ingen kontakt med proxyn' : e.message);
   } finally { clearTimeout(t); }
 }
+/** FAA-API:ts objekt → samma form som tolkningen förväntar sig */
+function fromApi(it, loc) {
+  const c = it?.properties?.coreNOTAMData || {}, n = c.notam || {};
+  const icao = (c.notamTranslation || []).find((x) => x.type === 'ICAO')?.formattedText;
+  return { facilityDesignator: n.icaoLocation || n.location || loc, notamNumber: n.number, icaoMessage: icao || n.text, meta: n };
+}
 
-/** Hämta alla NOTAM för platserna (alla sidor, högst 600 st) */
+/** Hämta alla NOTAM för platserna (en fråga per plats, högst fyra samtidigt) */
 export async function fetchNotams(locs) {
-  const out = [];
-  for (let off = 0; off < 600; off += 30) {
-    const j = await faaSearch(locs, off);
-    out.push(...j.notamList);
-    if (!j.notamList.length || off + 30 >= (j.totalNotamCount || 0)) break;
-  }
+  const out = [], queue = [...locs];
+  let err = null;
+  const worker = async () => {
+    while (queue.length) {
+      const loc = queue.shift();
+      try {
+        for (let page = 1; page <= 5; page++) {
+          const j = await faaPage(loc, page);
+          for (const it of j.items) out.push(fromApi(it, loc));
+          if (!j.totalPages || page >= j.totalPages) break;
+        }
+      } catch (e) { err ||= e; }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, locs.length) }, worker));
+  if (err && !out.length) throw err;
   return out.map(parse).filter(Boolean);
 }
 
@@ -79,7 +83,7 @@ async function refresh() {
     const b = map.getBounds(), c = map.getCenter();
     for (const { a } of nearestAirports({ lat: c.lat, lon: c.lng }, 40)) {
       if (a.icao && /^[A-Z]{4}$/.test(a.icao) && b.contains([a.lat, a.lon])) want.push(a.icao);
-      if (want.length >= 21) break;
+      if (want.length >= 9) break;
     }
   }
   const need = want.filter((l) => now - (fetched.get(l) || 0) > TTL);
@@ -119,7 +123,7 @@ const field = (txt, f, next) => {
 
 function parse(raw) {
   const txt = String(raw.icaoMessage || raw.traditionalMessage || '').replace(/\r/g, '');
-  if (!txt || /NOTAMC/.test(txt.slice(0, 40))) return null;
+  if ((!txt && !raw.meta) || /NOTAMC/.test(txt.slice(0, 40))) return null;
   const num = raw.notamNumber || txt.match(/^[A-Z]\d{4}\/\d{2}/)?.[0] || '';
   const q = txt.match(/Q\)\s*([A-Z]{4})\/Q([A-Z]{2})([A-Z]{2})\/\s*([A-Z ]*)\/\s*([A-Z ]*)\/\s*([A-Z ]*)\/\s*(\d{3})\/\s*(\d{3})\/\s*(\d{4})([NS])(\d{5})([EW])(\d{3})?/);
   const n = {
@@ -134,6 +138,23 @@ function parse(raw) {
     c: q ? coord(q[9], q[10], q[11], q[12]) : null, r: q?.[13] ? +q[13] : null,
     poly: null,
   };
+  const m = raw.meta;
+  if (m && !q) {
+    const sel = String(m.selectionCode || '');
+    n.subj = sel.slice(1, 3); n.cond = sel.slice(3, 5); n.scope = m.scope || '';
+    if (m.minimumFL != null) n.lower = +m.minimumFL;
+    if (m.maximumFL != null) n.upper = +m.maximumFL;
+    const cm = String(m.coordinates || '').match(/(\d{4})([NS])(\d{5})([EW])/);
+    if (cm) n.c = coord(cm[1], cm[2], cm[3], cm[4]);
+    if (m.radius != null) n.r = +m.radius;
+  }
+  if (m) {
+    if (!n.from && m.effectiveStart) n.from = new Date(m.effectiveStart);
+    if (!n.to && m.effectiveEnd && !/PERM/i.test(m.effectiveEnd)) n.to = new Date(String(m.effectiveEnd).replace(/EST$/, ''));
+    if (/PERM/i.test(m.effectiveEnd || '')) n.perm = true;
+    if (!n.e) n.e = String(m.text || '');
+    if (m.type === 'C') return null; // upphävande-NOTAM
+  }
   if (n.to && n.to < Date.now()) return null; // utgången
   const pts = [...n.e.matchAll(COORDS)].map((m) => coord(m[1], m[2], m[3], m[4]));
   if (pts.length >= 3 && 'RW'.includes(n.subj[0] || '-')) n.poly = pts.map((p) => [p.lat, p.lon]);
@@ -220,6 +241,8 @@ export async function testNotam() {
       const allowed = /Tillåten: ja/.test(t);
       row(allowed, `Proxyn svarar: ${esc(t.split('\n')[0])}. ${allowed ? 'Den här webbplatsen är tillåten.' : `Webbplatsen <b>${esc(location.origin)}</b> är <b>inte</b> tillåten — lägg till den i ALLOWED_ORIGINS och tryck Deploy.`}`);
       if (!allowed) return rows.join('');
+      if (!/ultranav-proxy [4-9]/.test(t)) { row(false, 'Proxyn behöver uppdateras till version 4 för FAA:s NOTAM-API. Klistra in senaste tools/cors-proxy-worker.js i Cloudflare och tryck <b>Deploy</b>.'); return rows.join(''); }
+      if (/FAA-nyckel: nej/.test(t)) { row(false, 'FAA-nyckeln saknas i proxyn. Lägg in <b>FAA_CLIENT_ID</b> och <b>FAA_CLIENT_SECRET</b> under Settings › Variables and Secrets i Cloudflare (se README › NOTAM).'); return rows.join(''); }
     } else if (/hello world/i.test(t)) { row(false, 'Workern kör fortfarande "Hello World" — koden är inte utbytt.'); return rows.join(''); }
     else row(false, `Proxyn svarar men kör en äldre kod (HTTP ${r.status}: ${esc(t.slice(0, 80))}). Klistra in senaste tools/cors-proxy-worker.js i Cloudflare och tryck <b>Deploy</b>.`);
   } catch (e) {

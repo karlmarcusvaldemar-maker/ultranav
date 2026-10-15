@@ -31,7 +31,7 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 | OurAirports | Fält, banor och frekvenser (public domain) | – |
 | Open-Meteo | Vind på höjd och prognos | – |
 | aviationweather.gov (NOAA) | METAR/TAF | – (kan kräva CORS-proxy) |
-| FAA NOTAM Search | NOTAM för Sverige (FIR ESAA och flygplatser) | – (går via CORS-proxyn) |
+| FAA NOTAM API | NOTAM för Sverige (FIR ESAA och flygplatser) | Gratis nyckel, läggs i CORS-proxyn |
 | RainViewer | Radar | – |
 | AWS Terrain Tiles | Terränghöjd | – |
 
@@ -57,6 +57,12 @@ Egen proxy:
 2. Välj **Edit code**, ersätt koden med innehållet i filen och tryck **Deploy**.
 3. Kopiera adressen, t.ex. `https://ultranav-proxy.<namn>.workers.dev`.
 4. Ange adressen i Ultranav under **Inställn. › CORS-proxy**, eller som `DEFAULT_PROXY` i `js/config.js`.
+
+## NOTAM (FAA NOTAM API)
+NOTAM hämtas från FAA:s NOTAM-API, som även har internationella NOTAM. FAA:s webbsökning stänger ute serveranrop, så API:t används.
+1. Registrera dig gratis på FAA:s API-portal (https://api.faa.gov) och ansök om åtkomst till **NOTAM API**. Du får ett *client_id* och ett *client_secret*.
+2. I Cloudflare: öppna workern › **Settings › Variables and Secrets › Add**. Lägg till två hemligheter (typ *Secret*): `FAA_CLIENT_ID` och `FAA_CLIENT_SECRET`. Tryck **Deploy**.
+3. Kontrollera med `https://<proxy>/?ping`, som ska visa `FAA-nyckel: ja`. Tryck sedan **Testa NOTAM** i appen.
 
 ## OpenAIP-nyckel
 Lägg en OpenAIP-nyckel som `OPENAIP_KEY` i [`js/config.js`](js/config.js), så slipper användarna skaffa en egen.
