@@ -441,7 +441,10 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene .flame.f1 path { fill: #f2b632; } .scene .flame.f2 path { fill: #ff7a2e; }
 .scene .spark { fill: #ffcf6b; opacity: 0; }
 .scene .fireglow { opacity: .9; }
-.scene .pier { fill: #6c5a46; } .scene .pier-post { stroke: #4a3c2e; stroke-width: 2; stroke-linecap: round; }
+.scene .pier { fill: #6c5a46; }
+.scene .pier-ripple { fill: none; stroke: #9fc0d8; stroke-width: 1; stroke-linecap: round; opacity: .45; }
+.scene .clublink { cursor: pointer; pointer-events: all; } .scene .clublink .hit { fill: transparent; }
+.scene .clublink:hover .club-wall { filter: brightness(1.15); } .scene .pier-post { stroke: #4a3c2e; stroke-width: 2; stroke-linecap: round; }
 .scene .fg { fill: #0d161f; }
 .scene .ring { fill: none; stroke: #9fc0d8; stroke-width: 1.4; opacity: 0; }
 .scene .ac-body, .scene .ac-wheel { fill: #f2b632; }
@@ -667,3 +670,10 @@ body.gated #shareChip { display: none; }
 .scene .club-sock { fill: #f28c28; }
 .scene .club-door { fill: #2b1a12; }
 .scene .clubtxt.sm { font-size: 4.2px; letter-spacing: .2px; }
+
+/* fråga om att besöka klubbens hemsida (tryck på klubbhuset) */
+.clubdlg { position: absolute; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(5, 10, 16, .55); }
+.clubdlg .box { width: min(360px, calc(100vw - 40px)); background: var(--panel); border: 1px solid var(--line-strong); border-radius: 18px; padding: 20px; box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+.clubdlg h3 { margin: 0 0 6px; font: 700 20px/1.2 var(--display); } .clubdlg p { margin: 0 0 16px; color: var(--muted); }
+.clubdlg .btnrow { display: flex; gap: 10px; justify-content: flex-end; }
+.clubdlg a.btn { text-decoration: none; }

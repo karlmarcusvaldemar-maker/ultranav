@@ -103,7 +103,8 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="stripmk" d="M956 770 l16 -1 M1006 767 l16 -1 M1056 764 l16 -1"/>
   <g transform="translate(1128 756)"><path class="hs" d="M0 0 V-16 Q16 -30 32 -16 V0 Z"/><path class="door" d="M8 0 V-10 H24 V0"/></g>
   <!-- klubbhus vid fältet: lågt rött hus med utkikstorn (glaskupol), vindstrut och antenn -->
-  <g transform="translate(972 824)">
+  <g class="clublink" transform="translate(972 824)" role="link" aria-label="Åsele Flygklubb — besök hemsidan">
+    <rect class="hit" x="-8" y="-58" width="72" height="62"/>
     <ellipse class="club-glow" cx="30" cy="-4" rx="50" ry="15" fill="url(#scFire)"/>
     <path class="club-roof" d="M-4 -20 L60 -20 L56 -24 L0 -24 Z"/>
     <path class="club-wall" d="M0 0 V-20 H56 V0 Z"/>
@@ -158,8 +159,10 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
     <g class="rod"><path class="rodp" d="M2 -6 L18 -19"/><path class="fline" d="M18 -19 L21 1"/><circle class="bobber" cx="21" cy="1" r="1.3"/>
       <ellipse class="fring" cx="21" cy="2" rx="5" ry="1"/></g>
   </g></g></g></g>
-  <path class="pier" d="M560 778 L572 778 L592 750 L582 750 Z"/>
-  <path class="pier-post" d="M562 778 v5 M571 778 v5 M584 750 v4 M591 750 v4"/>
+  <!-- bryggan går från stranden en bit ut i sjön -->
+  <path class="pier" d="M566 767 L577 767 L599 744 L589 744 Z"/>
+  <path class="pier-post" d="M568 767 v4 M576 767 v4 M586 754 v6 M593 752 v6 M590 744 v6 M598 744 v6"/>
+  <path class="pier-ripple" d="M583 760 h9 M587 751 h10 M585 750 h14"/>
   <g class="bob"><g transform="translate(578 718) scale(.72)">${SEA}</g></g>
   <ellipse class="ring r1" cx="602" cy="742" rx="26" ry="3.5"/>
   <ellipse class="ring r2" cx="602" cy="742" rx="26" ry="3.5"/>

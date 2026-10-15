@@ -24,6 +24,7 @@ function build() {
   fitScene(g.querySelector('svg'));
   if (gateNote) setGateNote(gateNote);
   dayCycle(g.querySelector('svg'));
+  g.querySelector('.clublink')?.addEventListener('click', openClubDialog);
 }
 
 /** Dygnet i landskapet: solen går upp efter 8 s (gubben dyker upp i båten, ror ut och fiskar, brasan slocknar),
@@ -52,6 +53,21 @@ function dayCycle(svg) {
     });
   };
   run();
+}
+
+/** Tryck på klubbhuset: fråga om man vill besöka klubbens hemsida (öppnas i ny flik) */
+function openClubDialog() {
+  const g = $('#gate');
+  g.querySelector('.clubdlg')?.remove();
+  const d = document.createElement('div');
+  d.className = 'clubdlg';
+  d.innerHTML = `<div class="box" role="dialog" aria-labelledby="clubTitle"><h3 id="clubTitle">Åsele Flygklubb</h3>
+    <p>Vill du besöka www.aseleflygklubb.se? Sidan öppnas i en ny flik.</p>
+    <div class="btnrow"><button type="button" class="btn" data-no>Avbryt</button>
+    <a class="btn primary" href="https://www.aseleflygklubb.se" target="_blank" rel="noopener" data-yes>Ja, öppna</a></div></div>`;
+  const close = () => d.remove();
+  d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('[data-no]') || e.target.closest('[data-yes]')) close(); });
+  g.appendChild(d);
 }
 
 const offlineAllowed = () => !navigator.onLine && store.get('ulnav.everLoggedIn', false);
