@@ -1,7 +1,7 @@
 // NOTAM-lager: aktuella NOTAM från SkyLink NOTAM API (FAA:s globala NOTAM-flöde) via RapidAPI.
-// Gratisnivån har en liten månadskvot, så appen hushållar: kartan hämtar bara FIR ESAA (en gång i timmen),
-// och en flygplats NOTAM hämtas först när man öppnar fältinfon. Proxyn lägger på nyckeln och delar
-// svaren mellan alla användare i en timme.
+// Gratisnivån har en liten månadskvot, så bara FIR ESAA hämtas. Proxyn lägger på nyckeln och delar
+// svaret mellan alla användare i ett dygn (ca 30 anrop i månaden). Fältinfon visar de NOTAM som redan
+// finns för fältet, utan egna anrop.
 import { map, registerOverlay } from './map.js';
 import { proxyUrl } from './settings.js';
 import { esc, toast, withProxy, debounce, idb, distNM } from './util.js';
@@ -92,9 +92,9 @@ async function refresh() {
   try { await load(FIR); } catch { /* visat */ } finally { loading = false; }
 }
 export const notamLayerOn = () => on;
-/** NOTAM för en flygplats — hämtas vid behov (bara när NOTAM-lagret är på, för att spara kvot) */
+/** NOTAM för en flygplats ur den redan hämtade datan (inga egna anrop — sparar kvot) */
 export async function loadAirportNotams(icao) {
-  await load([icao], { quiet: true });
+  if (on) await refresh();
   return notamsFor(icao);
 }
 

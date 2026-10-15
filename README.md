@@ -59,7 +59,7 @@ Egen proxy:
 4. Ange adressen i Ultranav under **Inställn. › CORS-proxy**, eller som `DEFAULT_PROXY` i `js/config.js`.
 
 ## NOTAM (SkyLink)
-NOTAM hämtas från [SkyLink NOTAM API](https://github.com/SkyLink-API/notam-api) (FAA:s globala NOTAM-flöde) via RapidAPI. Gratisnivån ger 1 000 anrop per månad, så appen hushållar: kartan hämtar bara FIR ESAA en gång i timmen, flygplats-NOTAM hämtas när man öppnar fältinfon, och proxyn delar svaren mellan alla användare i en timme.
+NOTAM hämtas från [SkyLink NOTAM API](https://github.com/SkyLink-API/notam-api) (FAA:s globala NOTAM-flöde) via RapidAPI. Gratisnivån ger 1 000 anrop per månad. Appen hämtar bara FIR ESAA, och proxyn delar svaret mellan alla användare i ett dygn, så det blir ungefär 30 anrop i månaden.
 1. Skapa ett gratiskonto på https://rapidapi.com, sök upp **SkyLink API** och prenumerera på gratisnivån (Basic).
 2. Kopiera din **X-RapidAPI-Key** (visas i API:ts kodexempel).
 3. I Cloudflare: workern › **Settings › Variables and Secrets › Add**, typ *Secret*, namn `SKYLINK_KEY`, värde = nyckeln. Tryck **Deploy**.

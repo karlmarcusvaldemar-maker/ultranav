@@ -3,7 +3,7 @@
 //
 // NOTAM: SkyLink NOTAM API via RapidAPI. Lägg in RapidAPI-nyckeln som hemlighet i workern
 // (Settings › Variables and Secrets): SKYLINK_KEY. Den syns aldrig i appen.
-// Svaren sparas i en timme och delas mellan alla användare, så att gratiskvoten räcker.
+// Svaren sparas ett dygn och delas mellan alla användare (ca 30 anrop i månaden per plats).
 //
 // Säkerhet: proxyn vidarebefordrar ENDAST till värdarna i ALLOWED_HOSTS och svarar bara
 // webbsidor från ALLOWED_ORIGINS, så att den inte kan missbrukas som öppen proxy av andra.
@@ -54,7 +54,7 @@ export default {
       if (!env.SKYLINK_KEY) return new Response('NOTAM-nyckel saknas i proxyn (SKYLINK_KEY)', { status: 501, headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8' } });
       headers0['x-rapidapi-key'] = env.SKYLINK_KEY;
       headers0['x-rapidapi-host'] = url.hostname;
-      ttl = 3600; // NOTAM: en timme, delas mellan alla användare (sparar kvot)
+      ttl = 86400; // NOTAM: ett dygn, delas mellan alla användare (sparar kvot)
     }
     let upstream;
     try {
