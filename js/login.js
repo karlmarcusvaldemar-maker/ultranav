@@ -16,7 +16,7 @@ function build() {
   const g = $('#gate');
   g.innerHTML = `${SCENE_SVG}
     <div class="gatecard" role="dialog" aria-labelledby="gateTitle">
-      <div class="brand"><img src="icons/icon.svg" alt="" width="52" height="52"><div><h1 id="gateTitle">Ultranav</h1><p>Navigeringsapp för ultralätt flyg</p></div></div>
+      <div class="brand"><img src="icons/icon.svg" alt="" width="52" height="52"><div><h1 id="gateTitle">Ultranav</h1><p>VFR-navigering för ultralätt flyg</p></div></div>
       <div id="gateNote"></div>
       <div id="gateBody"><div class="muted">Startar…</div></div>
       <div class="gatefoot"><a href="integritet.html" target="_blank" rel="noopener">Integritetspolicy och villkor</a> · <span class="muted">version ${APP_VERSION}</span></div>

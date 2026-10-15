@@ -1,7 +1,7 @@
 {
   "name": "Ultranav",
   "short_name": "Ultranav",
-  "description": "Navigeringsapp för ultralätt flyg",
+  "description": "VFR-navigering för ultralätt flyg",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
