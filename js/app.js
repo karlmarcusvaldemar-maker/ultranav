@@ -20,7 +20,7 @@ import { initWxOverlay, fetchMetarTaf, metarHtml, fetchForecast, hourIndex, surf
 import { elevationFt } from './terrain.js';
 import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
 import { sunInfo } from './sun.js';
-import { testOpenAip, testProxy, testWeather } from './diag.js';
+import { testOpenAip, testProxy, testWeather, testOverlays } from './diag.js';
 import { oaipStatus, resetOpenAip } from './openaip.js';
 import { applyIcons, icon, ic } from './icons.js';
 
@@ -396,8 +396,8 @@ function renderSettingsTab(el) {
   <h3>Felsökning</h3>
   <div class="muted" id="oaipStat"></div>
   <div class="btnrow"><button class="btn" id="tOaip">${ic('search')}Testa OpenAIP</button><button class="btn" id="tBase">${ic('search')}Testa vald baskarta</button>
-  <button class="btn" id="tWx">${ic('cloud')}Testa väder</button></div>
-  <div id="tOaipRes"></div><div id="tBaseRes"></div><div id="tWxRes"></div>
+  <button class="btn" id="tWx">${ic('cloud')}Testa väder</button><button class="btn" id="tOvl">${ic('layers')}Testa kartlager</button></div>
+  <div id="tOaipRes"></div><div id="tBaseRes"></div><div id="tWxRes"></div><div id="tOvlRes"></div>
 
   </div>` : ''}
 
@@ -433,6 +433,7 @@ function renderSettingsTab(el) {
     runTest('#tBase', '#tBaseRes', testCurrentBase);
     runTest('#tProxy', '#tProxyRes', testProxy);
     runTest('#tWx', '#tWxRes', testWeather);
+    runTest('#tOvl', '#tOvlRes', testOverlays);
     const showStat = () => { const st = oaipStatus(); $('#oaipStat', el).textContent = oaipKey()
       ? `OpenAIP inläst: ${st.airspaces} luftrum, ${st.airports} flygfält, ${st.rp} rapportpunkter (${st.cells} områden). Hämtning: ${settings.openaipQuery === 'country' ? 'per land' : 'per område (' + settings.openaipQuery + ')'}.`
       : 'OpenAIP: ingen nyckel.'; };

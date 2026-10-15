@@ -144,3 +144,27 @@ export async function testWeather() {
     (needsProxy ? '<br>METAR kräver troligen en CORS-proxy — se README.' : '') +
     (bad.length && proxy ? '<br>Tryck även "Testa CORS-proxy".' : ''));
 }
+
+// ---------- kartlager (WMS och terrängskuggning) ----------
+export async function testOverlays() {
+  const { overlaySources, map } = await import('./map.js');
+  const src = await overlaySources();
+  const c = map.getCenter(), p = L.CRS.EPSG3857.project(c), r = 20000;
+  const bbox = [p.x - r, p.y - r, p.x + r, p.y + r].map((v) => v.toFixed(0)).join(',');
+  const rows = [];
+  for (const [id, name] of [['protected', 'Skyddade områden Natur'], ['wind', 'Vindkraftverk'], ['clouds', 'Molnbild']]) {
+    const s = src[id];
+    if (!s) { rows.push(`<b>${name}</b>: lagerlistan gick inte att hämta (proxy uppdaterad?)`); continue; }
+    const u = `${s.url}${s.url.includes('?') ? '&' : '?'}service=WMS&request=GetMap&version=${s.version || '1.3.0'}&layers=${encodeURIComponent(s.layers)}&styles=&format=image/png&transparent=true&crs=EPSG:3857&bbox=${bbox}&width=256&height=256`;
+    const d = await probe(u), v = d.ok || !proxyUrl() ? null : await probe(withProxy(u, proxyUrl()));
+    const res = d.ok ? d : v || d;
+    const what = res.ok ? (/xml|text/.test(res.type || '') ? `fel från tjänsten: ${esc((res.text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140))}` : `bild ${Math.round((res.text?.length || 0) / 1024)} kB`) : esc(res.msg);
+    rows.push(`<b>${name}</b>: lager <code>${esc(s.layers)}</code> — ${what}${!d.ok && v?.ok ? ' (via proxy)' : ''}`);
+  }
+  const { settings } = await import('./settings.js');
+  const z = 10, n = 2 ** z, φ = c.lat * Math.PI / 180;
+  const tx = Math.floor((c.lng + 180) / 360 * n), ty = Math.floor((1 - Math.log(Math.tan(φ) + 1 / Math.cos(φ)) / Math.PI) / 2 * n);
+  const t = await probe(settings.tiles.terrain.replace('{z}', z).replace('{x}', tx).replace('{y}', ty));
+  rows.push(`<b>Terrängskuggning</b> (höjddata): ${t.ok ? `ok, ${Math.round((t.text?.length || 0) / 1024)} kB` : esc(t.msg)}`);
+  return box('warnbox', rows.join('<br>'));
+}

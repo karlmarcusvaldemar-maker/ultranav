@@ -72,6 +72,13 @@ export function initMap() {
   return map;
 }
 
+/** För felsökning: vilka WMS-adresser och lager som används */
+export const overlaySources = async () => ({
+  protected: await wmsDiscover('protected', settings.tiles.protected, /nationalpark|naturreservat|djur.*växt|växt.*djur|naturvårdsområde|naturminne|fågel/i, null),
+  wind: await wmsDiscover('wind', settings.tiles.wind, /vindkraftverk|verk\b|turbin/i, null),
+  clouds: await cloudLayer(),
+});
+
 export function setBase(id) {
   if (!BASES[id]) id = 'vecLiberty';
   if (baseLayer) map.removeLayer(baseLayer);
@@ -176,11 +183,19 @@ function makeProtected() { return wmsOverlay('protected', () => wmsDiscover('pro
   { url: 'https://geodata.naturvardsverket.se/inspire/ps-nvr/ows', layers: 'PS.ProtectedSites.NR,PS.ProtectedSites.DVO', version: '1.3.0' }),
   { attribution: 'Skyddade områden © Naturvårdsverket' }); }
 // Länsstyrelsernas Vindbrukskollen: vindkraftverk (uppdateras dagligen)
-function makeWind() { return wmsOverlay('wind', () => wmsDiscover('wind', settings.tiles.wind, /vindkraftverk|verk\b|turbin/i, null),
+function makeWind() { return wmsOverlay('wind', () => wmsDiscover('wind', settings.tiles.wind, /vindkraftverk|verk\b|turbin/i, { url: settings.tiles.wind, layers: '0', version: '1.3.0' }),
   { attribution: 'Vindkraftverk © Länsstyrelsen (Vindbrukskollen)' }); }
 // EUMETSAT: senaste satellitbild (infrarött 10,8 µm, Meteosat) — moln syns ljusa, även på natten
-// (lagret är känt — tjänstens lagerlista är mycket stor och hämtas inte)
-function makeClouds() { return wmsOverlay('clouds', async () => ({ url: settings.tiles.clouds, layers: 'msg_fes:ir108', version: '1.3.0' }),
+// EUMETSAT byter satelliter (MSG → MTG), så lagret letas upp i respektive arbetsyta, nyaste först.
+async function cloudLayer() {
+  const base = settings.tiles.clouds.replace(/\/(wms|ows)$/, '');
+  for (const ws of ['mtg_fd', 'msg_fes']) {
+    const c = await wmsDiscover('clouds-' + ws, `${base}/${ws}/wms`, /ir_?10[58]|ir108|ir105/i, null);
+    if (c) return { ...c, layers: c.layers.split(',')[0] };
+  }
+  return { url: settings.tiles.clouds, layers: 'msg_fes:ir108', version: '1.3.0' };
+}
+function makeClouds() { return wmsOverlay('clouds', cloudLayer,
   { attribution: 'Molnbild © EUMETSAT', zIndex: 45 }); }
 
 // ---------- test av baskarta ----------
