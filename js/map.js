@@ -142,7 +142,8 @@ function makeRadar() {
         opacity: state.opacity.radar ?? 0.6, maxNativeZoom: 7, maxZoom: 19, zIndex: 50,
         attribution: `Radar © RainViewer (${t.toISOString().slice(11, 16)}Z)`,
       }).addTo(grp);
-      toast(`Radarbild från ${t.toISOString().slice(11, 16)}Z`);
+      const min = Math.max(0, Math.round((Date.now() - t.getTime()) / 60000));
+      toast(min < 1 ? 'Radarbilden är helt ny' : `Radarbilden är ${min} ${min === 1 ? 'minut' : 'minuter'} gammal`);
     })
     .catch((e) => toast('Radar: ' + e.message));
   grp.setOpacity = (o) => grp.eachLayer((l) => l.setOpacity?.(o));

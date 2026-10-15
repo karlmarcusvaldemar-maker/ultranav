@@ -600,3 +600,53 @@ details.danger-zone summary { cursor: pointer; font-weight: 600; color: var(--ba
 body.gated #shareChip { display: none; }
 .traffic-ic { background: none; border: 0; }
 .traffic-label { font-weight: 700; }
+
+/* klubbstugan: faluröd, vita knutar, varmt ljus och radiomast */
+.scene .club-wall { fill: #5a1f19; } .scene.day .club-wall { fill: #a3352a; }
+.scene .club-trim { fill: none; stroke: #c9c2b4; stroke-width: 1.2; } .scene.day .club-trim { stroke: #f4f0e6; }
+.scene .club-roof { fill: #1c1a19; } .scene.day .club-roof { fill: #3a3634; }
+.scene .club-win { fill: #ffcf6b; transition: fill 2s ease; } .scene.day .club-win { fill: #2f4a66; } .scene .club-door { fill: #2b1a12; }
+.scene .club-glow { opacity: .8; transition: opacity 2s ease; } .scene.day .club-glow { opacity: 0; }
+.scene .club-lamp { fill: #ffe39a; } .scene.day .club-lamp { fill: #c9c2b4; }
+.scene .club-porch { fill: none; stroke: #6c5a46; stroke-width: 1.6; }
+.scene .club-flower { fill: none; stroke: #d9534f; stroke-width: 1.8; stroke-linecap: round; stroke-dasharray: 1.5 1.5; }
+.scene :is(.club-wall, .club-roof) { transition: fill 3s ease; }
+.scene .mast-l { fill: none; stroke: #8ea2b6; stroke-width: .9; stroke-linecap: round; } .scene.day .mast-l { stroke: #5b6773; }
+.scene .mast-light { fill: #ff3b30; animation: scBlink 1.6s steps(1) infinite; }
+@keyframes scBlink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: .15; } }
+
+/* flygplatser i fjärran */
+.scene .far-rwy { fill: none; stroke: #2a3f53; stroke-width: 3.2; stroke-linecap: round; } .scene.day .far-rwy { stroke: #6f8197; }
+.scene .far-rl { fill: none; stroke: #ffe39a; stroke-width: 1; stroke-dasharray: .6 3.4; stroke-linecap: round; animation: scTwinkle 2.4s ease-in-out infinite alternate; }
+.scene.day .far-rl { opacity: 0; animation: none; }
+.scene .far-twr { fill: none; stroke: #5d7389; stroke-width: 1; }
+.scene .beacon { fill: #9dffb8; animation: scBlink 2.2s steps(1) infinite; } .scene .beacon.b2 { animation-delay: -1s; }
+.scene .far-lbl { fill: #8ea2b6; font: 600 7.5px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; letter-spacing: .3px; opacity: .85; }
+.scene.day .far-lbl { fill: #2c3d50; }
+
+/* vedklyvning (andra dagen) */
+.scene .chopper { opacity: 0; transition: opacity .4s ease; }
+.scene.chop.day .chopper { opacity: 1; }
+.scene.chop .crew { opacity: 0 !important; }
+.scene .woodpile { fill: #8a6a48; stroke: #5b4430; stroke-width: .6; } .scene .woodend { stroke: #e2c49a; stroke-width: 2.4; stroke-linecap: round; }
+.scene .block { fill: #6c5a46; } .scene .logp { fill: #c9a77c; }
+.scene .leg { stroke: #2c3d50; stroke-width: 1.6; stroke-linecap: round; }
+.scene .axe-h { stroke: #8a6a48; stroke-width: 1.4; stroke-linecap: round; } .scene .axe-b { fill: #b8c4cf; }
+.scene .axe { transform-box: fill-box; transform-origin: 100% 100%; }
+.scene.chop.day .axe { animation: scChop 1.3s ease-in infinite; }
+@keyframes scChop { 0%, 15% { transform: rotate(0); } 55% { transform: rotate(-115deg); } 70% { transform: rotate(-118deg); } 100% { transform: rotate(0); } }
+.scene.chop.day .lp1 { animation: scSplitL 1.3s ease-out infinite; } .scene.chop.day .lp2 { animation: scSplitR 1.3s ease-out infinite; }
+.scene .logp { transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes scSplitL { 0%, 62% { transform: none; } 75%, 92% { transform: translate(-3px, 1px) rotate(-35deg); } 100% { transform: none; } }
+@keyframes scSplitR { 0%, 62% { transform: none; } 75%, 92% { transform: translate(3px, 1px) rotate(35deg); } 100% { transform: none; } }
+
+/* björnen (tredje natten) */
+.scene .bear { opacity: 0; }
+.scene .br { fill: #3d2b1f; stroke: #7a634c; stroke-width: .7; } .scene .br-eye { fill: #0b121a; }
+.scene .br-leg { fill: none; stroke: #3d2b1f; stroke-width: 4; stroke-linecap: round; transform-box: fill-box; transform-origin: 50% 0; }
+.scene.bear-on .bear { animation: scBear 15s linear both; }
+.scene.bear-on .br-leg.l1 { animation: scLeg .7s ease-in-out infinite alternate; }
+.scene.bear-on .br-leg.l2 { animation: scLeg .7s ease-in-out infinite alternate-reverse; }
+.scene.bear-on .bearbob { animation: scBob .7s ease-in-out infinite alternate; }
+.scene .bearbob { transform-box: fill-box; }
+@keyframes scBear { 0% { transform: translateX(80px); opacity: 0; } 6% { opacity: 1; } 94% { opacity: 1; } 100% { transform: translateX(1480px); opacity: 0; } }

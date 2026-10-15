@@ -33,15 +33,21 @@ function dayCycle(svg) {
   if (!svg || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const c = svg.classList, at = (ms, fn) => setTimeout(fn, ms);
   const row = () => { c.add('rowing'); at(5400, () => c.remove('rowing')); };
-  let days = 0;
+  let days = 0, nights = 1; // första natten är den som visas från start
   const run = () => {
     at(8000, () => {
-      c.add('day'); row(); at(5600, () => { if (c.contains('day')) c.add('fishing'); });
-      if (++days === 2) c.add('egg');
+      c.add('day');
+      // andra dagen klyver gubben ved vid stugan i stället för att ro ut och fiska
+      if (++days === 2) { c.add('egg', 'chop'); }
+      else { row(); at(5600, () => { if (c.contains('day')) c.add('fishing'); }); }
     });
     at(16000, () => {
-      c.remove('day', 'fishing'); row();
+      const chopped = c.contains('chop');
+      c.remove('day', 'fishing', 'chop');
+      if (!chopped) row();
       if (c.contains('egg')) { c.add('eggout'); at(3000, () => c.remove('egg', 'eggout')); }
+      // tredje natten lunkar en björn förbi
+      if (++nights === 3) { at(1500, () => c.add('bear-on')); at(17000, () => c.remove('bear-on')); }
       run();
     });
   };
