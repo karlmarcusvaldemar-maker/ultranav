@@ -566,3 +566,7 @@ details.notams summary { cursor: pointer; min-height: 32px; display: flex; align
 .gatefoot { margin-top: 12px; text-align: center; font-size: 12px; }
 details.danger-zone { margin: 14px 0 8px; border: 1px solid var(--line-strong); border-radius: 12px; padding: 8px 12px; }
 details.danger-zone summary { cursor: pointer; font-weight: 600; color: var(--bad, #ff5a52); min-height: 32px; display: flex; align-items: center; }
+
+/* klubbstugan vid fältet */
+.scene .clubsign { fill: #0b121a; stroke: #3a4c5e; stroke-width: .8; }
+.scene .clubtxt { fill: #f2b632; font: 700 7.4px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; letter-spacing: .35px; }

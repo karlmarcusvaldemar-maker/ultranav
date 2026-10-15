@@ -91,6 +91,15 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="strip" d="M930 772 L1120 760"/>
   <path class="stripmk" d="M956 770 l16 -1 M1006 767 l16 -1 M1056 764 l16 -1"/>
   <g transform="translate(1128 756)"><path class="hs" d="M0 0 V-16 Q16 -30 32 -16 V0 Z"/><path class="door" d="M8 0 V-10 H24 V0"/></g>
+  <!-- klubbstuga vid fältet -->
+  <g transform="translate(964 824)">
+    <path class="cab-roof" d="M-5 -26 L42 -40 L89 -26 Z"/>
+    <path class="hs club" d="M0 0 V-26 H84 V0 Z"/>
+    <rect class="clubsign" x="5" y="-24" width="74" height="10" rx="1.5"/>
+    <text class="clubtxt" x="42" y="-16.6" text-anchor="middle">ÅSELE FLYGKLUBB</text>
+    <rect class="win" x="9" y="-11" width="8" height="6"/><rect class="win" x="22" y="-11" width="8" height="6"/><rect class="win" x="44" y="-11" width="8" height="6"/>
+    <path class="cab-door" d="M64 0 V-13 H74 V0"/>
+  </g>
   <g class="tko"><g transform="translate(1102 752) scale(-.3 .3)">${BUSH}</g></g>
   <g transform="translate(918 768)"><path class="pole" d="M0 0 V-26"/><g class="sock"><path class="sockp" d="M0 -26 L18 -23 L17 -17 L0 -20 Z"/></g></g>
 
