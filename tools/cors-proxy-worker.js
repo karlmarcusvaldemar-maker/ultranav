@@ -5,6 +5,8 @@
 // webbsidor från ALLOWED_ORIGINS, så att den inte kan missbrukas som öppen proxy av andra.
 
 const ALLOWED_ORIGINS = [
+  'https://www.ultranav.se',
+  'https://ultranav.se',
   'https://karlmarcusvaldemar-maker.github.io',
   'http://localhost:8000', // lokal testning
 ];
@@ -13,7 +15,9 @@ const ALLOWED_HOSTS = [
   'api.open-meteo.com',             // vind/prognos
   'davidmegginson.github.io',       // OurAirports
   'api.rainviewer.com',             // radarlista
+  'notams.aim.faa.gov',             // NOTAM (sökningen görs med POST)
 ];
+const POST_HOSTS = ['notams.aim.faa.gov'];
 
 export default {
   async fetch(request) {
@@ -21,13 +25,12 @@ export default {
     const allowOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : '';
     const cors = {
       'Access-Control-Allow-Origin': allowOrigin || 'null',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': '*',
       'Access-Control-Max-Age': '86400',
       Vary: 'Origin',
     };
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
-    if (request.method !== 'GET') return new Response('Endast GET', { status: 405, headers: cors });
     if (!allowOrigin) return new Response('Otillåten webbplats', { status: 403, headers: cors });
 
     const target = new URL(request.url).searchParams.get('url');
@@ -36,11 +39,15 @@ export default {
     if (url.protocol !== 'https:' || !ALLOWED_HOSTS.includes(url.hostname)) {
       return new Response('Otillåten adress', { status: 403, headers: cors });
     }
+    const post = request.method === 'POST';
+    if (!(request.method === 'GET' || (post && POST_HOSTS.includes(url.hostname)))) {
+      return new Response('Metoden är inte tillåten', { status: 405, headers: cors });
+    }
 
-    const upstream = await fetch(url.toString(), {
-      headers: { 'User-Agent': 'Ultranav (+https://github.com/karlmarcusvaldemar-maker/ultranav)' },
-      cf: { cacheTtl: 120, cacheEverything: true }, // METAR uppdateras sällan oftare än så
-    });
+    const headers0 = { 'User-Agent': 'Ultranav (+https://www.ultranav.se)' };
+    const upstream = await fetch(url.toString(), post
+      ? { method: 'POST', body: await request.text(), headers: { ...headers0, 'Content-Type': request.headers.get('Content-Type') || 'application/x-www-form-urlencoded' } }
+      : { headers: headers0, cf: { cacheTtl: 120, cacheEverything: true } }); // METAR uppdateras sällan oftare än så
     const headers = new Headers(upstream.headers);
     for (const [k, v] of Object.entries(cors)) headers.set(k, v);
     return new Response(upstream.body, { status: upstream.status, headers });

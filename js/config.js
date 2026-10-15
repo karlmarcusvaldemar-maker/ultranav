@@ -3,3 +3,9 @@
 // som databasens säkerhetsregler (Row Level Security i supabase/schema.sql) tillåter.
 export const SUPABASE_URL = 'https://qdjyaulcqpqsvhziegdf.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_j39AtGC8ZDxr6REPeSlzkQ_De01iIvW'; // publishable key — avsedd för webbappen
+
+// Inbyggd OpenAIP-nyckel och CORS-proxy, så att användarna inte behöver ställa in något själva.
+// Används när användaren inte har angett egna värden under Inställningar. OpenAIP-nyckeln syns i
+// webbläsaren (precis som i kartadresserna) — den kan bytas på openaip.net om den skulle missbrukas.
+export const OPENAIP_KEY = '';
+export const DEFAULT_PROXY = 'https://ultranav-proxy.karlmarcusvaldemar.workers.dev';

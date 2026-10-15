@@ -69,3 +69,8 @@ export async function setShare(kind, id, share) {
 /** Lyssna på ändringar: fn(kind, source, item). source: 'local' | 'remote' | 'meta' */
 export const onLibrary = (fn) => listeners.add(fn);
 function emit(kind, source, item) { listeners.forEach((f) => f(kind, source, item)); }
+
+/** Töm hela det lokala biblioteket (efter att kontot raderats) */
+export async function clearLibrary() {
+  for (const k of KINDS) { mem[k] = []; await persist(k); listeners.forEach((f) => f(k, 'remote')); }
+}

@@ -1,5 +1,5 @@
 // Väder: vind på höjd (Open-Meteo), METAR/TAF (aviationweather.gov / NOAA)
-import { settings } from './settings.js';
+import { settings, oaipKey, proxyUrl } from './settings.js';
 import { fetchX, esc, toast, debounce, FT_PER_M, idb } from './util.js';
 import { allAirports } from './airports.js';
 import { map, registerOverlay } from './map.js';
@@ -19,7 +19,7 @@ export async function fetchForecast(points) {
     longitude: points.map((p) => p.lon.toFixed(3)).join(','),
     hourly: hourly.join(','), wind_speed_unit: 'kn', timezone: 'GMT', forecast_days: '3', past_days: '1',
   });
-  const j = await fetchX(url, { proxy: settings.corsProxy });
+  const j = await fetchX(url, { proxy: proxyUrl() });
   return Array.isArray(j) ? j : [j];
 }
 
@@ -65,8 +65,8 @@ export async function fetchMetarTaf(ids) {
   if (!ids.length) return [];
   const q = ids.join(',');
   const [m0, t0] = await Promise.all([
-    fetchX(`${AWC}metar?ids=${q}&format=json&hours=3`, { proxy: settings.corsProxy }).catch((e) => { throw new Error('METAR: ' + e.message); }),
-    fetchX(`${AWC}taf?ids=${q}&format=json`, { proxy: settings.corsProxy }).catch(() => []),
+    fetchX(`${AWC}metar?ids=${q}&format=json&hours=3`, { proxy: proxyUrl() }).catch((e) => { throw new Error('METAR: ' + e.message); }),
+    fetchX(`${AWC}taf?ids=${q}&format=json`, { proxy: proxyUrl() }).catch(() => []),
   ]);
   const m = Array.isArray(m0) ? m0 : [], t = Array.isArray(t0) ? t0 : []; // tomt svar = ingen data
   return ids.map((id) => {
@@ -97,7 +97,7 @@ export function loadStationList() {
     const cached = await idb.get('awc:stations');
     if (cached && (Date.now() - cached.t < 30 * 864e5 || !navigator.onLine)) return (stations = cached.list);
     try {
-      const j = await fetchX(`${AWC}stationinfo?bbox=${NORDIC_BBOX}&format=json`, { proxy: settings.corsProxy, timeout: 30000 });
+      const j = await fetchX(`${AWC}stationinfo?bbox=${NORDIC_BBOX}&format=json`, { proxy: proxyUrl(), timeout: 30000 });
       const list = (Array.isArray(j) ? j : []).filter((s) => s.icaoId && (!s.siteType || s.siteType.some((t) => /METAR|TAF/.test(t))))
         .map((s) => ({ id: s.icaoId, name: s.site || s.name || '', lat: s.lat, lon: s.lon, taf: !!s.siteType?.includes('TAF'), known: true }));
       if (list.length) { await idb.set('awc:stations', { t: Date.now(), list }); return (stations = list); }
@@ -144,7 +144,7 @@ async function loadStations() {
   if (key === lastKey) return;
   lastKey = key;
   try {
-    const j = await fetchX(`${AWC}metar?bbox=${b.getSouth().toFixed(2)},${b.getWest().toFixed(2)},${b.getNorth().toFixed(2)},${b.getEast().toFixed(2)}&format=json`, { proxy: settings.corsProxy });
+    const j = await fetchX(`${AWC}metar?bbox=${b.getSouth().toFixed(2)},${b.getWest().toFixed(2)},${b.getNorth().toFixed(2)},${b.getEast().toFixed(2)}&format=json`, { proxy: proxyUrl() });
     wxLayer.clearLayers();
     for (const m of j || []) {
       const cat = m.fltCat || calcCat(m);
@@ -153,6 +153,6 @@ async function loadStations() {
         .addTo(wxLayer);
     }
   } catch (e) {
-    toast('METAR-stationer: ' + e.message + (settings.corsProxy ? '' : ' — prova en CORS-proxy i Inställningar'), 5000);
+    toast('METAR-stationer: ' + e.message + (proxyUrl() ? '' : ' — prova en CORS-proxy i Inställningar'), 5000);
   }
 }

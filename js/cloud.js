@@ -1,6 +1,6 @@
 // Moln: konto (Supabase Auth, e-post + lösenord), synk av biblioteket och delning med länk.
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
-import { allItems, findAny, put, remove, setShare, onLibrary, get } from './library.js';
+import { allItems, findAny, put, remove, setShare, onLibrary, get, clearLibrary } from './library.js';
 import { toast, debounce, store } from './util.js';
 
 let client = null, shareClient = null;
@@ -79,6 +79,19 @@ export async function resetPassword(email) {
 export async function updatePassword(password) {
   const { error } = await client.auth.updateUser({ password });
   if (error) throw new Error(sv(error));
+}
+
+/** Radera kontot och allt innehåll i molnet, töm sedan enheten */
+export async function deleteAccount() {
+  if (!client || !user) throw new Error('Inte inloggad.');
+  const { error } = await client.rpc('delete_my_account');
+  if (error) throw new Error(/function .* does not exist|Could not find the function/i.test(error.message)
+    ? 'Radering är inte aktiverad i databasen ännu (kör supabase/schema.sql igen).' : sv(error));
+  await client.auth.signOut().catch(() => {});
+  user = null;
+  await clearLibrary();
+  store.set('ulnav.everLoggedIn', false); store.set('ulnav.lastSync', null);
+  emit();
 }
 
 // ---------- synk ----------

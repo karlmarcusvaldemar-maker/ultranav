@@ -1,5 +1,5 @@
 // Förladdning av kartbilder längs rutten (för flygning utan mobiltäckning)
-import { settings } from './settings.js';
+import { settings, oaipKey, proxyUrl } from './settings.js';
 import { route } from './route.js';
 import { currentBase, overlayOn } from './map.js';
 import { interp, distNM, toast } from './util.js';
@@ -11,19 +11,16 @@ function tileXY(lat, lon, z) {
   return { x: Math.floor((lon + 180) / 360 * n), y: Math.floor((1 - Math.log(Math.tan(φ) + 1 / Math.cos(φ)) / Math.PI) / 2 * n) };
 }
 function fill(tpl, z, x, y) {
-  return tpl.replace('{s}', 'abc'[(x + y) % 3]).replace('{z}', z).replace('{x}', x).replace('{y}', y).replace('{key}', encodeURIComponent(settings.openaipKey));
+  return tpl.replace('{s}', 'abc'[(x + y) % 3]).replace('{z}', z).replace('{x}', x).replace('{y}', y).replace('{key}', encodeURIComponent(oaipKey()));
 }
 
 /** Lista tile-URL:er i en korridor (±corridor NM) längs rutten */
-export function routeTiles({ corridor = 8, zMin = 7, zMax = 12 } = {}) {
+// Bara Standardkartan (OpenFreeMap) får förladdas. OpenStreetMap, OpenTopoMap och Esri tillåter inte massnedladdning.
+export function routeTiles({ corridor = 8, zMin = 7, zMax = 12 } = {}, vecTpl = null) {
   const sources = [];
-  const base = currentBase();
-  // OSM:s standardserver tillåter inte massnedladdning → hoppa över
-  if (base === 'otm') sources.push({ tpl: settings.tiles.otm, max: 15 });
-  if (base === 'esri') sources.push({ tpl: settings.tiles.esri, max: 18 });
-  if (base === 'ofmBase') sources.push({ tpl: settings.tiles.ofmBase, max: 12 });
+  if (vecTpl) sources.push({ tpl: vecTpl, max: 14 });
   if (overlayOn('ofmAero')) sources.push({ tpl: settings.tiles.ofmAero, max: 12 });
-  if (overlayOn('openaipTiles') && settings.openaipKey) sources.push({ tpl: settings.tiles.openaip, max: 14 });
+  if (overlayOn('openaipTiles') && oaipKey()) sources.push({ tpl: settings.tiles.openaip, max: 14 });
   sources.push({ tpl: settings.tiles.terrain, max: 10, only: 10 });
   const urls = new Set();
   const w = route.wps;
@@ -49,9 +46,12 @@ export function routeTiles({ corridor = 8, zMin = 7, zMax = 12 } = {}) {
 export async function downloadRoute(onProgress) {
   if (route.wps.length < 2) { toast('Skapa en rutt först'); return; }
   if (!('caches' in window)) { toast('Webbläsaren saknar stöd för offline-cache'); return; }
-  const urls = routeTiles();
-  if (urls.length > 6000) { toast(`För många kartbilder (${urls.length}). Korta rutten eller dela upp den.`); return; }
-  if (currentBase() === 'osm') toast('OpenStreetMap-servern tillåter inte förladdning — välj OpenTopoMap, satellit eller OFM', 5000);
+  let vecTpl = null;
+  try { vecTpl = (await (await fetch('https://tiles.openfreemap.org/planet')).json()).tiles?.[0] || null; }
+  catch { toast('Kunde inte nå Standardkartan — sparar bara flygkartlager och terräng', 5000); }
+  const urls = routeTiles({}, vecTpl);
+  if (urls.length > 8000) { toast(`För många kartbilder (${urls.length}). Korta rutten eller dela upp den.`); return; }
+  if (currentBase() !== 'vecLiberty') toast('Offline sparas Standardkartan (övriga baskartor tillåter inte förladdning). Byt till Standardkartan under flygningen.', 6000);
   const cache = await caches.open(TILE_CACHE);
   let done = 0, fail = 0;
   const queue = [...urls];

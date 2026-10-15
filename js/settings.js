@@ -1,5 +1,6 @@
 // Inställningar (sparas i localStorage)
 import { store } from './util.js';
+import { OPENAIP_KEY, DEFAULT_PROXY } from './config.js';
 
 export const DEFAULT_TILES = {
   osm: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -27,7 +28,7 @@ const DEFAULTS = {
   vectorHillshade: true,  // terrängskuggning i vektorkartor
   openaipAuth: 'query',
   openaipLimit: 50,       // sidstorlek som servern godtar (testas)
-  openaipQuery: 'pos',    // områdesfilter: 'pos' (dist i meter), 'poskm' eller 'bbox' — väljs av testknappen   // 'query' (apiKey i adressen, ingen CORS-förfrågan) eller 'header'
+  openaipQuery: 'country',    // områdesfilter: 'pos' (dist i meter), 'poskm' eller 'bbox' — väljs av testknappen   // 'query' (apiKey i adressen, ingen CORS-förfrågan) eller 'header'
   corsProxy: '',
   oaCountries: 'SE,NO,DK,FI',
   oaIncludeHeli: false,
@@ -52,6 +53,10 @@ export function saveSettings(patch = {}) {
   store.set('ulnav.settings', settings);
   listeners.forEach((fn) => fn(settings, patch));
 }
+
+// Effektiva värden: egna inställningar, annars appens inbyggda nyckel och proxy
+export const oaipKey = () => settings.openaipKey?.trim() || OPENAIP_KEY;
+export const proxyUrl = () => settings.corsProxy?.trim() || DEFAULT_PROXY;
 
 // Hastighetsenheter — internt alltid knop
 export const spdOut = (kt) => (settings.speedUnit === 'kmh' ? kt * 1.852 : kt);

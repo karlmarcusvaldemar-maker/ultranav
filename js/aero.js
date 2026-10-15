@@ -3,9 +3,10 @@ import { map, registerOverlay } from './map.js';
 import { airspaces, reportingPoints, asStyle, asVisible, asLabel, fmtLimit, limitFt, loadBounds, onOpenAipData, airspacesAt } from './openaip.js';
 import { allAirports, onAirports, longestRwy } from './airports.js';
 import { esc, debounce, distNM, bearing, fmtDeg, fmtLatLon } from './util.js';
-import { settings } from './settings.js';
+import { settings, oaipKey, proxyUrl } from './settings.js';
 import { fetchMetarTaf, metarHtml } from './wx.js';
 import { ic } from './icons.js';
+import { notamsAt, notamsFor, notamListHtml } from './notam.js';
 import { sunInfo } from './sun.js';
 
 /** Åtgärder som app.js fyller i (undviker cirkulära beroenden) */
@@ -128,6 +129,7 @@ export function airportHtml(a) {
     <table style="margin-top:6px">${rw}</table>${fq ? `<table style="margin-top:6px">${fq}</table>` : ''}
     ${a.icao ? `<div id="apwx-${esc(a.icao)}" class="muted" style="margin-top:6px">Hämtar METAR/TAF…</div>` : ''}
     ${sunLine(a)}
+    ${a.icao ? notamListHtml(notamsFor(a.icao)) : ''}
     <div class="muted" style="margin-top:4px">Källa: ${esc(a.src)} — kontrollera alltid mot AIP/fältets info</div>
     ${btns({ lat: a.lat, lon: a.lon, name: a.icao || a.name, icao: a.icao, elevFt: a.elevFt })}`;
 }
@@ -181,7 +183,8 @@ export function mapInfoPopup(latlng, elevFt) {
   const as = airspacesAt(p.lat, p.lon);
   L.popup({ maxWidth: 360 }).setLatLng(latlng).setContent(`<h4>${fmtLatLon(p.lat, p.lon)}</h4>
     ${elevFt != null ? `<div>Terräng ≈ <b>${Math.round(elevFt)} ft</b></div>` : ''}${relPos(p)}
-    ${settings.openaipKey ? airspaceListHtml(as) : '<div class="muted">Ange OpenAIP-nyckel för luftrumsinfo</div>'}
+    ${oaipKey() ? airspaceListHtml(as) : '<div class="muted">Ange OpenAIP-nyckel för luftrumsinfo</div>'}
+    ${notamListHtml(notamsAt(p.lat, p.lon))}
     ${btns(p)}`).openOn(map);
 }
 export { longestRwy };

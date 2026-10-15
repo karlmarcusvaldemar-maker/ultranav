@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integritet och villkor – Ultranav</title>
+<link rel="icon" href="icons/icon.svg">
+<style>
+  :root { --bg: #0f1720; --panel: #17212c; --text: #e7edf3; --muted: #9fb0c0; --accent: #f2b632; --line: #2a3846; }
+  @media (prefers-color-scheme: light) { :root { --bg: #f4f6f8; --panel: #fff; --text: #17212c; --muted: #52606d; --accent: #9a6a00; --line: #d9e0e6; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+  header img { border-radius: 12px; }
+  h1 { font-size: 28px; line-height: 1.15; margin: 0; }
+  header p { margin: 2px 0 0; color: var(--muted); }
+  h2 { font-size: 19px; margin: 32px 0 8px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 4px 20px 16px; margin-top: 16px; }
+  a { color: var(--accent); }
+  ul { padding-left: 20px; }
+  li { margin: 4px 0; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .back { display: inline-block; margin-top: 28px; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icons/icon.svg" alt="" width="52" height="52">
+    <div><h1>Integritet och villkor</h1><p>Ultranav — VFR-navigering för ultralätt flyg</p></div>
+  </header>
+
+  <section>
+    <h2>Viktigt om flygsäkerhet</h2>
+    <p>Ultranav är ett gratis hjälpmedel för planering och lägesuppfattning. Appen ersätter <b>inte</b> officiell AIP, ICAO-karta,
+    NOTAM, väderbriefing eller godkänd navigationsutrustning. Kartor, luftrum, flygfält, NOTAM och väder kommer från öppna källor
+    och kan vara ofullständiga, felaktiga eller inaktuella. Befälhavaren ansvarar alltid för planering och genomförande av flygningen.</p>
+    <p>Appen tillhandahålls i befintligt skick utan garantier, och vi ansvarar inte för skador som uppstår vid användning av den.</p>
+  </section>
+
+  <section>
+    <h2>Vem ansvarar för dina uppgifter?</h2>
+    <p>Ultranav drivs av en privatperson. Frågor om dina personuppgifter skickar du till <a href="mailto:hej@ultranav.se">hej@ultranav.se</a>.</p>
+
+    <h2>Vilka uppgifter sparas?</h2>
+    <ul>
+      <li><b>Konto:</b> din e-postadress och ditt lösenord. Lösenordet sparas aldrig i klartext.</li>
+      <li><b>Det du själv sparar:</b> rutter, ritningar, eget kartmaterial, inställningar och flygningar i loggboken, inklusive GPS-spår.</li>
+      <li><b>Tekniska loggar:</b> våra leverantörer registrerar IP-adress och tidpunkt vid anrop, för drift och säkerhet.</li>
+    </ul>
+    <p>Din GPS-position behandlas bara i din enhet. Den sparas endast när du själv sparar en flygning i loggboken.</p>
+
+    <h2>Varför?</h2>
+    <p>Uppgifterna behövs för att du ska kunna logga in, synka mellan dina enheter, ha en säkerhetskopia och dela innehåll med andra.
+    Den rättsliga grunden är att fullgöra avtalet med dig när du använder tjänsten. Vi säljer aldrig uppgifter och visar ingen reklam.</p>
+
+    <h2>Vilka leverantörer används?</h2>
+    <ul>
+      <li><b>Supabase</b> — inloggning och databas för ditt sparade innehåll.</li>
+      <li><b>Resend</b> — skickar e-post för bekräftelse av konto och nytt lösenord.</li>
+      <li><b>GitHub Pages</b> — levererar själva appen.</li>
+      <li><b>Cloudflare</b> — vidarebefordrar vissa dataanrop (CORS-proxy). Inget innehåll sparas där.</li>
+    </ul>
+    <p>När du använder kartan hämtar din enhet kartbilder och flygdata direkt från källorna, till exempel OpenStreetMap, OpenFreeMap,
+    OpenTopoMap, Esri, OpenAIP, OurAirports, NOAA/AWC, Open-Meteo, RainViewer och FAA (NOTAM). De ser då din IP-adress och vilket kartområde som hämtas.</p>
+
+    <h2>Hur länge?</h2>
+    <p>Så länge du har kvar ditt konto. Raderar du något i appen raderas det även i molnet vid nästa synk.</p>
+
+    <h2>Delade länkar</h2>
+    <p>Delar du en rutt, ritning, kartmaterial eller flygning kan alla som har länken se den. Du kan när som helst sluta dela.</p>
+
+    <h2>Dina rättigheter</h2>
+    <ul>
+      <li><b>Radera kontot:</b> logga in och välj <i>Konto › Radera konto</i>. Kontot och allt innehåll raderas direkt.</li>
+      <li><b>Få ut dina data:</b> rutter och flygningar kan exporteras som GPX, och du kan be om en kopia av allt via e-post.</li>
+      <li><b>Rättelse och information:</b> kontakta oss på adressen ovan.</li>
+      <li><b>Klagomål:</b> du kan vända dig till Integritetsskyddsmyndigheten (IMY).</li>
+    </ul>
+
+    <h2>Kakor och lokal lagring</h2>
+    <p>Ultranav använder inga spårningskakor. Appen sparar inställningar, inloggning och kartcache i din webbläsare så att den fungerar, även utan nät.</p>
+  </section>
+
+  <p class="muted">Senast uppdaterad 15 oktober 2026.</p>
+  <a class="back" href="./">‹ Till Ultranav</a>
+</main>
+</body>
+</html>

@@ -16,7 +16,8 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 - **Fältinfo**: tryck på (eller nära) ett flygfält för banor, frekvenser, sol, och METAR/TAF som hämtas automatiskt.
 - **Spårlogg** med GPX-export. **GPX-import och -export** av rutter, och sparade rutter.
 - **Simulering** av rutten för träning på marken.
-- **Offline**: spara kartbilder längs rutten. Luftrum och fält cachas i IndexedDB.
+- **NOTAM** som kartlager: luftrumsrestriktioner, varningar och hinder ritas på kartan. Flygplats-NOTAM visas i fältinfo.
+- **Offline**: spara Standardkartan, terräng och flygkartlager längs rutten. Luftrum och fält cachas i IndexedDB.
 - Teman: mörkt, ljust (sol) och natt (rött). Egna linjeikoner i [`js/icons.js`](js/icons.js), grupperade kontroller och stora tryckytor.
 
 ## Datakällor (öppna)
@@ -30,6 +31,7 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 | OurAirports | Fält, banor och frekvenser (public domain) | – |
 | Open-Meteo | Vind på höjd och prognos | – |
 | aviationweather.gov (NOAA) | METAR/TAF | – (kan kräva CORS-proxy) |
+| FAA NOTAM Search | NOTAM för Sverige (FIR ESAA och flygplatser) | – (går via CORS-proxyn) |
 | RainViewer | Radar | – |
 | AWS Terrain Tiles | Terränghöjd | – |
 
@@ -45,13 +47,20 @@ Obs: iPad-modeller med bara Wi-Fi saknar GPS-mottagare. Använd en mobildatamode
 ## Viktigt
 Appen är ett hjälpmedel. Den ersätter inte officiell AIP, ICAO-karta, NOTAM, briefing eller godkänd navigationsutrustning. Magnetisk variation anges manuellt i inställningarna.
 
-## CORS-proxy (valfri)
-Om METAR/TAF inte går att hämta kan du köra en egen liten proxy gratis hos Cloudflare.
-Koden finns i [`tools/cors-proxy-worker.js`](tools/cors-proxy-worker.js). Den släpper bara igenom anrop från Ultranavs adress, och bara till väderkällorna.
+## CORS-proxy
+Appen har en inbyggd proxy (`DEFAULT_PROXY` i [`js/config.js`](js/config.js)) som behövs för NOTAM och ibland för METAR/TAF.
+Koden finns i [`tools/cors-proxy-worker.js`](tools/cors-proxy-worker.js). Den släpper bara igenom anrop från Ultranavs adresser, och bara till källorna i listan.
+**När filen ändras** (ny källa eller ny adress): öppna workern i Cloudflare › **Edit code**, klistra in hela filen igen och tryck **Deploy**.
+
+Egen proxy:
 1. Skapa ett gratis konto på https://dash.cloudflare.com och gå till **Compute (Workers) › Create › Worker** ("Hello World").
 2. Välj **Edit code**, ersätt koden med innehållet i filen och tryck **Deploy**.
 3. Kopiera adressen, t.ex. `https://ultranav-proxy.<namn>.workers.dev`.
-4. Ange `https://ultranav-proxy.<namn>.workers.dev/?url={url}` i Ultranav under **Inställn. › CORS-proxy**.
+4. Ange adressen i Ultranav under **Inställn. › CORS-proxy**, eller som `DEFAULT_PROXY` i `js/config.js`.
+
+## OpenAIP-nyckel
+Lägg en OpenAIP-nyckel som `OPENAIP_KEY` i [`js/config.js`](js/config.js), så slipper användarna skaffa en egen.
+Användare kan fortfarande ange en egen nyckel under Inställningar.
 
 ## Konto och synk (Supabase)
 Konton (e-post och lösenord), synk mellan enheter, säkerhetskopia, eget kartmaterial, loggbok och delning med länk använder [Supabase](https://supabase.com) (gratisnivå). Appen fungerar fullt ut utan konto, och då sparas allt bara på enheten.
@@ -59,13 +68,24 @@ Konton (e-post och lösenord), synk mellan enheter, säkerhetskopia, eget kartma
 1. Skapa ett gratis konto på supabase.com och skapa ett nytt projekt. Välj region **Stockholm** (eu-north-1) eller närmaste.
 2. Öppna **SQL Editor › New query**, klistra in hela [`supabase/schema.sql`](supabase/schema.sql) och tryck **Run**.
 3. Under **Authentication › URL Configuration**:
-   - **Site URL:** `https://karlmarcusvaldemar-maker.github.io/ultranav/`
-   - **Redirect URLs:** lägg till samma adress (behövs för bekräftelse- och återställningslänkar).
+   - **Site URL:** `https://www.ultranav.se/`
+   - **Redirect URLs:** `https://www.ultranav.se/**` och `https://ultranav.se/**` (behövs för bekräftelse- och återställningslänkar).
 4. Under **Project Settings › API**, kopiera **Project URL** och **anon public / publishable key** till [`js/config.js`](js/config.js).
 
 Nyckeln är avsedd att ligga i webbappen. Det är säkerhetsreglerna i databasen (Row Level Security) som gör att varje användare bara kommer åt sina egna data. Delat innehåll kan bara hämtas med sin delningskod.
 
-Supabases inbyggda e-posttjänst skickar bara ett fåtal mejl per timme. Öppnas appen för många användare bör en egen SMTP-tjänst kopplas in under **Authentication › Emails**.
+Supabases inbyggda e-posttjänst skickar bara ett fåtal mejl per timme. Koppla in en egen SMTP-tjänst (t.ex. Resend) under **Authentication › Emails › SMTP Settings**.
+
+**Svenska mejl:** under **Authentication › Emails › Templates**, klistra in mallarna från [`supabase/email-templates`](supabase/email-templates):
+
+| Mall i Supabase | Ämnesrad | Fil |
+|---|---|---|
+| Confirm signup | Bekräfta ditt Ultranav-konto | `bekrafta-konto.html` |
+| Reset password | Välj nytt lösenord för Ultranav | `nytt-losenord.html` |
+| Change email address | Bekräfta ny e-postadress för Ultranav | `byt-epost.html` |
+| Invite user | Inbjudan till Ultranav | `inbjudan.html` |
+
+**Radera konto:** funktionen `delete_my_account` finns i `schema.sql`. Har databasen skapats med en äldre version, kör hela filen igen (den kan köras flera gånger).
 
 ### Eget kartmaterial
 Kartor › Eget kartmaterial › **Lägg till kartmaterial**:

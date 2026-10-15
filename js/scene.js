@@ -61,7 +61,7 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <g class="stars">${stars}</g>
   <g class="moonset"><circle cx="1180" cy="330" r="120" fill="url(#scGlow)"/><circle cx="1180" cy="330" r="30" class="moon"/></g>
   <g class="sunrise"><circle cx="560" cy="300" r="150" fill="url(#scSunGlow)"/><circle cx="560" cy="300" r="34" class="sun"/></g>
-  <g class="birds"><path class="bird" d="M0 0 q6 -6 12 0 q6 -6 12 0"/><path class="bird" d="M30 14 q5 -5 10 0 q5 -5 10 0"/><path class="bird" d="M-26 18 q5 -5 10 0 q5 -5 10 0"/></g>
+  <g class="birds"><g class="birdsi"><path class="bird" d="M0 0 q6 -6 12 0 q6 -6 12 0"/><path class="bird" d="M30 14 q5 -5 10 0 q5 -5 10 0"/><path class="bird" d="M-26 18 q5 -5 10 0 q5 -5 10 0"/></g></g>
 
   <!-- drivande moln -->
   <g class="drift d1"><path class="cl" d="M120 170 q20 -18 46 -8 q14 -20 40 -8 q26 -4 30 16 z"/></g>
@@ -91,6 +91,7 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="strip" d="M930 772 L1120 760"/>
   <path class="stripmk" d="M956 770 l16 -1 M1006 767 l16 -1 M1056 764 l16 -1"/>
   <g transform="translate(1128 756)"><path class="hs" d="M0 0 V-16 Q16 -30 32 -16 V0 Z"/><path class="door" d="M8 0 V-10 H24 V0"/></g>
+  <g class="tko"><g transform="translate(1102 752) scale(-.3 .3)">${BUSH}</g></g>
   <g transform="translate(918 768)"><path class="pole" d="M0 0 V-26"/><g class="sock"><path class="sockp" d="M0 -26 L18 -23 L17 -17 L0 -20 Z"/></g></g>
 
   <!-- by med tända fönster -->
@@ -111,13 +112,27 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
     <path class="cab-door" d="M22 0 V-12 H30 V0"/>
     <path class="smoke" d="M28.5 -36 c-4 -6 4 -10 0 -16 c-4 -6 4 -10 0 -14"/>
   </g>
-  <ellipse class="fireglow" cx="546" cy="786" rx="46" ry="16" fill="url(#scFire)"/>
+  <g class="fireup"><ellipse class="fireglow" cx="546" cy="786" rx="46" ry="16" fill="url(#scFire)"/></g>
   <g transform="translate(546 787) scale(.8)">
     <path class="logs" d="M-8 2 L8 -2 M-8 -2 L8 2"/>
+    <g class="fireup">
     <g class="flame f1"><path d="M0 -1 C-6 -6 -3 -12 0 -18 C3 -12 6 -6 0 -1 Z"/></g>
     <g class="flame f2"><path d="M-3 -1 C-7 -5 -5 -9 -3 -12 C-1 -9 1 -5 -3 -1 Z M3 -1 C-1 -5 1 -9 3 -12 C5 -9 7 -5 3 -1 Z"/></g>
     <circle class="spark k1" cx="0" cy="-16" r="1"/><circle class="spark k2" cx="2" cy="-18" r=".9"/><circle class="spark k3" cx="-2" cy="-17" r=".8"/>
+    </g>
+    <path class="smoke ember" d="M0 -3 c-4 -6 4 -10 0 -16 c-4 -6 4 -10 0 -14"/>
   </g>
+
+  <!-- roddbåt: ror ut och fiskar när solen gått upp, ror hem när det blir natt -->
+  <g class="rower"><g transform="translate(560 752)"><g class="bob">
+    <path class="boat" d="M-13 -1 H13 L9 4 H-9 Z"/>
+    <path class="oar" d="M-10 7 L1 -3"/>
+    <path class="person" d="M-3 -1 V-8 Q0 -10 3 -8 V-1 Z"/>
+    <circle class="head" cx="0" cy="-11.5" r="2.6"/>
+    <path class="hat" d="M-3 -12.5 H3 L2 -15 H-2 Z"/>
+    <g class="rod"><path class="rodp" d="M2 -6 L18 -19"/><path class="fline" d="M18 -19 L21 1"/><circle class="bobber" cx="21" cy="1" r="1.3"/>
+      <ellipse class="fring" cx="21" cy="2" rx="5" ry="1"/></g>
+  </g></g></g>
   <path class="pier" d="M560 778 L572 778 L592 750 L582 750 Z"/>
   <path class="pier-post" d="M562 778 v5 M571 778 v5 M584 750 v4 M591 750 v4"/>
   <g class="bob"><g transform="translate(578 718) scale(.72)">${SEA}</g></g>

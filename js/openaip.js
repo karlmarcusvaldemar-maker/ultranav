@@ -1,5 +1,5 @@
 // OpenAIP: luftrum, flygfält och rapportpunkter (vektor). Kräver gratis API-nyckel från openaip.net.
-import { settings } from './settings.js';
+import { settings, oaipKey, proxyUrl } from './settings.js';
 import { idb, fetchX, toast, pointInGeometry, FT_PER_M, distNM } from './util.js';
 
 const API = 'https://api.core.openaip.net/api';
@@ -97,10 +97,10 @@ function areaQuery(bbox) {
   return `pos=${c.lat.toFixed(4)},${c.lon.toFixed(4)}&dist=${settings.openaipQuery === 'poskm' ? Math.ceil(m / 1000) : m}`;
 }
 export function oaipUrl(path, query) {
-  const q = settings.openaipAuth === 'header' ? '' : `&apiKey=${encodeURIComponent(settings.openaipKey)}`;
+  const q = settings.openaipAuth === 'header' ? '' : `&apiKey=${encodeURIComponent(oaipKey())}`;
   return `${API}/${path}?${query}${q}`;
 }
-export const oaipHeaders = () => (settings.openaipAuth === 'header' ? { 'x-openaip-api-key': settings.openaipKey } : undefined);
+export const oaipHeaders = () => (settings.openaipAuth === 'header' ? { 'x-openaip-api-key': oaipKey() } : undefined);
 
 /** Ligger objektet inom området? (filtrerar bort data från fel plats om servern skulle ignorera filtret) */
 function inArea(item, [w, s, e, n]) {
@@ -134,7 +134,7 @@ async function loadCell(x, y) {
   const p = (async () => {
     let data = await idb.get(KEY + k);
     if (!data || Date.now() - data.t > MAX_AGE) {
-      if (!settings.openaipKey || !navigator.onLine) { if (!data) return; }
+      if (!oaipKey() || !navigator.onLine) { if (!data) return; }
       else {
         const bbox = [x * 2 * CELL, y * CELL, (x + 1) * 2 * CELL, (y + 1) * CELL];
         try {
@@ -180,7 +180,7 @@ function loadCountry(cc) {
   const p = (async () => {
     let data = await idb.get(KEY + 'cc:' + cc);
     if (!data || Date.now() - data.t > MAX_AGE) {
-      if (settings.openaipKey && navigator.onLine) {
+      if (oaipKey() && navigator.onLine) {
         try {
           const [as, ap, rp] = await Promise.all([getCountry('airspaces', cc), getCountry('airports', cc), getCountry('reporting-points', cc)]);
           data = { t: Date.now(), as, ap, rp };

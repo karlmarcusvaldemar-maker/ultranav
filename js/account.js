@@ -1,7 +1,9 @@
 // Konto-fliken: logga in, skapa konto, glömt lösenord, synkstatus
-import { cloudConfigured, cloudStatus, signIn, signUp, signOut, resetPassword, updatePassword, sync } from './cloud.js';
+import { cloudConfigured, cloudStatus, signIn, signUp, signOut, resetPassword, updatePassword, sync, deleteAccount } from './cloud.js';
 import * as lib from './library.js';
-import { esc, $, note, modal, toast } from './util.js';
+import { esc, $, note, modal, toast, store } from './util.js';
+
+export const TERMS_VERSION = 1;
 import { ic } from './icons.js';
 
 let mode = 'login'; // 'login' | 'signup'
@@ -25,7 +27,8 @@ export function renderAuthForm(el) {
     <form class="authform" autocomplete="on">
       <label class="afield"><span>E-post</span><input type="email" name="email" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>
       <label class="afield"><span>Lösenord</span><input type="password" name="pw" autocomplete="${mode === 'signup' ? 'new-password' : 'current-password'}" minlength="8" required></label>
-      ${mode === 'signup' ? '<label class="afield"><span>Upprepa lösenord</span><input type="password" name="pw2" autocomplete="new-password" minlength="8" required></label>' : ''}
+      ${mode === 'signup' ? `<label class="afield"><span>Upprepa lösenord</span><input type="password" name="pw2" autocomplete="new-password" minlength="8" required></label>
+      <label class="consent"><input type="checkbox" name="ok" required><span>Jag har läst <a href="integritet.html" target="_blank" rel="noopener">integritetspolicyn</a> och förstår att Ultranav är ett hjälpmedel som inte ersätter officiell AIP, NOTAM eller godkänd navigationsutrustning.</span></label>` : ''}
       <button type="submit" class="btn primary wide">${ic(mode === 'signup' ? 'user' : 'lock')}${mode === 'signup' ? 'Skapa konto' : 'Logga in'}</button>
       ${mode === 'login' ? '<button type="button" class="linkbtn" data-forgot>Glömt lösenord?</button>' : '<div class="muted small">Minst 8 tecken. Du får ett mejl för att bekräfta adressen.</div>'}
     </form>
@@ -40,6 +43,7 @@ export function renderAuthForm(el) {
     try {
       if (mode === 'signup') {
         if (pw !== form.pw2.value) throw new Error('Lösenorden är inte lika.');
+        store.set('ulnav.terms', TERMS_VERSION);
         const r = await signUp(email, pw);
         if (r.needsConfirm) { mode = 'login'; renderAuthForm(el); el.querySelector('form').email.value = email;
           el.querySelector('.authmsg').innerHTML = note('ok', `Kontot är skapat. Vi har skickat ett mejl till <b>${esc(email)}</b> — klicka på länken i mejlet och logga sedan in.`); }
@@ -65,8 +69,18 @@ function renderLoggedIn(el, st) {
       <span>Eget kartmaterial</span><b>${n('layer')}</b><span>Flygningar</span><b>${n('flight')}</b></div>
     <div class="btnrow"><button class="btn" id="accSync">${ic('sync')}Synka nu</button><button class="btn" id="accPwBtn">${ic('lock')}Byt lösenord</button>
       <button class="btn danger" id="accOut">${ic('logout')}Logga ut</button></div>
+    <details class="danger-zone"><summary>Radera konto</summary>
+      <div class="muted">Kontot och allt du sparat i molnet — rutter, ritningar, kartmaterial, loggbok och delade länkar — raderas permanent. Det går inte att ångra.</div>
+      <div class="btnrow"><button class="btn danger" id="accDel">${ic('trash')}Radera mitt konto</button></div></details>
+    <div class="muted"><a href="integritet.html" target="_blank" rel="noopener">Integritetspolicy och villkor</a></div>
     <div class="muted">Synken sker automatiskt när något ändras, när appen öppnas och var femte minut. Utan nät sparas ändringarna och skickas när nätet är tillbaka.</div>`;
   $('#accSync', el).onclick = () => sync();
+  $('#accDel', el).onclick = async () => {
+    const v = prompt(`Skriv RADERA för att radera kontot ${st.user.email} och allt innehåll permanent.`);
+    if (v?.trim().toUpperCase() !== 'RADERA') return;
+    try { await deleteAccount(); toast('Kontot är raderat'); }
+    catch (err) { toast(err.message, 6000); }
+  };
   $('#accPwBtn', el).onclick = () => askNewPassword();
   $('#accOut', el).onclick = async () => {
     if (!confirm('Logga ut? Det som finns på den här enheten ligger kvar.')) return;

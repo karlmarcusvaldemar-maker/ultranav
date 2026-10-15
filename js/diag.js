@@ -1,5 +1,5 @@
 // Felsökning av anslutningar: visar varför ett anrop misslyckas (inloggning, behörighet, CORS, nätverk)
-import { settings, saveSettings } from './settings.js';
+import { settings, saveSettings, oaipKey, proxyUrl } from './settings.js';
 import { esc, note, withProxy } from './util.js';
 
 /** Gör ett anrop och klassificera resultatet */
@@ -25,7 +25,7 @@ const box = (cls, html) => note(cls.replace('box', ''), html, cls === 'okbox' ? 
 // ---------- OpenAIP ----------
 /** Testar nyckel OCH områdessökning: hämtar fält runt Stockholm och kontrollerar att de faktiskt ligger där. */
 export async function testOpenAip() {
-  const key = settings.openaipKey;
+  const key = oaipKey();
   if (!key) return box('warnbox', 'Ange en API-nyckel först.');
   const { oaipUrl, resetOpenAip } = await import('./openaip.js');
   const H = { 'x-openaip-api-key': key };
@@ -98,7 +98,7 @@ export async function testTile(url, name, isJson = false) {
 
 // ---------- CORS-proxy ----------
 export async function testProxy() {
-  const proxy = settings.corsProxy?.trim();
+  const proxy = proxyUrl();
   if (!proxy) return box('warnbox', 'Ingen proxy angiven. Fyll i adressen till din Worker i fältet CORS-proxy ovan.');
   if (!/^https:\/\//.test(proxy)) return box('badbox', 'Adressen måste börja med https://');
   const target = 'https://aviationweather.gov/api/data/metar?ids=ESSA&format=json';
@@ -118,7 +118,7 @@ export async function testProxy() {
 
 // ---------- väderkällor ----------
 export async function testWeather() {
-  const proxy = settings.corsProxy?.trim();
+  const proxy = proxyUrl();
   const rows = [];
   const check = async (name, url, validate = () => true) => {
     const d = await probe(url);

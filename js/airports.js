@@ -1,5 +1,5 @@
 // Flygfält: OurAirports (public domain, hela världen, filtreras per land) + OpenAIP (rikare data, kräver nyckel)
-import { settings } from './settings.js';
+import { settings, oaipKey, proxyUrl } from './settings.js';
 import { idb, fetchX, toast, distNM } from './util.js';
 import { oaipAirports } from './openaip.js';
 
@@ -44,7 +44,7 @@ export async function loadOurAirports(force = false) {
   if (!navigator.onLine) return;
   try {
     toast('Hämtar flygfält från OurAirports…', 4000);
-    const opt = { as: 'text', proxy: settings.corsProxy, timeout: 60000 };
+    const opt = { as: 'text', proxy: proxyUrl(), timeout: 60000 };
     const [ap, rw, fq] = await Promise.all([
       fetchX(OA + 'airports.csv', opt), fetchX(OA + 'runways.csv', opt), fetchX(OA + 'airport-frequencies.csv', opt)]);
     const set = new Set(countries);
@@ -78,7 +78,7 @@ export async function loadOurAirports(force = false) {
     toast(`${oaAirports.length} flygfält inlästa (${countries.join(', ')})`);
     emit();
   } catch (e) {
-    toast('OurAirports: ' + e.message + (settings.corsProxy ? '' : ' (prova CORS-proxy i inställningar)'), 6000);
+    toast('OurAirports: ' + e.message + (proxyUrl() ? '' : ' (prova CORS-proxy i inställningar)'), 6000);
   }
 }
 export const oaInfo = () => oaMeta ? { n: oaMeta.list.length, t: new Date(oaMeta.t) } : null;

@@ -1,6 +1,6 @@
 // Ruttplanering och navlogg
 import { map } from './map.js';
-import { settings, spdOut, spdUnit } from './settings.js';
+import { settings, spdOut, spdUnit, oaipKey, proxyUrl } from './settings.js';
 import { distNM, bearing, interp, windTriangle, norm360, fmtDeg, fmtHM, fmtUTC, fmtLocal, esc, store, toast, debounce, download, $, note } from './util.js';
 import { ic } from './icons.js';
 import { fetchForecast, hourIndex, windAt } from './wx.js';
@@ -111,7 +111,7 @@ async function updateProfile() {
 }
 async function updateAirspace() {
   crossings = [];
-  if (route.wps.length < 2 || !settings.openaipKey) return;
+  if (route.wps.length < 2 || !oaipKey()) return;
   await loadRoute(route.wps);
   // sampla var ~0,5 NM
   const pts = [];
@@ -275,7 +275,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
     if (low.length) h += note('warn', `Under ${settings.minClearance} ft terrängmarginal på: ${low.map((l) => `${esc(l.to.name)} (terräng ${Math.round(l.terr)} ft)`).join(', ')}. Höjddata saknar master och byggnader.`);
 
     h += `<h3>Luftrum längs rutten</h3>`;
-    if (!settings.openaipKey) h += '<div class="muted">Ange OpenAIP-nyckel under Inställningar för luftrumskontroll.</div>';
+    if (!oaipKey()) h += '<div class="muted">Ange OpenAIP-nyckel under Inställningar för luftrumskontroll.</div>';
     else if (!crossings.length) h += '<div class="muted">Inga luftrum funna längs rutten i OpenAIP-data (eller ännu ej inläst).</div>';
     else h += crossings.map((c) => {
       const cls = c.inside && [1, 3, 4, 7, 13, 26, 36, 2].includes(c.as.type) ? 'asp-bad' : c.inside ? 'asp-warn' : '';

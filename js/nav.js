@@ -1,7 +1,7 @@
 // GPS, rörlig karta, aktiv sträcka, direkt-till, glidräckvidd, spårlogg och varningar
 import { map } from './map.js';
 import { ic } from './icons.js';
-import { settings, spdOut, spdUnit } from './settings.js';
+import { settings, spdOut, spdUnit, oaipKey, proxyUrl } from './settings.js';
 import { route, onRouteChange, getLegs } from './route.js';
 import { airspacesAt, limitFt, asLabel, fmtLimit } from './openaip.js';
 import { elevationFt } from './terrain.js';
@@ -141,7 +141,7 @@ async function terrainCheck(fix) {
   nav.aglFt = t != null && fix.altFt != null ? fix.altFt - t : null;
 }
 function airspaceCheck(fix) {
-  if (fix.t - lastAs < 8000 || !settings.openaipKey) return;
+  if (fix.t - lastAs < 8000 || !oaipKey()) return;
   lastAs = fix.t;
   const alt = fix.altFt;
   const check = (p, ahead) => {

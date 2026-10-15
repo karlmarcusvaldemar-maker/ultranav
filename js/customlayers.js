@@ -2,7 +2,7 @@
 import { map, registerCustomLayers, renderLayerPanel } from './map.js';
 import * as lib from './library.js';
 import { store, toast, modal, esc, $, fetchX } from './util.js';
-import { settings } from './settings.js';
+import { settings, oaipKey, proxyUrl } from './settings.js';
 import { ic } from './icons.js';
 
 const shown = new Map();                       // id → Leaflet-lager som visas
@@ -138,7 +138,7 @@ async function addGeoJSON(name, geojson) {
 // ---------- WMS ----------
 async function wmsLayers(url) {
   const u = url + (url.includes('?') ? '&' : '?') + 'service=WMS&request=GetCapabilities';
-  const xml = await fetchX(u, { as: 'text', proxy: settings.corsProxy, timeout: 20000 });
+  const xml = await fetchX(u, { as: 'text', proxy: proxyUrl(), timeout: 20000 });
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
   const version = doc.documentElement.getAttribute('version') || '1.3.0';
   const layers = kids(doc, 'Layer').map((l) => ({ name: [...l.children].find((c) => c.localName === 'Name')?.textContent, title: [...l.children].find((c) => c.localName === 'Title')?.textContent })).filter((l) => l.name);

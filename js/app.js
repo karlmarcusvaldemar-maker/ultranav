@@ -1,6 +1,7 @@
 // Ultranav — huvudmodul
-import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES, onSettings } from './settings.js';
+import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES, onSettings, oaipKey, proxyUrl } from './settings.js';
 import * as lib from './library.js';
+import { OPENAIP_KEY } from './config.js';
 import { initCloud, onCloud, cloudConfigured, cloudStatus, shareItem, unshareItem, fetchShared, copyText } from './cloud.js';
 import { renderAccountTab, askNewPassword } from './account.js';
 import { initCustomLayers, addSharedLayer } from './customlayers.js';
@@ -20,6 +21,7 @@ import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
 import { sunInfo } from './sun.js';
 import { testOpenAip, testProxy, testWeather } from './diag.js';
 import { oaipStatus, resetOpenAip } from './openaip.js';
+import { initNotam, testNotam } from './notam.js';
 import { applyIcons, icon, ic } from './icons.js';
 
 let editing = false;
@@ -40,6 +42,7 @@ initMap();
 initAero();
 initCustomLayers();
 initWxOverlay();
+initNotam();
 initRoute();
 initNav();
 initDraw();
@@ -230,7 +233,7 @@ function renderFieldsTab(el) {
   const info = oaInfo();
   el.innerHTML = `<input class="search" type="search" id="fq" placeholder="Sök namn eller ICAO (t.ex. ESSB, Långtora)…" value="${esc(fieldQuery)}" autocomplete="off">
     <div id="fres"></div>
-    <div class="muted" style="margin-top:10px">${info ? `OurAirports: ${info.n} fält (${esc(settings.oaCountries)}), hämtat ${info.t.toLocaleDateString('sv-SE')}` : 'OurAirports ej inläst'}${settings.openaipKey ? ' · OpenAIP: fält laddas för kartvyn' : ' · Ange OpenAIP-nyckel för UL-fält och frekvenser'}</div>`;
+    <div class="muted" style="margin-top:10px">${info ? `OurAirports: ${info.n} fält (${esc(settings.oaCountries)}), hämtat ${info.t.toLocaleDateString('sv-SE')}` : 'OurAirports ej inläst'}${oaipKey() ? ' · OpenAIP: fält laddas för kartvyn' : ' · Ange OpenAIP-nyckel för UL-fält och frekvenser'}</div>`;
   const draw = () => {
     const q = $('#fq', el).value;
     fieldQuery = q;
@@ -363,18 +366,18 @@ function renderSettingsTab(el) {
   ${num('arrivalRadius', 'Ankomstradie (NM)', 'byt till nästa punkt', 0.1)}
 
   <h3>Datakällor</h3>
-  <div class="field"><span>OpenAIP API-nyckel<small>Gratis på <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a> › konto › API-klienter</small></span>
-    <input type="password" data-k="openaipKey" value="${esc(s.openaipKey)}" autocomplete="off"></div>
+  <div class="field"><span>OpenAIP API-nyckel${OPENAIP_KEY ? ' (valfri)' : ''}<small>${OPENAIP_KEY ? 'Appen har en inbyggd nyckel. Egen nyckel: ' : ''}Gratis på <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a> › konto › API-klienter</small></span>
+    <input type="password" data-k="openaipKey" value="${esc(s.openaipKey)}" autocomplete="off" placeholder="${OPENAIP_KEY ? 'Inbyggd nyckel' : ''}"></div>
 
   <div class="field"><span>OurAirports länder<small>ISO-koder, t.ex. SE,NO,DK,FI</small></span><input type="text" data-k="oaCountries" value="${esc(s.oaCountries)}"></div>
   <div class="field"><span>Ta med helikopterplatser</span><input type="checkbox" data-k="oaIncludeHeli" ${s.oaIncludeHeli ? 'checked' : ''}></div>
   <div class="btnrow"><button class="btn" id="oaReload">${ic('refresh')}Ladda om OurAirports</button></div>
-  <div class="field"><span>CORS-proxy (valfri)<small>Adressen till din Cloudflare Worker, t.ex. https://ultranav-proxy.namn.workers.dev</small></span>
-    <input type="url" data-k="corsProxy" value="${esc(s.corsProxy)}" placeholder="https://…workers.dev" autocapitalize="off"></div>
+  <div class="field"><span>CORS-proxy (valfri)<small>Lämna tomt för appens inbyggda proxy. Egen: adressen till din Cloudflare Worker</small></span>
+    <input type="url" data-k="corsProxy" value="${esc(s.corsProxy)}" placeholder="Inbyggd proxy" autocapitalize="off"></div>
   <div class="btnrow"><button class="btn" id="tProxy">${ic('search')}Testa CORS-proxy</button></div><div id="tProxyRes"></div>
 
   <h3>Offline</h3>
-  <div class="muted">Spara kartbilder (zoom 7–12, ±8 NM) och terräng längs aktuell rutt för vald baskarta och aktiva flygkartlager. Data för luftrum och flygfält sparas automatiskt när de visas.</div>
+  <div class="muted">Spara Standardkartan (zoom 7–12, ±8 NM), terräng och aktiva flygkartlager längs aktuell rutt. Övriga baskartor tillåter inte förladdning. Data för luftrum och flygfält sparas automatiskt när de visas.</div>
   <div class="btnrow"><button class="btn primary" id="offDl">${ic('download')}Spara rutten offline</button><button class="btn danger" id="offClr">${ic('trash')}Töm kartcache</button></div>
   <div id="offInfo" class="muted"></div>
 
@@ -387,15 +390,15 @@ function renderSettingsTab(el) {
   <h3>Felsökning</h3>
   <div class="muted" id="oaipStat"></div>
   <div class="btnrow"><button class="btn" id="tOaip">${ic('search')}Testa OpenAIP</button><button class="btn" id="tBase">${ic('search')}Testa vald baskarta</button>
-  <button class="btn" id="tWx">${ic('cloud')}Testa väder</button></div>
-  <div id="tOaipRes"></div><div id="tBaseRes"></div><div id="tWxRes"></div>
+  <button class="btn" id="tWx">${ic('cloud')}Testa väder</button><button class="btn" id="tNotam">${ic('alert')}Testa NOTAM</button></div>
+  <div id="tOaipRes"></div><div id="tBaseRes"></div><div id="tWxRes"></div><div id="tNotamRes"></div>
 
   <h3>Om & licenser</h3>
   <div class="field"><span>Version<small>Uppdateras automatiskt när du är online</small></span><b>${APP_VERSION}</b></div>
   <div class="btnrow"><button class="btn" id="forceUpd">${ic('refresh')}Tvinga uppdatering</button></div>
   <div class="muted" style="line-height:1.5">
   Kartdata © OpenStreetMap-bidragsgivare (ODbL) · OpenFreeMap/OpenMapTiles · MapLibre GL (BSD-3) · OpenTopoMap (CC-BY-SA) · Esri World Imagery ·
-  open flightmaps · OpenAIP (CC BY-NC 4.0) · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
+  open flightmaps · OpenAIP (CC BY-NC 4.0) · NOTAM via FAA NOTAM Search · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
   RainViewer · AWS Terrain Tiles (SRTM, GMTED, ETOPO m.fl.) · Leaflet (BSD-2).<br><br>
   <b>Viktigt:</b> Appen är ett hjälpmedel för planering och lägesuppfattning. Den ersätter inte officiell AIP, ICAO-karta, NOTAM,
   briefing eller godkänd navigationsutrustning. Data från öppna källor kan vara ofullständiga eller inaktuella. Befälhavaren ansvarar alltid.</div>`;
@@ -421,9 +424,10 @@ function renderSettingsTab(el) {
   runTest('#tBase', '#tBaseRes', testCurrentBase);
   runTest('#tProxy', '#tProxyRes', testProxy);
   runTest('#tWx', '#tWxRes', testWeather);
-  const showStat = () => { const st = oaipStatus(); $('#oaipStat', el).textContent = settings.openaipKey
+  runTest('#tNotam', '#tNotamRes', testNotam);
+  const showStat = () => { const st = oaipStatus(); $('#oaipStat', el).textContent = oaipKey()
     ? `OpenAIP inläst: ${st.airspaces} luftrum, ${st.airports} flygfält, ${st.rp} rapportpunkter (${st.cells} områden). Hämtning: ${settings.openaipQuery === 'country' ? 'per land' : 'per område (' + settings.openaipQuery + ')'}.`
-    : 'OpenAIP: ingen nyckel angiven.'; };
+    : 'OpenAIP: ingen nyckel.'; };
   showStat();
   $('#forceUpd', el).onclick = async () => {
     // Töm appens programcache (inte kartor eller dina data) och ladda om från servern
@@ -512,7 +516,7 @@ function openTab(tab) {
 })();
 
 // ---------- service worker ----------
-export const APP_VERSION = '2026-10-15.5';
+export const APP_VERSION = '2026-10-15.6';
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // updateViaCache: 'none' → sw.js hämtas alltid färskt; leta efter uppdatering vid start och när appen visas igen
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {

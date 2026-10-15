@@ -497,27 +497,72 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } .scene .fly.near { transform: translateX(420px); } .scene .fly.far { transform: translateX(1000px); } }
 #gateNote:not(:empty) { margin-bottom: 6px; }
 
-/* Påskägg: gryning efter en stund på inloggningssidan */
-.scene .dawnsky { opacity: 0; transition: opacity 16s ease-in-out 4s; }
-.scene .stars { transition: opacity 8s ease; }
-.scene .moonset { transition: transform 14s ease-in; }
-.scene .sunrise { transform: translateY(330px); transition: transform 18s ease-out 6s; }
+/* Dygnsväxling: dag efter 8 s, natt igen efter 16 s (styrs av login.js, upprepas) */
+.scene .dawnsky { opacity: 0; transition: opacity 3s ease-in-out; }
+.scene .stars { transition: opacity 2.5s ease; }
+.scene .moonset { transition: transform 3s ease-in-out; }
+.scene .sunrise { transform: translateY(330px); transition: transform 3.5s ease-out; }
 .scene .sun { fill: #ffe39a; }
-.scene .birds { opacity: 0; transform: translate(-120px, 230px); }
+.scene .birds { opacity: 0; }
 .scene .bird { fill: none; stroke: #1d2e40; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.scene :is(.m1, .m2, .m3, .tr, .vale, .lake, .river, .fg, .cl, .hs, .cab, .cab-roof, .strip, .pad) { transition: fill 16s ease 4s, stroke 16s ease 4s; }
-.scene .win, .scene .fireglow { transition: opacity 10s ease 8s; }
-.scene.dawn .dawnsky { opacity: 1; }
-.scene.dawn .stars { opacity: 0; }
-.scene.dawn .moonset { transform: translateY(260px); }
-.scene.dawn .sunrise { transform: translateY(0); }
-.scene.dawn .m1 { fill: #7d90aa; } .scene.dawn .m2 { fill: #64789a; } .scene.dawn .m3 { fill: #52688a; }
-.scene.dawn .tr, .scene.dawn .tr.far { fill: #3a5272; } .scene.dawn .tr.near { fill: #1e2c3d; }
-.scene.dawn .vale { fill: #4b6185; } .scene.dawn .fg { fill: #2a3a50; }
-.scene.dawn .lake { fill: #79a8cc; } .scene.dawn .river { stroke: #79a8cc; }
-.scene.dawn .cl { fill: #f4ddc6; } .scene.dawn .hs { fill: #2c3a4c; }
-.scene.dawn .strip { stroke: #4f7a52; } .scene.dawn .pad { fill: #52688a; }
-.scene.dawn .win { opacity: 0; animation: none; } .scene.dawn .fireglow { opacity: .35; animation: none; }
-.scene.dawn .moonpath { stroke: #fff1c4; }
-.scene.dawn .birds { animation: scBirds 30s linear 14s infinite; }
-@keyframes scBirds { 0% { transform: translate(-120px, 230px); opacity: 0; } 5% { opacity: 1; } 95% { opacity: 1; } 100% { transform: translate(1800px, 150px); opacity: 0; } }
+.scene :is(.m1, .m2, .m3, .tr, .vale, .lake, .river, .fg, .cl, .hs, .cab, .cab-roof, .strip, .pad) { transition: fill 3s ease, stroke 3s ease; }
+.scene .win { transition: opacity 2s ease; }
+.scene .fireup { transition: opacity 1.6s ease; }
+.scene .smoke.ember { opacity: 0; animation: none; transition: opacity 2s ease; }
+.scene.day .dawnsky { opacity: 1; }
+.scene.day .stars { opacity: 0; }
+.scene.day .moonset { transform: translateY(260px); }
+.scene.day .sunrise { transform: translateY(0); }
+.scene.day .m1 { fill: #7d90aa; } .scene.day .m2 { fill: #64789a; } .scene.day .m3 { fill: #52688a; }
+.scene.day .tr, .scene.day .tr.far { fill: #3a5272; } .scene.day .tr.near { fill: #1e2c3d; }
+.scene.day .vale { fill: #4b6185; } .scene.day .fg { fill: #2a3a50; }
+.scene.day .lake { fill: #79a8cc; } .scene.day .river { stroke: #79a8cc; }
+.scene.day .cl { fill: #f4ddc6; } .scene.day .hs { fill: #2c3a4c; }
+.scene.day .strip { stroke: #4f7a52; } .scene.day .pad { fill: #52688a; }
+.scene.day .win { opacity: 0; animation: none; }
+.scene.day .fireup { opacity: 0; }
+.scene.day .smoke.ember { opacity: 1; animation: scSmoke 3.5s ease-out infinite; }
+.scene.day .moonpath { stroke: #fff1c4; }
+.scene.day .birds { opacity: 1; }
+.scene.day .birdsi { animation: scBirds 9s linear .5s both; }
+@keyframes scBirds { 0% { transform: translate(-120px, 230px); opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { transform: translate(1300px, 120px); opacity: 0; } }
+
+/* roddbåten */
+.scene .boat { fill: #6c5a46; } .scene .person { fill: #b5482f; } .scene .head { fill: #e2bb94; } .scene .hat { fill: #2c3d50; }
+.scene .oar { fill: none; stroke: #c9a77c; stroke-width: 1.4; stroke-linecap: round; transform-box: fill-box; transform-origin: 100% 0; }
+.scene .rodp { fill: none; stroke: #3d2f22; stroke-width: 1.1; stroke-linecap: round; }
+.scene .fline { fill: none; stroke: #c8d6e2; stroke-width: .5; }
+.scene .bobber { fill: #e8473a; }
+.scene .fring { fill: none; stroke: #c8d6e2; stroke-width: .7; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.scene .rod { opacity: 0; transition: opacity .8s ease; }
+.scene .rower { transition: transform 5s ease-in-out; }
+.scene.day .rower { transform: translate(-100px, -38px); }
+.scene.rowing .oar { animation: scOar .75s ease-in-out infinite alternate; }
+.scene.fishing .rod { opacity: 1; }
+.scene.fishing .fring { animation: scRing 2.6s ease-out infinite; }
+@keyframes scOar { from { transform: rotate(-28deg); } to { transform: rotate(22deg); } }
+
+/* flygplanet vid hangaren startar åt vänster, mot vinden */
+.scene .tko { transform-box: fill-box; transform-origin: center; animation: scPark 1.6s ease both; }
+.scene.takeoff .tko { animation: scTakeoff 4s ease-in both; }
+@keyframes scPark { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scTakeoff {
+  0% { transform: translate(0, 0) rotate(0); }
+  50% { transform: translate(-118px, 7px) rotate(0); }
+  62% { transform: translate(-165px, 4px) rotate(9deg); }
+  100% { transform: translate(-760px, -300px) rotate(16deg); }
+}
+@media (prefers-reduced-motion: reduce) { .scene .rower, .scene * { transition: none !important; } }
+
+/* NOTAM i popup-fönster */
+details.notams { margin-top: 8px; }
+details.notams summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.asp.notam .ntxt { white-space: pre-wrap; font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 4px; max-height: 9.5em; overflow: auto; }
+
+/* samtycke, kontoradering, länkar på inloggningssidan */
+.consent { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.consent input { width: 22px; height: 22px; flex: none; margin-top: 1px; accent-color: var(--accent); }
+.consent a, .gatefoot a, .danger-zone + .muted a { color: var(--accent); }
+.gatefoot { margin-top: 12px; text-align: center; font-size: 12px; }
+details.danger-zone { margin: 14px 0 8px; border: 1px solid var(--line-strong); border-radius: 12px; padding: 8px 12px; }
+details.danger-zone summary { cursor: pointer; font-weight: 600; color: var(--bad, #ff5a52); min-height: 32px; display: flex; align-items: center; }
