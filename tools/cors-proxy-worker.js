@@ -31,7 +31,10 @@ export default {
       Vary: 'Origin',
     };
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
-    if (!allowOrigin) return new Response('Otillåten webbplats', { status: 403, headers: cors });
+    // Statuskontroll som alla kan läsa (för felsökning): https://<proxy>/?ping
+    const open = { ...cors, 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/plain; charset=utf-8' };
+    if (new URL(request.url).searchParams.has('ping')) return new Response(`ultranav-proxy 3\nOrigin: ${origin || '(saknas)'}\nTillåten: ${allowOrigin ? 'ja' : 'nej'}`, { headers: open });
+    if (!allowOrigin) return new Response(`Otillåten webbplats: ${origin || '(ingen Origin)'}`, { status: 403, headers: open });
 
     const target = new URL(request.url).searchParams.get('url');
     let url;
@@ -61,7 +64,7 @@ export default {
     }
     const headers = new Headers(upstream.headers);
     for (const [k, v] of Object.entries(cors)) headers.set(k, v);
-    headers.set('X-Ultranav-Proxy', '2');
+    headers.set('X-Ultranav-Proxy', '3');
     headers.set('Access-Control-Expose-Headers', 'X-Ultranav-Proxy');
     return new Response(upstream.body, { status: upstream.status, headers });
   },

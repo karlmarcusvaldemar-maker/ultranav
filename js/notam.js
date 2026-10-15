@@ -212,12 +212,24 @@ export async function testNotam() {
   const rows = [];
   const row = (ok, txt) => rows.push(`<div class="${ok ? 'okbox' : 'badbox'}"><div>${txt}</div></div>`);
   const proxy = proxyUrl();
-  // 1) svarar proxyn, och är det den nya versionen (som tillåter NOTAM)?
+  // 1) svarar proxyn, och vilken version körs?
   try {
-    const r = await fetch(withProxy('https://aviationweather.gov/api/data/metar?ids=ESSA&format=json', proxy));
-    const ver = r.headers.get('X-Ultranav-Proxy');
-    row(r.ok, `Proxyn svarar (HTTP ${r.status})${ver ? `, version ${esc(ver)}` : ' — <b>gammal version</b>: klistra in den senaste koden i Cloudflare'}.`);
-  } catch (e) { row(false, `Proxyn svarar inte: ${esc(e.message)}. Adress: ${esc(proxy)}`); return rows.join(''); }
+    const r = await fetch(proxy.replace(/\?.*$/, '').replace(/\/?$/, '/') + '?ping', { cache: 'no-store' });
+    const t = await r.text();
+    if (/ultranav-proxy/.test(t)) {
+      const allowed = /Tillåten: ja/.test(t);
+      row(allowed, `Proxyn svarar: ${esc(t.split('\n')[0])}. ${allowed ? 'Den här webbplatsen är tillåten.' : `Webbplatsen <b>${esc(location.origin)}</b> är <b>inte</b> tillåten — lägg till den i ALLOWED_ORIGINS och tryck Deploy.`}`);
+      if (!allowed) return rows.join('');
+    } else if (/hello world/i.test(t)) { row(false, 'Workern kör fortfarande "Hello World" — koden är inte utbytt.'); return rows.join(''); }
+    else row(false, `Proxyn svarar men kör en äldre kod (HTTP ${r.status}: ${esc(t.slice(0, 80))}). Klistra in senaste tools/cors-proxy-worker.js i Cloudflare och tryck <b>Deploy</b>.`);
+  } catch (e) {
+    // Når vi den alls? Ett "no-cors"-anrop lyckas om servern svarar, även utan CORS-tillåtelse.
+    const reach = await fetch(proxy, { mode: 'no-cors', cache: 'no-store' }).then(() => true, () => false);
+    row(false, reach
+      ? `Proxyn svarar, men utan CORS-tillåtelse för den här webbplatsen — troligen körs en äldre kod. Klistra in senaste tools/cors-proxy-worker.js i Cloudflare och tryck <b>Deploy</b>. (${esc(proxy)})`
+      : `Proxyn går inte att nå: ${esc(proxy)}. Kontrollera adressen.`);
+    return rows.join('');
+  }
   // 2) NOTAM via proxyn
   const t0 = performance.now();
   try {
