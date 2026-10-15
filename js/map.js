@@ -26,7 +26,12 @@ export const BASES = {
   vecLiberty: { name: 'Standardkarta', make: () => vectorLayer('liberty', '© OpenFreeMap © OpenMapTiles © OpenStreetMap') },
   osm: { name: 'Vägkarta', make: () => L.tileLayer(settings.tiles.osm, tileOpts({ maxNativeZoom: 19, attribution: '© OpenStreetMap-bidragsgivare' })) },
   otm: { name: 'Topografikarta', make: () => L.tileLayer(settings.tiles.otm, tileOpts({ maxNativeZoom: 17, subdomains: 'abc', attribution: '© OpenStreetMap, SRTM | © OpenTopoMap (CC-BY-SA)' })) },
-  esri: { name: 'Satellitkarta', make: () => L.tileLayer(settings.tiles.esri, tileOpts({ maxNativeZoom: 18, attribution: 'Bild © Esri, Maxar, Earthstar Geographics' })) },
+  // Satellitbild med Esris referenslager ovanpå: vägar, orter och gränser
+  esri: { name: 'Satellitkarta', make: () => L.featureGroup([
+    L.tileLayer(settings.tiles.esri, tileOpts({ maxNativeZoom: 18, attribution: 'Bild © Esri, Maxar, Earthstar Geographics' })),
+    L.tileLayer(settings.tiles.esriRoads, tileOpts({ maxNativeZoom: 18, className: 'basemap-ref' })),
+    L.tileLayer(settings.tiles.esriPlaces, tileOpts({ maxNativeZoom: 18, className: 'basemap-ref' })),
+  ]) },
   kartverket: { name: 'Norgekarta', make: () => L.tileLayer(settings.tiles.kartverket, tileOpts({ maxNativeZoom: 18, attribution: '© Kartverket (CC BY 4.0)' })) },
 };
 
