@@ -16,6 +16,8 @@ const ALLOWED_HOSTS = [
   'davidmegginson.github.io',       // OurAirports
   'api.rainviewer.com',             // radarlista
   'geodata.naturvardsverket.se',    // skyddade områden (lagerlista)
+  'ext-geodata-applikationer.lansstyrelsen.se', // vindkraftverk (lagerlista)
+  'view.eumetsat.int',              // molnbild (lagerlista)
 ];
 
 export default {
@@ -32,7 +34,7 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     // Statuskontroll som alla kan läsa (för felsökning): https://<proxy>/?ping
     const open = { ...cors, 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/plain; charset=utf-8' };
-    if (new URL(request.url).searchParams.has('ping')) return new Response(`ultranav-proxy 7\nOrigin: ${origin || '(saknas)'}\nTillåten: ${allowOrigin ? 'ja' : 'nej'}`, { headers: open });
+    if (new URL(request.url).searchParams.has('ping')) return new Response(`ultranav-proxy 8\nOrigin: ${origin || '(saknas)'}\nTillåten: ${allowOrigin ? 'ja' : 'nej'}`, { headers: open });
     if (!allowOrigin) return new Response(`Otillåten webbplats: ${origin || '(ingen Origin)'}`, { status: 403, headers: open });
 
     const target = new URL(request.url).searchParams.get('url');
@@ -54,7 +56,7 @@ export default {
     }
     const headers = new Headers(upstream.headers);
     for (const [k, v] of Object.entries(cors)) headers.set(k, v);
-    headers.set('X-Ultranav-Proxy', '7');
+    headers.set('X-Ultranav-Proxy', '8');
     headers.set('Access-Control-Expose-Headers', 'X-Ultranav-Proxy');
     return new Response(upstream.body, { status: upstream.status, headers });
   },

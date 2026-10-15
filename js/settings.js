@@ -9,6 +9,8 @@ export const DEFAULT_TILES = {
   terrain: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
   kartverket: 'https://cache.kartverket.no/v1/wmts/1.0.0/topo/default/webmercator/{z}/{y}/{x}.png',
   protected: 'https://geodata.naturvardsverket.se/naturvardsregistret/wms',
+  wind: 'https://ext-geodata-applikationer.lansstyrelsen.se/arcgis/services/VBK/lst_vbk_wms_vindbrukskollen/MapServer/WMSServer',
+  clouds: 'https://view.eumetsat.int/geoserver/wms',
 };
 
 const DEFAULTS = {

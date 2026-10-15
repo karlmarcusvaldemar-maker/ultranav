@@ -2,6 +2,7 @@
 import { settings, saveSettings, onSettings, oaipKey, proxyUrl } from './settings.js';
 import { store, esc, $, fetchX, toast } from './util.js';
 import { vectorLayer } from './vector.js';
+import { hillshadeLayer } from './hillshade.js';
 import { ic } from './icons.js';
 
 export let map;
@@ -32,6 +33,9 @@ export const BASES = {
 export const OVERLAYS = {
   radar: { name: 'Nederbördsradar', opacity: 0.6, make: makeRadar },
   protected: { name: 'Skyddade områden Natur', opacity: 0.7, make: makeProtected },
+  wind: { name: 'Vindkraftverk', opacity: 1, make: makeWind },
+  hillshade: { name: 'Terrängskuggning', opacity: 0.6, make: () => hillshadeLayer({ opacity: state.opacity.hillshade ?? 0.6 }) },
+  clouds: { name: 'Molnbild', opacity: 0.55, make: makeClouds },
 };
 
 let baseLayer;
@@ -138,36 +142,46 @@ function makeRadar() {
   return grp;
 }
 
-// ---------- Naturvårdsverkets skyddade områden (WMS) ----------
-// Lagernamnen läses ur tjänstens GetCapabilities (sparas en vecka). Reserv: kända INSPIRE-lager.
-const PROTECTED_FALLBACK = { url: 'https://geodata.naturvardsverket.se/inspire/ps-nvr/ows', layers: 'PS.ProtectedSites.NR,PS.ProtectedSites.DVO', version: '1.3.0' };
-const PROTECTED_MATCH = /nationalpark|naturreservat|djur.*växt|växt.*djur|naturvårdsområde|naturminne|fågel/i;
-async function protectedLayers() {
-  const cached = store.get('ulnav.protectedWms', null);
-  if (cached && cached.url === settings.tiles.protected && Date.now() - cached.t < 7 * 864e5) return cached;
+// ---------- WMS-lager med lagernamn ur tjänstens GetCapabilities ----------
+// Lagernamnen väljs efter titel/namn och sparas en vecka. Om lagerlistan inte går att hämta används en reserv.
+async function wmsDiscover(key, url, match, fallback) {
+  const cached = store.get('ulnav.wms.' + key, null);
+  if (cached && cached.url === url && Date.now() - cached.t < 7 * 864e5) return cached;
   try {
-    const url = settings.tiles.protected;
     const xml = await fetchX(url + (url.includes('?') ? '&' : '?') + 'service=WMS&request=GetCapabilities', { as: 'text', proxy: proxyUrl(), timeout: 20000 });
     const doc = new DOMParser().parseFromString(xml, 'application/xml');
     const child = (el, n) => [...el.children].find((c) => c.localName === n)?.textContent || '';
     const named = [...doc.getElementsByTagNameNS('*', 'Layer')].map((l) => ({ name: child(l, 'Name'), title: child(l, 'Title') })).filter((l) => l.name);
-    const pick = named.filter((l) => PROTECTED_MATCH.test(l.title) || PROTECTED_MATCH.test(l.name));
-    if (!pick.length) throw new Error('inga lager');
-    const res = { t: Date.now(), url, layers: pick.map((l) => l.name).join(','), titles: pick.map((l) => l.title), version: doc.documentElement.getAttribute('version') || '1.3.0' };
-    store.set('ulnav.protectedWms', res);
+    const pick = named.filter((l) => match.test(l.title) || match.test(l.name));
+    if (!pick.length) throw new Error('inga matchande lager');
+    const res = { t: Date.now(), url, layers: pick.map((l) => l.name).join(','), version: doc.documentElement.getAttribute('version') || '1.3.0' };
+    store.set('ulnav.wms.' + key, res);
     return res;
-  } catch (e) { console.warn('skyddade områden', e); return PROTECTED_FALLBACK; }
+  } catch (e) { console.warn('WMS ' + key, e); return fallback; }
 }
-function makeProtected() {
+function wmsOverlay(id, discover, extra = {}) {
   const grp = L.layerGroup();
   let wms = null;
-  protectedLayers().then((c) => {
+  discover().then((c) => {
+    if (!c) { toast(`${OVERLAYS[id].name}: tjänsten svarar inte just nu`); return; }
     wms = L.tileLayer.wms(c.url, { layers: c.layers, format: 'image/png', transparent: true, version: c.version, maxZoom: 19, zIndex: 40,
-      opacity: state.opacity.protected ?? 0.7, attribution: 'Skyddade områden © Naturvårdsverket' }).addTo(grp);
+      opacity: state.opacity[id] ?? OVERLAYS[id].opacity ?? 1, ...extra }).addTo(grp);
   });
   grp.setOpacity = (o) => wms?.setOpacity(o);
   return grp;
 }
+// Naturvårdsverkets skyddade områden. Reserv: kända INSPIRE-lager.
+function makeProtected() { return wmsOverlay('protected', () => wmsDiscover('protected', settings.tiles.protected,
+  /nationalpark|naturreservat|djur.*växt|växt.*djur|naturvårdsområde|naturminne|fågel/i,
+  { url: 'https://geodata.naturvardsverket.se/inspire/ps-nvr/ows', layers: 'PS.ProtectedSites.NR,PS.ProtectedSites.DVO', version: '1.3.0' }),
+  { attribution: 'Skyddade områden © Naturvårdsverket' }); }
+// Länsstyrelsernas Vindbrukskollen: vindkraftverk (uppdateras dagligen)
+function makeWind() { return wmsOverlay('wind', () => wmsDiscover('wind', settings.tiles.wind, /vindkraftverk|verk\b|turbin/i, null),
+  { attribution: 'Vindkraftverk © Länsstyrelsen (Vindbrukskollen)' }); }
+// EUMETSAT: senaste satellitbild (infrarött 10,8 µm, Meteosat) — moln syns ljusa, även på natten
+// (lagret är känt — tjänstens lagerlista är mycket stor och hämtas inte)
+function makeClouds() { return wmsOverlay('clouds', async () => ({ url: settings.tiles.clouds, layers: 'msg_fes:ir108', version: '1.3.0' }),
+  { attribution: 'Molnbild © EUMETSAT', zIndex: 45 }); }
 
 // ---------- test av baskarta ----------
 export async function testCurrentBase() {
@@ -186,7 +200,7 @@ export function registerCustomLayers(provider) { custom = provider; }
 
 // ---------- Lagerpanel ----------
 const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', osm: 'mapRoad', kartverket: 'mapTopo', esri: 'satellite' };
-const OVERLAY_ORDER = ['airspace', 'fields', 'protected', 'metar', 'radar', 'drawings'];
+const OVERLAY_ORDER = ['airspace', 'fields', 'protected', 'wind', 'hillshade', 'metar', 'radar', 'clouds', 'drawings'];
 
 export function renderLayerPanel() {
   const el = $('#layerPanel');
