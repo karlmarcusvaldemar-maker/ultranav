@@ -135,12 +135,14 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <!-- roddbåt: ror ut och fiskar när solen gått upp, ror hem när det blir natt -->
   <g class="rower"><g transform="translate(560 752)"><g class="bob">
     <path class="boat" d="M-13 -1 H13 L9 4 H-9 Z"/>
+    <g class="crew">
     <path class="oar" d="M-10 7 L1 -3"/>
     <path class="person" d="M-3 -1 V-8 Q0 -10 3 -8 V-1 Z"/>
     <circle class="head" cx="0" cy="-11.5" r="2.6"/>
     <path class="hat" d="M-3 -12.5 H3 L2 -15 H-2 Z"/>
     <g class="rod"><path class="rodp" d="M2 -6 L18 -19"/><path class="fline" d="M18 -19 L21 1"/><circle class="bobber" cx="21" cy="1" r="1.3"/>
       <ellipse class="fring" cx="21" cy="2" rx="5" ry="1"/></g>
+    </g>
   </g></g></g>
   <path class="pier" d="M560 778 L572 778 L592 750 L582 750 Z"/>
   <path class="pier-post" d="M562 778 v5 M571 778 v5 M584 750 v4 M591 750 v4"/>

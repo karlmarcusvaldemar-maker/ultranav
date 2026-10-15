@@ -537,6 +537,11 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 .scene .rod { opacity: 0; transition: opacity .8s ease; }
 .scene .rower { transition: transform 5s ease-in-out; }
 .scene.day .rower { transform: translate(-100px, -38px); }
+/* gubben finns bara i båten på dagen och medan han ror; båten ligger tom vid bryggan på natten */
+.scene .crew { opacity: 0; transform-box: fill-box; transform-origin: 50% 100%; }
+.scene.day .crew, .scene.rowing .crew { opacity: 1; }
+.scene.day .crew { animation: scPop .35s ease-out; }
+@keyframes scPop { from { transform: scale(.2); } 70% { transform: scale(1.15); } to { transform: scale(1); } }
 .scene.rowing .oar { animation: scOar .75s ease-in-out infinite alternate; }
 .scene.fishing .rod { opacity: 1; }
 .scene.fishing .fring { animation: scRing 2.6s ease-out infinite; }
