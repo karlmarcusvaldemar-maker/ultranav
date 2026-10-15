@@ -542,10 +542,6 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 
 @media (prefers-reduced-motion: reduce) { .scene .rower, .scene * { transition: none !important; } }
 
-/* NOTAM i popup-fönster */
-details.notams { margin-top: 8px; }
-details.notams summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }
-.asp.notam .ntxt { white-space: pre-wrap; font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 4px; max-height: 9.5em; overflow: auto; }
 
 /* samtycke, kontoradering, länkar på inloggningssidan */
 .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--muted); line-height: 1.4; }

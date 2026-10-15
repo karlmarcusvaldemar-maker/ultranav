@@ -16,7 +16,7 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 - **Fältinfo**: tryck på (eller nära) ett flygfält för banor, frekvenser, sol, och METAR/TAF som hämtas automatiskt.
 - **Spårlogg** med GPX-export. **GPX-import och -export** av rutter, och sparade rutter.
 - **Simulering** av rutten för träning på marken.
-- **NOTAM** som kartlager: luftrumsrestriktioner, varningar och hinder ritas på kartan. Flygplats-NOTAM visas i fältinfo.
+- **NOTAM**: knappen NOTAM öppnar LFV:s officiella AROWeb (NOTAM under AIS).
 - **Offline**: spara Standardkartan, terräng och flygkartlager längs rutten. Luftrum och fält cachas i IndexedDB.
 - Teman: mörkt, ljust (sol) och natt (rött). Egna linjeikoner i [`js/icons.js`](js/icons.js), grupperade kontroller och stora tryckytor.
 
@@ -31,7 +31,6 @@ En webbapp för VFR-navigering, anpassad för ultralätt flyg. Den är optimerad
 | OurAirports | Fält, banor och frekvenser (public domain) | – |
 | Open-Meteo | Vind på höjd och prognos | – |
 | aviationweather.gov (NOAA) | METAR/TAF | – (kan kräva CORS-proxy) |
-| SkyLink NOTAM API (RapidAPI) | NOTAM (FIR ESAA och flygplatser) | Gratis nyckel, läggs i CORS-proxyn |
 | RainViewer | Radar | – |
 | AWS Terrain Tiles | Terränghöjd | – |
 
@@ -48,7 +47,7 @@ Obs: iPad-modeller med bara Wi-Fi saknar GPS-mottagare. Använd en mobildatamode
 Appen är ett hjälpmedel. Den ersätter inte officiell AIP, ICAO-karta, NOTAM, briefing eller godkänd navigationsutrustning. Magnetisk variation anges manuellt i inställningarna.
 
 ## CORS-proxy
-Appen har en inbyggd proxy (`DEFAULT_PROXY` i [`js/config.js`](js/config.js)) som behövs för NOTAM och ibland för METAR/TAF.
+Appen har en inbyggd proxy (`DEFAULT_PROXY` i [`js/config.js`](js/config.js)) som behövs för METAR/TAF.
 Koden finns i [`tools/cors-proxy-worker.js`](tools/cors-proxy-worker.js). Den släpper bara igenom anrop från Ultranavs adresser, och bara till källorna i listan.
 **När filen ändras** (ny källa eller ny adress): öppna workern i Cloudflare › **Edit code**, klistra in hela filen igen och tryck **Deploy**.
 
@@ -57,13 +56,6 @@ Egen proxy:
 2. Välj **Edit code**, ersätt koden med innehållet i filen och tryck **Deploy**.
 3. Kopiera adressen, t.ex. `https://ultranav-proxy.<namn>.workers.dev`.
 4. Ange adressen i Ultranav under **Inställn. › CORS-proxy**, eller som `DEFAULT_PROXY` i `js/config.js`.
-
-## NOTAM (SkyLink)
-NOTAM hämtas från [SkyLink NOTAM API](https://github.com/SkyLink-API/notam-api) (FAA:s globala NOTAM-flöde) via RapidAPI. Gratisnivån ger 1 000 anrop per månad. Appen hämtar bara FIR ESAA, och proxyn delar svaret mellan alla användare i ett dygn, så det blir ungefär 30 anrop i månaden.
-1. Skapa ett gratiskonto på https://rapidapi.com, sök upp **SkyLink API** och prenumerera på gratisnivån (Basic).
-2. Kopiera din **X-RapidAPI-Key** (visas i API:ts kodexempel).
-3. I Cloudflare: workern › **Settings › Variables and Secrets › Add**, typ *Secret*, namn `SKYLINK_KEY`, värde = nyckeln. Tryck **Deploy**.
-4. Kontrollera med `https://<proxy>/?ping` (ska visa `ultranav-proxy 5` och `NOTAM-nyckel: ja`) och tryck **Testa NOTAM** i appen.
 
 ## OpenAIP-nyckel
 Lägg en OpenAIP-nyckel som `OPENAIP_KEY` i [`js/config.js`](js/config.js), så slipper användarna skaffa en egen.

@@ -155,7 +155,7 @@ export function registerCustomLayers(provider) { custom = provider; }
 
 // ---------- Lagerpanel ----------
 const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', osm: 'mapRoad', esri: 'satellite' };
-const OVERLAY_ORDER = ['airspace', 'notam', 'fields', 'rp', 'metar', 'radar', 'ofmAero', 'openaipTiles', 'drawings'];
+const OVERLAY_ORDER = ['airspace', 'fields', 'rp', 'metar', 'radar', 'ofmAero', 'openaipTiles', 'drawings'];
 
 export function renderLayerPanel() {
   const el = $('#layerPanel');

@@ -22,7 +22,6 @@ import { downloadRoute, cacheInfo, clearTiles } from './offline.js';
 import { sunInfo } from './sun.js';
 import { testOpenAip, testProxy, testWeather } from './diag.js';
 import { oaipStatus, resetOpenAip } from './openaip.js';
-import { initNotam, testNotam } from './notam.js';
 import { applyIcons, icon, ic } from './icons.js';
 
 let editing = false;
@@ -43,7 +42,6 @@ initMap();
 initAero();
 initCustomLayers();
 initWxOverlay();
-initNotam();
 initRoute();
 initNav();
 initDraw();
@@ -108,6 +106,8 @@ fab('#btnProfile', () => { $('#profilePanel').classList.toggle('hidden'); drawPr
 fab('#btnEditUndo', () => { if (route.wps.length) removeWp(route.wps.length - 1); });
 fab('#btnEditDone', () => setEdit(false));
 fab('#btnNearest', showNearest);
+// NOTAM: LFV:s officiella AROWeb (NOTAM finns under AIS i menyn)
+fab('#btnNotam', () => window.open('https://aro.lfv.se/', '_blank', 'noopener'));
 fab('#btnLayers', () => { const p = $('#layerPanel'); p.classList.toggle('hidden'); if (!p.classList.contains('hidden')) renderLayerPanel(); syncFab(); });
 fab('#btnZoomIn', () => map.zoomIn());
 fab('#btnZoomOut', () => map.zoomOut());
@@ -391,15 +391,15 @@ function renderSettingsTab(el) {
   <h3>Felsökning</h3>
   <div class="muted" id="oaipStat"></div>
   <div class="btnrow"><button class="btn" id="tOaip">${ic('search')}Testa OpenAIP</button><button class="btn" id="tBase">${ic('search')}Testa vald baskarta</button>
-  <button class="btn" id="tWx">${ic('cloud')}Testa väder</button><button class="btn" id="tNotam">${ic('alert')}Testa NOTAM</button></div>
-  <div id="tOaipRes"></div><div id="tBaseRes"></div><div id="tWxRes"></div><div id="tNotamRes"></div>
+  <button class="btn" id="tWx">${ic('cloud')}Testa väder</button></div>
+  <div id="tOaipRes"></div><div id="tBaseRes"></div><div id="tWxRes"></div>
 
   <h3>Om & licenser</h3>
   <div class="field"><span>Version<small>Uppdateras automatiskt när du är online</small></span><b>${APP_VERSION}</b></div>
   <div class="btnrow"><button class="btn" id="forceUpd">${ic('refresh')}Tvinga uppdatering</button></div>
   <div class="muted" style="line-height:1.5">
   Kartdata © OpenStreetMap-bidragsgivare (ODbL) · OpenFreeMap/OpenMapTiles · MapLibre GL (BSD-3) · OpenTopoMap (CC-BY-SA) · Esri World Imagery ·
-  open flightmaps · OpenAIP (CC BY-NC 4.0) · NOTAM via SkyLink (FAA NOTAM-flöde) · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
+  open flightmaps · OpenAIP (CC BY-NC 4.0) · OurAirports (public domain) · Open-Meteo (CC-BY 4.0) · NOAA/AWC aviationweather.gov ·
   RainViewer · AWS Terrain Tiles (SRTM, GMTED, ETOPO m.fl.) · Leaflet (BSD-2).<br><br>
   <b>Viktigt:</b> Appen är ett hjälpmedel för planering och lägesuppfattning. Den ersätter inte officiell AIP, ICAO-karta, NOTAM,
   briefing eller godkänd navigationsutrustning. Data från öppna källor kan vara ofullständiga eller inaktuella. Befälhavaren ansvarar alltid.</div>`;
@@ -425,7 +425,6 @@ function renderSettingsTab(el) {
   runTest('#tBase', '#tBaseRes', testCurrentBase);
   runTest('#tProxy', '#tProxyRes', testProxy);
   runTest('#tWx', '#tWxRes', testWeather);
-  runTest('#tNotam', '#tNotamRes', testNotam);
   const showStat = () => { const st = oaipStatus(); $('#oaipStat', el).textContent = oaipKey()
     ? `OpenAIP inläst: ${st.airspaces} luftrum, ${st.airports} flygfält, ${st.rp} rapportpunkter (${st.cells} områden). Hämtning: ${settings.openaipQuery === 'country' ? 'per land' : 'per område (' + settings.openaipQuery + ')'}.`
     : 'OpenAIP: ingen nyckel.'; };

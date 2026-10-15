@@ -6,7 +6,6 @@ import { esc, debounce, distNM, bearing, fmtDeg, fmtLatLon } from './util.js';
 import { settings, oaipKey, proxyUrl } from './settings.js';
 import { fetchMetarTaf, metarHtml } from './wx.js';
 import { ic } from './icons.js';
-import { notamsAt, notamListHtml, notamLayerOn, loadAirportNotams } from './notam.js';
 import { sunInfo } from './sun.js';
 
 /** Åtgärder som app.js fyller i (undviker cirkulära beroenden) */
@@ -129,7 +128,6 @@ export function airportHtml(a) {
     <table style="margin-top:6px">${rw}</table>${fq ? `<table style="margin-top:6px">${fq}</table>` : ''}
     ${a.icao ? `<div id="apwx-${esc(a.icao)}" class="muted" style="margin-top:6px">Hämtar METAR/TAF…</div>` : ''}
     ${sunLine(a)}
-    ${a.icao && notamLayerOn() ? '<div class="apnotam muted" style="margin-top:6px">Hämtar NOTAM…</div>' : ''}
     <div class="muted" style="margin-top:4px">Källa: ${esc(a.src)} — kontrollera alltid mot AIP/fältets info</div>
     ${btns({ lat: a.lat, lon: a.lon, name: a.icao || a.name, icao: a.icao, elevFt: a.elevFt })}`;
 }
@@ -147,12 +145,6 @@ export function openAirport(a) {
   box.innerHTML = airportHtml(a);
   const popup = L.popup({ maxWidth: 360, autoPanPaddingTopLeft: [10, 10], autoPanPaddingBottomRight: [90, 10] })
     .setLatLng([a.lat, a.lon]).setContent(box).openOn(map);
-  const nEl = box.querySelector('.apnotam');
-  if (nEl) loadAirportNotams(a.icao).then((list) => {
-    nEl.classList.remove('muted');
-    nEl.innerHTML = notamListHtml(list, '<span class="muted">Inga NOTAM för fältet</span>');
-    if (popup.isOpen()) popup.update();
-  }).catch((e) => { nEl.textContent = 'NOTAM kunde inte hämtas: ' + e.message; });
   if (!a.icao || !navigator.onLine) { const el = a.icao && document.getElementById('apwx-' + a.icao); if (el) el.textContent = 'Offline — ingen METAR'; return; }
   fetchMetarTaf([a.icao]).then(([r]) => {
     const el = box.querySelector('[id^="apwx-"]');
@@ -190,7 +182,6 @@ export function mapInfoPopup(latlng, elevFt) {
   L.popup({ maxWidth: 360 }).setLatLng(latlng).setContent(`<h4>${fmtLatLon(p.lat, p.lon)}</h4>
     ${elevFt != null ? `<div>Terräng ≈ <b>${Math.round(elevFt)} ft</b></div>` : ''}${relPos(p)}
     ${oaipKey() ? airspaceListHtml(as) : '<div class="muted">Ange OpenAIP-nyckel för luftrumsinfo</div>'}
-    ${notamListHtml(notamsAt(p.lat, p.lon))}
     ${btns(p)}`).openOn(map);
 }
 export { longestRwy };
