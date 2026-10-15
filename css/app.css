@@ -571,3 +571,7 @@ details.danger-zone summary { cursor: pointer; font-weight: 600; color: var(--ba
 @keyframes scMooseWalk { 0% { transform: translateX(-230px); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateX(0); opacity: 1; } }
 @keyframes scLeg { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
 @keyframes scDrink { from { transform: rotate(0); } to { transform: rotate(48deg); } }
+
+/* administratörsinställningar */
+.adminzone { margin-top: 18px; border: 1px dashed var(--line-strong); border-radius: 14px; padding: 4px 14px 12px; }
+.adminhead { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }

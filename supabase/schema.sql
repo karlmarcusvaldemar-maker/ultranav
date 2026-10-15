@@ -66,3 +66,7 @@ $$;
 
 revoke all on function public.delete_my_account() from public, anon;
 grant execute on function public.delete_my_account() to authenticated;
+
+-- Administratör: ger kontot tillgång till Datakällor, CORS-proxy och Felsökning i appens inställningar.
+-- Byt e-postadressen och kör en gång. Logga sedan ut och in i appen.
+-- update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}' where email = 'din@epost.se';

@@ -153,6 +153,6 @@ async function loadStations() {
         .addTo(wxLayer);
     }
   } catch (e) {
-    toast('METAR-stationer: ' + e.message + (proxyUrl() ? '' : ' — prova en CORS-proxy i Inställningar'), 5000);
+    toast('METAR-stationer kunde inte hämtas: ' + e.message, 5000);
   }
 }

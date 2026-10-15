@@ -133,7 +133,7 @@ export function openAirport(a) {
     el.classList.remove('muted');
     el.innerHTML = r && (r.metar || r.taf) ? metarHtml(r) : '<span class="muted">Ingen METAR/TAF för fältet</span>';
     if (popup.isOpen()) popup.update(); // panorera om så att den större rutan syns helt
-  }).catch(() => { const el = document.getElementById('apwx-' + a.icao); if (el) el.textContent = 'METAR kunde inte hämtas (prova CORS-proxy i Inställningar)'; });
+  }).catch(() => { const el = document.getElementById('apwx-' + a.icao); if (el) el.textContent = 'METAR kunde inte hämtas just nu'; });
 }
 
 /** Närmaste synliga fält inom px pixlar från en skärmpunkt (för tryck som missar prickens kant) */
@@ -162,7 +162,7 @@ export function mapInfoPopup(latlng, elevFt) {
   const as = airspacesAt(p.lat, p.lon);
   L.popup({ maxWidth: 360 }).setLatLng(latlng).setContent(`<h4>${fmtLatLon(p.lat, p.lon)}</h4>
     ${elevFt != null ? `<div>Terräng ≈ <b>${Math.round(elevFt)} ft</b></div>` : ''}${relPos(p)}
-    ${oaipKey() ? airspaceListHtml(as) : '<div class="muted">Ange OpenAIP-nyckel för luftrumsinfo</div>'}
+    ${oaipKey() ? airspaceListHtml(as) : '<div class="muted">Luftrumsinfo saknas just nu</div>'}
     ${btns(p)}`).openOn(map);
 }
 export { longestRwy };

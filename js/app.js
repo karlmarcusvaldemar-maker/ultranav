@@ -234,7 +234,7 @@ function renderFieldsTab(el) {
   const info = oaInfo();
   el.innerHTML = `<input class="search" type="search" id="fq" placeholder="Sök namn eller ICAO (t.ex. ESSB, Långtora)…" value="${esc(fieldQuery)}" autocomplete="off">
     <div id="fres"></div>
-    <div class="muted" style="margin-top:10px">${info ? `OurAirports: ${info.n} fält (${esc(settings.oaCountries)}), hämtat ${info.t.toLocaleDateString('sv-SE')}` : 'OurAirports ej inläst'}${oaipKey() ? ' · OpenAIP: fält laddas för kartvyn' : ' · Ange OpenAIP-nyckel för UL-fält och frekvenser'}</div>`;
+    <div class="muted" style="margin-top:10px">${info ? `OurAirports: ${info.n} fält (${esc(settings.oaCountries)}), hämtat ${info.t.toLocaleDateString('sv-SE')}` : 'OurAirports ej inläst'}${oaipKey() ? ' · OpenAIP: fält laddas för kartvyn' : ''}</div>`;
   const draw = () => {
     const q = $('#fq', el).value;
     fieldQuery = q;
@@ -287,7 +287,7 @@ function renderWxTab(el) {
       const r = await fetchMetarTaf(ids);
       $('#wxRes', el).innerHTML = r.map(metarHtml).join('');
     } catch (e) {
-      $('#wxRes', el).innerHTML = note('bad', `Kunde inte hämta väder: ${esc(e.message)}<br>Tryck Inställn. › Felsökning › Testa väder för att se orsaken.`);
+      $('#wxRes', el).innerHTML = note('bad', `Kunde inte hämta väder: ${esc(e.message)}`);
     }
   };
   const suggest = debounce(async () => {
@@ -338,8 +338,11 @@ async function routeForecast(box) {
 }
 
 // ---------- flik: inställningar ----------
+/** Administratör: kontot har rollen admin i Supabase (app_metadata), eller molnet är inte konfigurerat (lokal utveckling) */
+const isAdmin = () => !cloudConfigured() || cloudStatus().user?.app_metadata?.role === 'admin';
+
 function renderSettingsTab(el) {
-  const s = settings, u = spdUnit();
+  const s = settings, u = spdUnit(), admin = isAdmin();
   const num = (k, label, sub, step = 1, conv = (v) => v) => `<div class="field"><span>${label}${sub ? `<small>${sub}</small>` : ''}</span>
     <input type="number" inputmode="decimal" step="${step}" data-k="${k}" value="${+conv(s[k]).toFixed(1)}"></div>`;
   el.innerHTML = `
@@ -366,6 +369,13 @@ function renderSettingsTab(el) {
   ${num('variation', 'Magnetisk variation (°)', 'ost = +, väst = −. Hämta från aktuell karta/AIP', 0.5)}
   ${num('arrivalRadius', 'Ankomstradie (NM)', 'byt till nästa punkt', 0.1)}
 
+  <h3>Offline</h3>
+  <div class="muted">Spara Standardkartan (zoom 7–12, ±8 NM) och terräng längs aktuell rutt. Övriga baskartor tillåter inte förladdning. Data för luftrum och flygfält sparas automatiskt när de visas.</div>
+  <div class="btnrow"><button class="btn primary" id="offDl">${ic('download')}Spara rutten offline</button><button class="btn danger" id="offClr">${ic('trash')}Töm kartcache</button></div>
+  <div id="offInfo" class="muted"></div>
+
+  ${admin ? `
+  <div class="adminzone"><div class="adminhead">${ic('lock', 16)}Administratör — visas bara för dig</div>
   <h3>Datakällor</h3>
   <div class="field"><span>OpenAIP API-nyckel${OPENAIP_KEY ? ' (valfri)' : ''}<small>${OPENAIP_KEY ? 'Appen har en inbyggd nyckel. Egen nyckel: ' : ''}Gratis på <a href="https://www.openaip.net" target="_blank" rel="noopener">openaip.net</a> › konto › API-klienter</small></span>
     <input type="password" data-k="openaipKey" value="${esc(s.openaipKey)}" autocomplete="off" placeholder="${OPENAIP_KEY ? 'Inbyggd nyckel' : ''}"></div>
@@ -376,11 +386,6 @@ function renderSettingsTab(el) {
   <div class="field"><span>CORS-proxy (valfri)<small>Lämna tomt för appens inbyggda proxy. Egen: adressen till din Cloudflare Worker</small></span>
     <input type="url" data-k="corsProxy" value="${esc(s.corsProxy)}" placeholder="Inbyggd proxy" autocapitalize="off"></div>
   <div class="btnrow"><button class="btn" id="tProxy">${ic('search')}Testa CORS-proxy</button></div><div id="tProxyRes"></div>
-
-  <h3>Offline</h3>
-  <div class="muted">Spara Standardkartan (zoom 7–12, ±8 NM) och terräng längs aktuell rutt. Övriga baskartor tillåter inte förladdning. Data för luftrum och flygfält sparas automatiskt när de visas.</div>
-  <div class="btnrow"><button class="btn primary" id="offDl">${ic('download')}Spara rutten offline</button><button class="btn danger" id="offClr">${ic('trash')}Töm kartcache</button></div>
-  <div id="offInfo" class="muted"></div>
 
   <details style="margin-top:12px"><summary class="btn" style="display:inline-flex;align-items:center">Avancerat: kart-URL:er</summary>
     ${Object.keys(DEFAULT_TILES).map((k) => `<div class="field" style="flex-direction:column;align-items:stretch"><span><small>${k}</small></span>
@@ -393,6 +398,8 @@ function renderSettingsTab(el) {
   <div class="btnrow"><button class="btn" id="tOaip">${ic('search')}Testa OpenAIP</button><button class="btn" id="tBase">${ic('search')}Testa vald baskarta</button>
   <button class="btn" id="tWx">${ic('cloud')}Testa väder</button></div>
   <div id="tOaipRes"></div><div id="tBaseRes"></div><div id="tWxRes"></div>
+
+  </div>` : ''}
 
   <h3>Om & licenser</h3>
   <div class="field"><span>Version<small>Uppdateras automatiskt när du är online</small></span><b>${APP_VERSION}</b></div>
@@ -415,20 +422,22 @@ function renderSettingsTab(el) {
     if (k === 'speedUnit') renderSettingsTab(el);
     updateInstruments();
   }));
-  el.querySelectorAll('[data-tile]').forEach((inp) => inp.addEventListener('change', () => saveSettings({ tiles: { ...settings.tiles, [inp.dataset.tile]: inp.value.trim() } })));
-  $('#tilesReset', el).onclick = () => { saveSettings({ tiles: { ...DEFAULT_TILES } }); renderSettingsTab(el); };
-  $('#oaReload', el).onclick = () => loadOurAirports(true);
-  const runTest = (btn, res, fn) => { $(btn, el).onclick = async () => {
-    el.querySelectorAll('[data-k=openaipKey],[data-k=corsProxy]').forEach((i) => i.dispatchEvent(new Event('change'))); // spara ev. osparade fält först
-    $(res, el).innerHTML = '<div class="muted">Testar…</div>'; $(res, el).innerHTML = await fn(); }; };
-  runTest('#tOaip', '#tOaipRes', async () => { const r = await testOpenAip(); map.fire('moveend'); setTimeout(showStat, 4000); showStat(); return r; });
-  runTest('#tBase', '#tBaseRes', testCurrentBase);
-  runTest('#tProxy', '#tProxyRes', testProxy);
-  runTest('#tWx', '#tWxRes', testWeather);
-  const showStat = () => { const st = oaipStatus(); $('#oaipStat', el).textContent = oaipKey()
-    ? `OpenAIP inläst: ${st.airspaces} luftrum, ${st.airports} flygfält, ${st.rp} rapportpunkter (${st.cells} områden). Hämtning: ${settings.openaipQuery === 'country' ? 'per land' : 'per område (' + settings.openaipQuery + ')'}.`
-    : 'OpenAIP: ingen nyckel.'; };
-  showStat();
+  if (admin) {
+    el.querySelectorAll('[data-tile]').forEach((inp) => inp.addEventListener('change', () => saveSettings({ tiles: { ...settings.tiles, [inp.dataset.tile]: inp.value.trim() } })));
+    $('#tilesReset', el).onclick = () => { saveSettings({ tiles: { ...DEFAULT_TILES } }); renderSettingsTab(el); };
+    $('#oaReload', el).onclick = () => loadOurAirports(true);
+    const runTest = (btn, res, fn) => { $(btn, el).onclick = async () => {
+      el.querySelectorAll('[data-k=openaipKey],[data-k=corsProxy]').forEach((i) => i.dispatchEvent(new Event('change'))); // spara ev. osparade fält först
+      $(res, el).innerHTML = '<div class="muted">Testar…</div>'; $(res, el).innerHTML = await fn(); }; };
+    runTest('#tOaip', '#tOaipRes', async () => { const r = await testOpenAip(); map.fire('moveend'); setTimeout(showStat, 4000); showStat(); return r; });
+    runTest('#tBase', '#tBaseRes', testCurrentBase);
+    runTest('#tProxy', '#tProxyRes', testProxy);
+    runTest('#tWx', '#tWxRes', testWeather);
+    const showStat = () => { const st = oaipStatus(); $('#oaipStat', el).textContent = oaipKey()
+      ? `OpenAIP inläst: ${st.airspaces} luftrum, ${st.airports} flygfält, ${st.rp} rapportpunkter (${st.cells} områden). Hämtning: ${settings.openaipQuery === 'country' ? 'per land' : 'per område (' + settings.openaipQuery + ')'}.`
+      : 'OpenAIP: ingen nyckel.'; };
+    showStat();
+  }
   $('#forceUpd', el).onclick = async () => {
     // Töm appens programcache (inte kartor eller dina data) och ladda om från servern
     const keys = await caches.keys();
@@ -536,7 +545,7 @@ if (!store.get('ulnav.welcomed', false)) {
   store.set('ulnav.welcomed', true);
   modal(`<h3>Välkommen till Ultranav</h3>
   <ol style="line-height:1.6;padding-left:20px">
-   <li>Öppna <b>Meny › Inställningar</b> och ange din gratis <b>OpenAIP-nyckel</b> (luftrum, UL-fält, rapportpunkter), samt flygplanets fart och förbrukning.</li>
+   <li>Öppna <b>Meny › Inställningar</b> och ange flygplanets fart och förbrukning.</li>
    <li>Tryck på <b>Rutt</b> och sedan på kartan för att lägga ut brytpunkter. Tryck nära ett fält för att fästa vid det.</li>
    <li>Navloggen med vindkorrektion, bränsle, solnedgång och luftrum längs rutten finns under <b>Meny › Rutt</b>. Terrängprofilen öppnas med <b>Profil</b>.</li>
    <li>Före start: <b>Spara rutten offline</b> under Inställningar. Lägg sedan till appen på hemskärmen via Safari › Dela › Lägg till på hemskärmen.</li>

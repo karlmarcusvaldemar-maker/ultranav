@@ -85,7 +85,7 @@ function watchErrors(layer, name) {
   layer.on('load', () => {
     if (err > 0 && ok === 0 && navigator.onLine && Date.now() - lastErrToast > 60000) {
       lastErrToast = Date.now();
-      toast(`${name} svarar inte. Testa under Inställningar › Felsökning för att se orsaken.`, 6000);
+      toast(`${name} svarar inte just nu. Prova en annan baskarta.`, 6000);
     }
   });
 }
@@ -94,7 +94,7 @@ function enableOverlay(id, on) {
   const def = OVERLAYS[id];
   if (on) {
     if (overlayLayers[id]) return;
-    if (def.needsKey && !oaipKey()) { toast('Ange OpenAIP API-nyckel under Inställningar'); return false; }
+    if (def.needsKey && !oaipKey()) { toast('Kartlagret är inte tillgängligt just nu'); return false; }
     const lyr = def.make();
     if (!lyr) return false;
     lyr.setOpacity?.(state.opacity[id] ?? def.opacity ?? 1);

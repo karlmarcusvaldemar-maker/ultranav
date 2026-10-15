@@ -275,7 +275,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
     if (low.length) h += note('warn', `Under ${settings.minClearance} ft terrängmarginal på: ${low.map((l) => `${esc(l.to.name)} (terräng ${Math.round(l.terr)} ft)`).join(', ')}. Höjddata saknar master och byggnader.`);
 
     h += `<h3>Luftrum längs rutten</h3>`;
-    if (!oaipKey()) h += '<div class="muted">Ange OpenAIP-nyckel under Inställningar för luftrumskontroll.</div>';
+    if (!oaipKey()) h += '<div class="muted">Luftrumskontroll är inte tillgänglig just nu.</div>';
     else if (!crossings.length) h += '<div class="muted">Inga luftrum funna längs rutten i OpenAIP-data (eller ännu ej inläst).</div>';
     else h += crossings.map((c) => {
       const cls = c.inside && [1, 3, 4, 7, 13, 26, 36, 2].includes(c.as.type) ? 'asp-bad' : c.inside ? 'asp-warn' : '';

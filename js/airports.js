@@ -78,7 +78,7 @@ export async function loadOurAirports(force = false) {
     toast(`${oaAirports.length} flygfält inlästa (${countries.join(', ')})`);
     emit();
   } catch (e) {
-    toast('OurAirports: ' + e.message + (proxyUrl() ? '' : ' (prova CORS-proxy i inställningar)'), 6000);
+    toast('Flygfältsdata kunde inte hämtas: ' + e.message, 6000);
   }
 }
 export const oaInfo = () => oaMeta ? { n: oaMeta.list.length, t: new Date(oaMeta.t) } : null;

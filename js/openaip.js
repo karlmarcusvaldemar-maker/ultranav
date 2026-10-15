@@ -158,7 +158,7 @@ let errShown = 0;
 function reportErr(e) {
   if (Date.now() - errShown < 30000) return;
   errShown = Date.now();
-  toast(`OpenAIP: ${e.message}. Tryck "Testa OpenAIP" under Inställningar för att se orsaken.`, 6000);
+  toast(`Luftrum och fält kunde inte hämtas: ${e.message}`, 6000);
 }
 
 /** Ladda alla celler inom bounds (L.LatLngBounds). Max 12 celler per anrop. */
