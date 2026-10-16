@@ -102,6 +102,8 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   <path class="strip" d="M930 772 L1120 760"/>
   <path class="stripmk" d="M956 770 l16 -1 M1006 767 l16 -1 M1056 764 l16 -1"/>
   <g transform="translate(1128 756)"><path class="hs" d="M0 0 V-16 Q16 -30 32 -16 V0 Z"/><path class="door" d="M8 0 V-10 H24 V0"/></g>
+  <!-- var tredje dag: ett flygplan går in för landning och rullar ut på banan -->
+  <g class="lander-fade"><g class="lander"><g transform="scale(.48) translate(-39 -32)">${BUSH}</g></g></g>
   <!-- klubbhus vid fältet: lågt rött hus med utkikstorn (glaskupol), vindstrut och antenn -->
   <g class="clublink" transform="translate(972 824)" role="link" aria-label="Åsele Flygklubb — besök hemsidan">
     <rect class="hit" x="-8" y="-58" width="72" height="62"/>
@@ -115,8 +117,6 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
     <path class="club-roof" d="M19 -42 L37 -42 L35 -44.5 L21 -44.5 Z"/>
     <path class="mast-l" d="M28 -44.5 V-52"/><circle class="mast-light" cx="28" cy="-52.6" r="1.2"/>
     <g transform="translate(35 -44.5)"><path class="pole" d="M0 0 V-9" style="stroke-width:.7"/><g class="sock"><path class="club-sock" d="M0 -9 L7 -8 L6.6 -6 L0 -7 Z"/></g></g>
-    <rect class="club-win" x="4" y="-12" width="7" height="7"/><rect class="club-win" x="14" y="-12" width="7" height="7"/><rect class="club-win" x="35" y="-12" width="7" height="7"/>
-    <path class="club-trim" d="M7.5 -12 V-5 M4 -8.5 H11 M17.5 -12 V-5 M14 -8.5 H21 M38.5 -12 V-5 M35 -8.5 H42"/>
     <path class="club-door" d="M25 0 V-12 H32 V0"/><circle class="club-lamp" cx="33.5" cy="-13" r="1"/>
     <rect class="clubsign" x="6" y="-19" width="44" height="6.4" rx="1.2"/>
     <text class="clubtxt sm" x="28" y="-14.4" text-anchor="middle">ÅSELE FLYGKLUBB</text>

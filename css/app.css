@@ -495,6 +495,18 @@ body.gated #fab, body.gated #instruments { visibility: hidden; }
 @keyframes scSock { from { transform: rotate(-7deg); } to { transform: rotate(5deg); } }
 @keyframes scShimmer { from { opacity: .2; } to { opacity: .75; } }
 @keyframes scTwinkle { from { opacity: .25; } to { opacity: 1; } }
+/* var tredje dag: flygplan går in för landning, sätter ner på gräsfältet och rullar ut */
+.scene .lander { opacity: 0; }
+.scene.landing .lander { animation: scLand 7.4s forwards; }
+.scene .lander-fade { transition: opacity 2s ease; }
+.scene.landout .lander-fade { opacity: 0; }
+@keyframes scLand {
+  0% { transform: translate(600px, 702px) rotate(6deg); opacity: 0; animation-timing-function: linear; }
+  10% { opacity: 1; }
+  48% { transform: translate(930px, 766px) rotate(2deg); animation-timing-function: ease-out; }
+  56% { transform: translate(962px, 769.5px) rotate(-4deg); animation-timing-function: cubic-bezier(.25, .6, .4, 1); }
+  100% { transform: translate(1085px, 762.5px) rotate(-3.6deg); opacity: 1; }
+}
 @media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } .scene .fly.near { transform: translateX(420px); } .scene .fly.far { transform: translateX(1000px); } }
 #gateNote:not(:empty) { margin-bottom: 6px; }
 
@@ -611,7 +623,6 @@ body.gated #shareChip { display: none; }
 .scene .club-wall { fill: #5a1f19; } .scene.day .club-wall { fill: #a3352a; }
 .scene .club-trim { fill: none; stroke: #c9c2b4; stroke-width: 1.2; } .scene.day .club-trim { stroke: #f4f0e6; }
 .scene .club-roof { fill: #1c1a19; } .scene.day .club-roof { fill: #3a3634; }
-.scene .club-win { fill: #ffcf6b; transition: fill 2s ease; } .scene.day .club-win { fill: #2f4a66; } .scene .club-door { fill: #2b1a12; }
 .scene .club-glow { opacity: .8; transition: opacity 2s ease; } .scene.day .club-glow { opacity: 0; }
 .scene .club-lamp { fill: #ffe39a; } .scene.day .club-lamp { fill: #c9c2b4; }
 .scene .club-porch { fill: none; stroke: #6c5a46; stroke-width: 1.6; }
