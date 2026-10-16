@@ -62,6 +62,7 @@ begin
   delete from public.items where user_id = auth.uid();
   -- delade fält finns kvar för andra piloter, men utan koppling till kontot
   update public.fields set added_by = null where user_id = auth.uid();
+  update public.field_comments set added_by = null where user_id = auth.uid();
   delete from auth.users where id = auth.uid();
 end;
 $$;
@@ -112,6 +113,33 @@ create policy "fields: ändra egna"      on public.fields for update to authenti
   with check (auth.uid() = user_id or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 create policy "fields: radera egna"     on public.fields for delete to authenticated
   using (auth.uid() = user_id or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- Kommentarer på fält från Ultranav-piloter, t.ex. om banans skick. Alla inloggade kan läsa och skriva.
+-- Den som skrev, fältets ägare och administratören kan ta bort en kommentar. Tas fältet bort försvinner
+-- kommentarerna. Raderas kontot finns kommentaren kvar, men utan koppling till kontot.
+create table if not exists public.field_comments (
+  id          uuid        primary key default gen_random_uuid(),
+  field_id    uuid        not null references public.fields (id) on delete cascade,
+  user_id     uuid        default auth.uid() references auth.users (id) on delete set null,
+  body        text        not null check (char_length(body) between 1 and 500),
+  added_by    text        check (added_by is null or char_length(added_by) <= 12), -- anropssignal
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists field_comments_field on public.field_comments (field_id, created_at);
+
+alter table public.field_comments enable row level security;
+
+drop policy if exists "field_comments: inloggade läser" on public.field_comments;
+drop policy if exists "field_comments: skapa egna"      on public.field_comments;
+drop policy if exists "field_comments: radera"          on public.field_comments;
+
+create policy "field_comments: inloggade läser" on public.field_comments for select to authenticated using (true);
+create policy "field_comments: skapa egna"      on public.field_comments for insert to authenticated with check (auth.uid() = user_id);
+create policy "field_comments: radera"          on public.field_comments for delete to authenticated using (
+  auth.uid() = user_id
+  or exists (select 1 from public.fields f where f.id = field_id and f.user_id = auth.uid())
+  or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 -- Administratör: ger kontot tillgång till Datakällor, CORS-proxy och Felsökning i appens inställningar.
 -- Byt e-postadressen och kör en gång. Logga sedan ut och in i appen.

@@ -65,9 +65,47 @@ function openField(f) {
     ${relPos(f)}
     <div class="muted" style="margin-top:4px">Tillagt av ${esc(f.added_by || 'en Ultranav-pilot')}${date ? ' · ' + date : ''}. Okontrollerade uppgifter — kontakta fältets ägare före landning.</div>
     ${placeBtns({ lat: f.lat, lon: f.lon, name: f.name })}
+    <div class="ufc"><div class="ufc-head">Kommentarer</div><div class="ufc-list muted">Hämtar kommentarer…</div></div>
     ${mine(f) || isAdmin() ? '<div class="pbtns"><button class="sec uf-del">' + ic('trash') + (mine(f) ? 'Ta bort mitt fält' : 'Ta bort (admin)') + '</button></div>' : ''}`;
   box.querySelector('.uf-del')?.addEventListener('click', () => removeField(f));
-  L.popup({ maxWidth: 340, autoPanPaddingTopLeft: [10, 10], autoPanPaddingBottomRight: [90, 10] }).setLatLng([f.lat, f.lon]).setContent(box).openOn(map);
+  const popup = L.popup({ maxWidth: 340, autoPanPaddingTopLeft: [10, 10], autoPanPaddingBottomRight: [90, 10] }).setLatLng([f.lat, f.lon]).setContent(box).openOn(map);
+  loadComments(f, box, popup);
+}
+
+// ---------- kommentarer ----------
+// Andra piloter kan kommentera ett fält, t.ex. om banans skick ("träd över banan").
+// Den som skrev, fältets ägare och administratören kan ta bort en kommentar.
+const when = (t) => new Date(t).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: new Date(t).getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
+async function loadComments(f, box, popup) {
+  const sec = box.querySelector('.ufc');
+  if (!navigator.onLine || !supa()) { sec.querySelector('.ufc-list').textContent = 'Kommentarer visas när du är uppkopplad.'; return; }
+  const { data, error } = await supa().from('field_comments').select('id,user_id,body,added_by,created_at').eq('field_id', f.id).order('created_at', { ascending: false }).limit(50);
+  if (error) { sec.remove(); if (popup.isOpen()) popup.update(); return; } // tabellen saknas ännu: visa fältet utan kommentarer
+  const me = cloudStatus().user?.id;
+  const canDel = (c) => c.user_id === me || mine(f) || isAdmin();
+  sec.innerHTML = `<div class="ufc-head">Kommentarer${data.length ? ` (${data.length})` : ''}</div>
+    <div class="ufc-list">${data.length ? data.map((c) => `<div class="ufc-item"><div class="ufc-body">${esc(c.body)}</div>
+      <div class="ufc-meta">${esc(c.added_by || 'Ultranav-pilot')} · ${when(c.created_at)}${canDel(c) ? ` <button class="ufc-del" data-id="${c.id}" aria-label="Ta bort kommentaren">${ic('trash', 14)}</button>` : ''}</div></div>`).join('')
+      : '<div class="muted">Inga kommentarer ännu. Har du varit här? Berätta hur banan ser ut.</div>'}</div>
+    <textarea class="ufc-in" maxlength="500" rows="2" placeholder="Skriv en kommentar, t.ex. om banans skick"></textarea>
+    <div class="ufc-row"><span class="muted">Syns för alla Ultranav-piloter</span><button class="ufc-send">${ic('check', 16)}Skicka</button></div>`;
+  L.DomEvent.disableClickPropagation(sec); L.DomEvent.disableScrollPropagation(sec);
+  sec.querySelectorAll('.ufc-del').forEach((b) => b.onclick = async () => {
+    if (!confirm('Ta bort kommentaren?')) return;
+    const { error: e } = await supa().from('field_comments').delete().eq('id', b.dataset.id);
+    if (e) { toast('Kunde inte ta bort: ' + e.message, 5000); return; }
+    loadComments(f, box, popup);
+  });
+  sec.querySelector('.ufc-send').onclick = async (ev) => {
+    const ta = sec.querySelector('.ufc-in'), body = ta.value.trim();
+    if (!body) { ta.focus(); return; }
+    ev.currentTarget.disabled = true;
+    const { error: e } = await supa().from('field_comments').insert({ field_id: f.id, body, added_by: (settings.shareCallsign || '').slice(0, 12) || null });
+    if (e) { ev.currentTarget.disabled = false; toast('Kunde inte skicka: ' + e.message, 5000); return; }
+    toast('Kommentaren är skickad');
+    loadComments(f, box, popup);
+  };
+  if (popup.isOpen()) popup.update();
 }
 
 async function removeField(f) {
