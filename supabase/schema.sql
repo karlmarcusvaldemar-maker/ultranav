@@ -60,6 +60,9 @@ as $$
 begin
   if auth.uid() is null then raise exception 'inte inloggad'; end if;
   delete from public.items where user_id = auth.uid();
+  -- delade fält finns kvar för andra piloter, men utan koppling till kontot
+  update public.fields set added_by = null where user_id = auth.uid();
+  update public.field_comments set added_by = null where user_id = auth.uid();
   delete from auth.users where id = auth.uid();
 end;
 $$;
@@ -73,6 +76,70 @@ drop policy if exists "traffic: inloggade läser"  on realtime.messages;
 drop policy if exists "traffic: inloggade skickar" on realtime.messages;
 create policy "traffic: inloggade läser"  on realtime.messages for select to authenticated using (realtime.topic() = 'traffic');
 create policy "traffic: inloggade skickar" on realtime.messages for insert to authenticated with check (realtime.topic() = 'traffic');
+
+-- Fält från Ultranav-piloter: små privata fält som läggs till via Rita & mät › Lägg till fält.
+-- Alla inloggade kan se fälten. Bara den som lagt till ett fält, eller en administratör, kan ändra
+-- eller ta bort det. Raderas kontot finns fältet kvar utan ägare (user_id blir null) och förvaltas
+-- därefter av administratören; anropssignalen tas bort så att fältet inte längre pekar ut personen.
+create table if not exists public.fields (
+  id          uuid             primary key default gen_random_uuid(),
+  user_id     uuid             default auth.uid() references auth.users (id) on delete set null,
+  name        text             not null check (char_length(name) between 1 and 60),
+  lat         double precision not null check (lat between -90 and 90),
+  lon         double precision not null check (lon between -180 and 180),
+  rwy_len_m   integer          not null check (rwy_len_m between 50 and 5000),
+  contact     text             check (contact is null or char_length(contact) <= 120),  -- null = okänd
+  info        text             check (info is null or char_length(info) <= 1000),
+  added_by    text             check (added_by is null or char_length(added_by) <= 12), -- anropssignal
+  created_at  timestamptz      not null default now()
+);
+
+-- Om tabellen skapades med en tidigare version av filen: låt fälten finnas kvar när ett konto raderas
+alter table public.fields alter column user_id drop not null;
+alter table public.fields drop constraint if exists fields_user_id_fkey;
+alter table public.fields add constraint fields_user_id_fkey foreign key (user_id) references auth.users (id) on delete set null;
+
+alter table public.fields enable row level security;
+
+drop policy if exists "fields: inloggade läser" on public.fields;
+drop policy if exists "fields: skapa egna"      on public.fields;
+drop policy if exists "fields: ändra egna"      on public.fields;
+drop policy if exists "fields: radera egna"     on public.fields;
+
+create policy "fields: inloggade läser" on public.fields for select to authenticated using (true);
+create policy "fields: skapa egna"      on public.fields for insert to authenticated with check (auth.uid() = user_id);
+create policy "fields: ändra egna"      on public.fields for update to authenticated
+  using (auth.uid() = user_id or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+  with check (auth.uid() = user_id or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "fields: radera egna"     on public.fields for delete to authenticated
+  using (auth.uid() = user_id or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- Kommentarer på fält från Ultranav-piloter, t.ex. om banans skick. Alla inloggade kan läsa och skriva.
+-- Den som skrev, fältets ägare och administratören kan ta bort en kommentar. Tas fältet bort försvinner
+-- kommentarerna. Raderas kontot finns kommentaren kvar, men utan koppling till kontot.
+create table if not exists public.field_comments (
+  id          uuid        primary key default gen_random_uuid(),
+  field_id    uuid        not null references public.fields (id) on delete cascade,
+  user_id     uuid        default auth.uid() references auth.users (id) on delete set null,
+  body        text        not null check (char_length(body) between 1 and 500),
+  added_by    text        check (added_by is null or char_length(added_by) <= 12), -- anropssignal
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists field_comments_field on public.field_comments (field_id, created_at);
+
+alter table public.field_comments enable row level security;
+
+drop policy if exists "field_comments: inloggade läser" on public.field_comments;
+drop policy if exists "field_comments: skapa egna"      on public.field_comments;
+drop policy if exists "field_comments: radera"          on public.field_comments;
+
+create policy "field_comments: inloggade läser" on public.field_comments for select to authenticated using (true);
+create policy "field_comments: skapa egna"      on public.field_comments for insert to authenticated with check (auth.uid() = user_id);
+create policy "field_comments: radera"          on public.field_comments for delete to authenticated using (
+  auth.uid() = user_id
+  or exists (select 1 from public.fields f where f.id = field_id and f.user_id = auth.uid())
+  or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 -- Administratör: ger kontot tillgång till Datakällor, CORS-proxy och Felsökning i appens inställningar.
 -- Byt e-postadressen och kör en gång. Logga sedan ut och in i appen.

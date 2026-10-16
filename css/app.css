@@ -688,3 +688,24 @@ body.gated #shareChip { display: none; }
 .clubdlg h3 { margin: 0 0 6px; font: 700 20px/1.2 var(--display); } .clubdlg p { margin: 0 0 16px; color: var(--muted); }
 .clubdlg .btnrow { display: flex; gap: 10px; justify-content: flex-end; }
 .clubdlg a.btn { text-decoration: none; }
+
+/* fält från Ultranav-piloter: grön romb, skild från de officiella fältens runda prickar */
+.ufield-ic { background: none; border: 0; }
+.ufield { width: 12px; height: 12px; margin: 3px; transform: rotate(45deg); background: #12a36b; border: 2px solid #fff; border-radius: 2px; box-shadow: 0 1px 3px rgba(0, 0, 0, .45); }
+.uf-label { color: #0b5a3a; }
+.tag.uf { background: #12a36b; color: #fff; border-color: #12a36b; margin-right: 6px; }
+.uf-info { margin-top: 6px; white-space: pre-wrap; }
+.ufsum { padding: 10px 12px; margin: 8px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); white-space: pre-wrap; }
+.field.col { flex-direction: column; align-items: stretch; padding: 8px 0; }
+.field textarea { width: 100%; margin-top: 6px; font-size: 16px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--bg); color: var(--text); resize: vertical; }
+/* kommentarer på pilotfält */
+.ufc { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--popup-line); }
+.ufc-head { font-weight: 700; margin-bottom: 4px; }
+.ufc-list { max-height: 170px; overflow-y: auto; }
+.ufc-item { padding: 5px 0; border-bottom: 1px solid var(--popup-line); }
+.ufc-body { white-space: pre-wrap; }
+.ufc-meta { color: var(--popup-muted); font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.ufc-del { margin-left: auto; border: 0; background: none; color: #a33; padding: 2px 4px; cursor: pointer; }
+.ufc-in { width: 100%; margin-top: 6px; font: 15px var(--sans); padding: 6px 8px; border-radius: 8px; border: 1px solid var(--popup-line); background: var(--popup-bg); color: var(--popup-text); resize: vertical; }
+.ufc-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; font-size: 12px; }
+.ufc-send { display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 8px; padding: 6px 12px; font: 600 14px var(--sans); background: var(--popup-primary); color: var(--popup-primary-text); cursor: pointer; }

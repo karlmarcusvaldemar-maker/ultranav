@@ -6,7 +6,7 @@ import { hillshadeLayer } from './hillshade.js';
 import { ic } from './icons.js';
 
 export let map;
-const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspace', 'fields'], opacity: {}, v: 2 });
+const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspace', 'fields', 'userfields'], opacity: {}, v: 3 });
 // Migrering: tidigare versioner sparade lagernamn som inte längre finns, vilket stängde av luftrum/fält
 {
   const MAP = { openaipVec: ['airspace', 'rp'], oa: ['fields'], route: [] };
@@ -16,6 +16,8 @@ const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspa
   }
   // Standardkartan blev förvald baskarta i version 2 — byt en gång, därefter gäller användarens val
   if ((state.v || 1) < 2) { state.base = 'vecLiberty'; state.v = 2; store.set('ulnav.layers', state); }
+  // Fält från Ultranav-piloter (version 3) visas från start för den som har flygfälten på
+  if (state.v < 3) { if (state.overlays.includes('fields')) state.overlays.push('userfields'); state.v = 3; store.set('ulnav.layers', state); }
 }
 const save = () => store.set('ulnav.layers', state);
 
@@ -127,6 +129,8 @@ export function registerOverlay(id, name, note, onToggle) {
   onToggle(state.overlays.includes(id));
 }
 export const overlayOn = (id) => state.overlays.includes(id);
+/** Slå på ett registrerat överlägg (t.ex. när användaren just lagt till något i det) */
+export function showOverlay(id) { if (!external[id] || overlayOn(id)) return; external[id].onToggle(true); setOverlayState(id, true); }
 
 function setOverlayState(id, on) {
   state.overlays = state.overlays.filter((x) => x !== id);
@@ -226,7 +230,7 @@ export function registerCustomLayers(provider) { custom = provider; }
 
 // ---------- Lagerpanel ----------
 const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', osm: 'mapRoad', kartverket: 'mapTopo', esri: 'satellite' };
-const OVERLAY_ORDER = ['airspace', 'fields', 'traffic', 'protected', 'wind', 'hillshade', 'metar', 'radar', 'clouds', 'drawings'];
+const OVERLAY_ORDER = ['airspace', 'fields', 'userfields', 'traffic', 'protected', 'wind', 'hillshade', 'metar', 'radar', 'clouds', 'drawings'];
 
 export function renderLayerPanel() {
   const el = $('#layerPanel');

@@ -23,6 +23,7 @@ import { sunInfo } from './sun.js';
 import { testOpenAip, testProxy, testWeather, testOverlays } from './diag.js';
 import { oaipStatus, resetOpenAip } from './openaip.js';
 import { initTraffic, openShareDialog } from './traffic.js';
+import { initFields } from './fields.js';
 import { SYMBOLS, symbolSvg } from './aircraft.js';
 import { applyIcons, icon, ic } from './icons.js';
 
@@ -45,6 +46,7 @@ initAero();
 initCustomLayers();
 initWxOverlay();
 initTraffic();
+initFields();
 initRoute();
 initNav();
 initDraw();

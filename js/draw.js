@@ -3,6 +3,7 @@ import { map, registerOverlay } from './map.js';
 import { settings } from './settings.js';
 import { icon, ic } from './icons.js';
 import * as lib from './library.js';
+import { addFieldAt } from './fields.js';
 import { distNM, bearing, norm360, fmtDeg, fmtLatLon, esc, store, toast, download, $, interp } from './util.js';
 
 const R_M = 6371008.8;
@@ -22,7 +23,7 @@ export const drawActions = { addWaypoint() {}, directTo() {}, setRoute() {}, own
 const COLORS = { line: '#0a84ff', polygon: '#ff9f0a', point: '#30d158', measure: '#ff375f' };
 const savedLayer = L.layerGroup();
 const liveLayer = L.layerGroup();
-let mode = null;        // null | 'measure' | 'line' | 'polygon' | 'point'
+let mode = null;        // null | 'measure' | 'line' | 'polygon' | 'point' | 'field'
 let pts = [];           // [{lat, lon}] för pågående ritning
 let savedOn = false;
 
@@ -93,6 +94,7 @@ export function syncBar() {
 export function drawTap(latlng) {
   const p = { lat: latlng.lat, lon: latlng.lng ?? latlng.lon };
   if (mode === 'point') { savePoint(p); return; }
+  if (mode === 'field') { addFieldAt(p, () => setMode(null, true)); return; }
   pts.push(p); drawLive();
 }
 
@@ -103,6 +105,7 @@ function buildToolbar() {
   bar.innerHTML = `<div class="dbtns">
       <button data-mode="measure">${icon('measure')}<small>Mät</small></button><button data-mode="line">${icon('polyline')}<small>Linje</small></button>
       <button data-mode="polygon">${icon('polygon')}<small>Yta</small></button><button data-mode="point">${icon('pin')}<small>Punkt</small></button>
+      <button data-mode="field">${icon('runway')}<small>Fält</small></button>
       <span class="sep" id="dSep2"></span>
       <button id="dOwn" title="Börja från min position">${icon('crosshair')}<small>Min pos</small></button>
       <button id="dUndo">${icon('undo')}<small>Ångra</small></button><button id="dDone" class="primary">${icon('check')}<small>Spara</small></button>
@@ -116,6 +119,7 @@ function buildToolbar() {
     if (!o) { toast('Ingen GPS-position — starta GPS först'); return; }
     if (mode === 'route') { drawActions.addWaypoint({ lat: o.lat, lon: o.lon, name: 'Min pos' }); readout(); return; }
     if (mode === 'point') { savePoint({ lat: o.lat, lon: o.lon }); return; }
+    if (mode === 'field') { addFieldAt({ lat: o.lat, lon: o.lon }, () => setMode(null, true)); return; }
     pts.unshift({ lat: o.lat, lon: o.lon }); drawLive();
   };
   $('#dDone').onclick = finish;
@@ -157,7 +161,8 @@ export function readout() {
   if (!mode) { el.innerHTML = '<span class="muted">Välj ett verktyg ovan.</span>'; return; }
   if (mode === 'route') { el.innerHTML = drawActions.routeSummary() || '<span class="muted">Tryck på kartan för att lägga till brytpunkter. Tryck nära ett fält för att fästa vid det.</span>'; return; }
   const hint = { measure: 'Tryck på kartan för att mäta. Dra punkterna för att justera.', line: 'Tryck för att lägga till punkter i linjen.',
-    polygon: 'Tryck för att lägga till hörn. Tryck på punkt 1 eller Spara för att avsluta.', point: 'Tryck på kartan för att placera en punkt.' }[mode] || '';
+    polygon: 'Tryck för att lägga till hörn. Tryck på punkt 1 eller Spara för att avsluta.', point: 'Tryck på kartan för att placera en punkt.',
+    field: 'Tryck på kartan där fältet ligger. Fältet delas med alla Ultranav-piloter.' }[mode] || '';
   if (pts.length < 2) { el.innerHTML = `<span class="muted">${hint}</span>`; return; }
   const total = lengthNM(pts);
   const last = distNM(pts[pts.length - 2], pts[pts.length - 1]);
@@ -171,7 +176,7 @@ const fmtTime = (h) => { const m = Math.round(h * 60); return m < 60 ? `${m} min
 
 function finish() {
   if (mode === 'route') { toast('Rutten är sparad'); setMode(null); return; }
-  if (mode === 'point') { setMode(null); return; }
+  if (mode === 'point' || mode === 'field') { setMode(null); return; }
   const min = mode === 'polygon' ? 3 : 2;
   if (pts.length < min) { toast(mode === 'polygon' ? 'En yta behöver minst tre hörn' : 'Lägg till minst två punkter'); return; }
   const type = mode === 'measure' ? 'line' : mode;
@@ -255,8 +260,9 @@ window.ulnavDraw = {
 export function renderDrawTab(el) {
   el.innerHTML = `<h3>Verktyg</h3>
     <div class="btnrow"><button class="btn" data-m="measure">${ic('measure')}Mät avstånd</button><button class="btn" data-m="line">${ic('polyline')}Linje</button>
-    <button class="btn" data-m="polygon">${ic('polygon')}Yta</button><button class="btn" data-m="point">${ic('pin')}Punkt</button></div>
-    <div class="muted">Avstånd visas i NM och km, kurs i grader magnetiskt (variation ${settings.variation}°). Ytor räknas på jordklotet.</div>
+    <button class="btn" data-m="polygon">${ic('polygon')}Yta</button><button class="btn" data-m="point">${ic('pin')}Punkt</button>
+    <button class="btn" data-m="field">${ic('runway')}Lägg till fält</button></div>
+    <div class="muted">Avstånd visas i NM och km, kurs i grader magnetiskt (variation ${settings.variation}°). Ytor räknas på jordklotet. <i>Lägg till fält</i> delar ett litet fält med alla Ultranav-piloter.</div>
     <h3>Sparade (${drawings.length})</h3>
     ${drawings.length ? `<ul class="aplist">${drawings.map((f) => `<li><div class="info"><b class="popinfo">${ic({ point: 'pin', line: 'polyline', polygon: 'polygon' }[f.type], 16)} ${esc(f.name)}</b><span>${describe(f)}</span></div>
       <button class="btn small" onclick="window.ulnavDraw.zoom('${f.id}')">${ic('search')}Visa</button><button class="btn small icon" onclick="window.ulnavDraw.share('${f.id}')" aria-label="Dela">${ic('share')}</button><button class="btn small danger" onclick="window.ulnavDraw.del('${f.id}')" aria-label="Ta bort">${ic('trash')}</button></li>`).join('')}</ul>`
