@@ -44,12 +44,37 @@ export const SYMBOLS = {
     <ellipse cx="20" cy="17.5" rx="4.6" ry="6.6"/>
     <path d="M4 9 L36 26 M36 9 L4 26" fill="none" stroke-width="1.8"/>
     <circle cx="20" cy="17.5" r="1.4" fill="#17212c" stroke="none"/>` },
+  landrover: { name: 'Land Rover 109', vb: '0 0 40 40', profile: true, body: `
+    <path d="M2 26 V9.5 Q2 8.5 3 8.5 H25 L26.5 16 H36.5 Q38 16 38 17.5 V25 H35 A5.2 5.2 0 0 0 25 25 H14 A5.2 5.2 0 0 0 4 25 Z"/>
+    <path d="M2.6 8.5 H25 L25.4 10.4 H2.6 Z" fill="#f4f0e6" stroke-width=".8"/>
+    <path d="M4 11.6 H9 V15.6 H4 Z M10 11.6 H15 V15.6 H10 Z M16 11.6 H20.6 V15.6 H16 Z M21.6 11.6 H25.2 L26 15.6 H21.6 Z" fill="#17212c" stroke="none"/>
+    <path d="M15.5 11 V24.6 M21 11 V24.6" fill="none" stroke-width=".7"/>
+    <ellipse cx="32" cy="15.3" rx="3.4" ry="1.3" fill="#1b1b1b" stroke="none"/>
+    <circle cx="37" cy="19.2" r="1" fill="#ffe39a" stroke="none"/>
+    <rect x="36" y="24" width="3.4" height="1.6" fill="#1b1b1b" stroke="none"/>
+    <circle cx="9" cy="27" r="4.3" fill="#1b1b1b"/><circle cx="9" cy="27" r="1.9" fill="#c9c9c9" stroke="none"/>
+    <circle cx="30" cy="27" r="4.3" fill="#1b1b1b"/><circle cx="30" cy="27" r="1.9" fill="#c9c9c9" stroke="none"/>` },
+  saab900: { name: 'Saab 900', vb: '0 0 40 40', profile: true, body: `
+    <path d="M2.6 24.2 L2 20 Q2 18 3.5 17.2 L6 12.4 Q7.5 9.6 11 9.4 H21 Q23.5 9.5 25.5 11.6 L28 15.2 Q34 15.6 37 17.3 Q38.6 18.2 38.6 20 V24.2 H33 A4.6 4.6 0 0 0 25 24.2 H14 A4.6 4.6 0 0 0 6 24.2 Z"/>
+    <path d="M7.6 15.3 L9.1 11.8 Q10.1 10.5 12.1 10.5 H20.6 Q22.6 10.6 24 12.1 L26.6 15.3 Z" fill="#17212c" stroke="none"/>
+    <path d="M17.4 10.5 V15.3" stroke="#f2b632" stroke-width=".9"/>
+    <path d="M6.2 21 H33.8" fill="none" stroke-width=".7"/>
+    <path d="M2.2 21.6 H6 M33.6 21.6 H38.6" fill="none" stroke="#1b1b1b" stroke-width="1.8"/>
+    <rect x="37.2" y="18.4" width="1.4" height="1.8" fill="#ffe39a" stroke="none"/><rect x="2" y="18.3" width="1.1" height="2.4" fill="#d9534f" stroke="none"/>
+    <circle cx="10" cy="26.4" r="4" fill="#1b1b1b"/><circle cx="10" cy="26.4" r="2" fill="#c9c9c9" stroke="none"/>
+    <circle cx="29" cy="26.4" r="4" fill="#1b1b1b"/><circle cx="29" cy="26.4" r="2" fill="#c9c9c9" stroke="none"/>` },
 };
 export const DEFAULT_SYMBOL = 'experimental';
 export const symbolOf = (id) => SYMBOLS[id] || SYMBOLS[DEFAULT_SYMBOL];
 /** SVG för en symbol. fill/stroke ger färg, size i pixlar. */
+/** Hur symbolen ska vändas för en viss riktning: flygfarkoster roteras, bilar (profil) speglas åt rätt håll */
+export function symbolTransform(id, rot = 0) {
+  const s = symbolOf(id);
+  if (s.profile) { const r = ((rot % 360) + 360) % 360; return r > 180 && r < 360 ? 'scaleX(-1)' : 'none'; }
+  return s.rotate === false ? 'none' : `rotate(${rot}deg)`;
+}
 export function symbolSvg(id, { fill = '#f2b632', stroke = '#000', size = 40, rot = 0, opacity = 1 } = {}) {
   const s = symbolOf(id);
-  return `<svg width="${size}" height="${size}" viewBox="${s.vb}" style="transform:rotate(${s.rotate === false ? 0 : rot}deg);opacity:${opacity}">
+  return `<svg width="${size}" height="${size}" viewBox="${s.vb}" style="transform:${symbolTransform(id, rot)};opacity:${opacity}">
     <g fill="${fill}" stroke="${stroke}" stroke-width="${s.vb.endsWith('56') ? 1.5 : 1.3}" stroke-linejoin="round">${s.body}</g></svg>`;
 }

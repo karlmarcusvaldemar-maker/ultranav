@@ -1,7 +1,7 @@
 // GPS, rörlig karta, aktiv sträcka, direkt-till, glidräckvidd, spårlogg och varningar
 import { map } from './map.js';
 import { ic } from './icons.js';
-import { symbolSvg, symbolOf } from './aircraft.js';
+import { symbolSvg, symbolTransform } from './aircraft.js';
 import { settings, onSettings, spdOut, spdUnit, oaipKey, proxyUrl } from './settings.js';
 import { route, onRouteChange, getLegs } from './route.js';
 import { airspacesAt, limitFt, asLabel, fmtLimit } from './openaip.js';
@@ -180,7 +180,7 @@ function update() {
   ownMarker.setLatLng(ll);
   const svg = ownMarker.getElement()?.querySelector('svg');
   const mb = map.getBearing ? map.getBearing() : 0;
-  if (svg) svg.style.transform = symbolOf(settings.ownSymbol).rotate === false ? '' : `rotate(${(p.trk ?? 0) + mb}deg)`;
+  if (svg) svg.style.transform = symbolTransform(settings.ownSymbol, (p.trk ?? 0) + mb);
   // fartvektor 5 min
   if (p.trk != null && p.gsKt > 10) vecLine.setLatLngs([ll, Object.values(destPoint(p, p.trk, p.gsKt * 5 / 60))]);
   else vecLine.setLatLngs([]);
