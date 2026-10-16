@@ -17,6 +17,8 @@ export const DEFAULT_TILES = {
 
 const DEFAULTS = {
   speedUnit: 'kt',        // 'kt' | 'kmh'
+  distUnit: 'nm',         // 'nm' | 'km'
+  altUnit: 'ft',          // 'ft' | 'm'
   tas: 80,                // kt (lagras alltid i knop)
   fuelBurn: 14,           // l/h
   fuelUsable: 65,         // l
@@ -68,3 +70,14 @@ export const proxyUrl = () => settings.corsProxy?.trim() || DEFAULT_PROXY;
 export const spdOut = (kt) => (settings.speedUnit === 'kmh' ? kt * 1.852 : kt);
 export const spdIn = (v) => (settings.speedUnit === 'kmh' ? v / 1.852 : v);
 export const spdUnit = () => (settings.speedUnit === 'kmh' ? 'km/h' : 'kt');
+
+// Avstånd och höjd — internt alltid NM och ft
+export const distOut = (nm) => (settings.distUnit === 'km' ? nm * 1.852 : nm);
+export const distIn = (v) => (settings.distUnit === 'km' ? v / 1.852 : v);
+export const distUnit = () => (settings.distUnit === 'km' ? 'km' : 'NM');
+export const fmtDist = (nm, dec = 1) => `${distOut(nm).toFixed(dec)} ${distUnit()}`;
+export const altOut = (ft) => (settings.altUnit === 'm' ? ft / 3.28084 : ft);
+export const altIn = (v) => (settings.altUnit === 'm' ? v * 3.28084 : v);
+export const altUnit = () => (settings.altUnit === 'm' ? 'm' : 'ft');
+/** Höjd med enhet. coarse: avrunda till 100 ft / 50 m (uppskattningar som molnbas) */
+export const fmtAlt = (ft, coarse = false) => { const st = coarse ? (settings.altUnit === 'm' ? 50 : 100) : 1; return `${Math.round(altOut(ft) / st) * st} ${altUnit()}`; };

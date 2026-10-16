@@ -1,5 +1,5 @@
 // Ultranav — huvudmodul
-import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES, onSettings, oaipKey, proxyUrl } from './settings.js';
+import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES, onSettings, oaipKey, proxyUrl, distOut, distIn, distUnit, fmtDist, altOut, altIn, altUnit, fmtAlt } from './settings.js';
 import * as lib from './library.js';
 import { OPENAIP_KEY } from './config.js';
 import { APP_VERSION } from './version.js';
@@ -78,7 +78,7 @@ Object.assign(drawActions, {
   routeSummary: () => {
     if (route.wps.length < 2) return '';
     const legs = getLegs(), d = legs.reduce((s, l) => s + l.d, 0), t = legs.reduce((s, l) => s + l.ete, 0);
-    return `<b>${route.wps.length} punkter · ${d.toFixed(1)} NM · ${fmtHM(t)}</b> — tryck för fler punkter, dra för att flytta`;
+    return `<b>${route.wps.length} punkter · ${fmtDist(d)} · ${fmtHM(t)}</b> — tryck för fler punkter, dra för att flytta`;
   },
 });
 onDrawings(() => { if (currentTab === 'draw') renderTab(); });
@@ -186,11 +186,12 @@ function updateInstruments() {
   setI('#iGS', o.gs != null ? Math.round(spdOut(o.gs)) : '--');
   $('#iGSu').textContent = spdUnit();
   setI('#iTRK', o.trk != null ? fmtDeg(o.trk - settings.variation) : '---');
-  setI('#iALT', o.alt != null ? Math.round(o.alt) : '----');
-  setI('#iAGL', o.agl != null ? Math.round(o.agl) : '----', o.agl != null && o.agl < 300 && (o.gs || 0) > 30);
+  setI('#iALT', o.alt != null ? Math.round(altOut(o.alt)) : '----');
+  setI('#iAGL', o.agl != null ? Math.round(altOut(o.agl)) : '----', o.agl != null && o.agl < 300 && (o.gs || 0) > 30);
+  $('#iALTu').textContent = $('#iAGLu').textContent = altUnit(); $('#iDISTu').textContent = distUnit();
   setI('#iWP', o.wp ? (nav.dto ? 'D→ ' : '') + o.wp : '—');
   setI('#iBRG', o.brg != null ? fmtDeg(o.brg) : '---');
-  setI('#iDIST', o.dist != null ? (o.dist < 10 ? o.dist.toFixed(1) : Math.round(o.dist)) : '--');
+  setI('#iDIST', o.dist != null ? (distOut(o.dist) < 10 ? distOut(o.dist).toFixed(1) : Math.round(distOut(o.dist))) : '--');
   setI('#iETE', fmtHM(o.ete));
   setI('#iETA', fmtUTC(o.eta));
 }
@@ -212,14 +213,14 @@ function showNearest() {
   const list = nearestAirports(ref, 12);
   window.ulnav._near = list.map((x) => x.a);
   modal(`<h3>Närmaste fält ${nav.pos ? 'från din position' : '<span class="muted">(från kartans mitt — GPS av)</span>'}</h3>
-    ${nav.pos && nav.aglFt ? note('ok', `Glidräckvidd ≈ <b>${(nav.aglFt * settings.glideRatio / 6076).toFixed(1)} NM</b> (1:${settings.glideRatio}, ${Math.round(nav.aglFt)} ft AGL)`, 'triangle') : ''}
+    ${nav.pos && nav.aglFt ? note('ok', `Glidräckvidd ≈ <b>${fmtDist(nav.aglFt * settings.glideRatio / 6076)}</b> (1:${settings.glideRatio}, ${fmtAlt(nav.aglFt)} AGL)`, 'triangle') : ''}
     ${list.length ? `<ul class="aplist">${list.map(({ a, d }, i) => apRow(a, d, bearing(ref, a), i, true)).join('')}</ul>` : '<div class="muted">Inga fält inlästa ännu.</div>'}`);
 }
 function apRow(a, d, brg, i, big) {
   const r = longestRwy(a);
   return `<li><div class="info"><b>${a.ul ? '<span class="tag ul">UL</span>' : ''}${esc(a.name)}</b>
     <span>${esc(a.icao || '')} ${esc(a.type)}${r ? ` · ${esc(r.des)} ${r.lenM ? r.lenM + ' m' : ''} ${esc(r.surf)}` : ''}${a.freqs[0] ? ' · ' + esc(a.freqs[0].mhz) : ''}</span></div>
-    <div class="dist">${d.toFixed(1)}<small>NM · ${fmtDeg(brg - settings.variation)}°M</small></div>
+    <div class="dist">${distOut(d).toFixed(1)}<small>${distUnit()} · ${fmtDeg(brg - settings.variation)}°M</small></div>
     <button class="btn small ${big ? 'primary' : ''}" onclick="window.ulnav.dtoNear(${i})" aria-label="Direkt till">${ic('arrowRight', 20)}</button>
     <button class="btn small" onclick="window.ulnav.showNear(${i})" aria-label="Info">${ic('info', 20)}</button></li>`;
 }
@@ -326,14 +327,14 @@ async function routeForecast(box) {
       const sun = sunInfo(t, fc.latitude, fc.longitude);
       return `<div class="metar" style="font-family:inherit;font-size:14px;white-space:normal"><div class="st"><span>${esc(name)}</span><span class="muted">${fmtUTC(t)}Z</span></div>
         <div class="kv"><span>Vind 10 m</span><b>${fmtDeg(s.wdir)}° / ${Math.round(s.wspd)} kt${s.gust > s.wspd + 5 ? ' (byar ' + Math.round(s.gust) + ')' : ''}</b>
-        <span>Vind ${settings.cruiseAlt} ft</span><b>${fmtDeg(wa.dir)}° / ${Math.round(wa.spd)} kt</b>
+        <span>Vind ${fmtAlt(settings.cruiseAlt, true)}</span><b>${fmtDeg(wa.dir)}° / ${Math.round(wa.spd)} kt</b>
         <span>Temp / dagg</span><b>${s.temp?.toFixed(0)}° / ${s.dew?.toFixed(0)}°</b>
-        <span>Molnbas (uppsk.)</span><b>${s.baseFt != null ? '≈ ' + s.baseFt + ' ft AGL' : '—'}</b>
+        <span>Molnbas (uppsk.)</span><b>${s.baseFt != null ? '≈ ' + fmtAlt(s.baseFt, true) + ' AGL' : '—'}</b>
         <span>Låga moln</span><b>${s.low ?? '—'} %</b>
         <span>Sikt</span><b>${s.visKm != null ? (s.visKm >= 10 ? '≥ 10 km' : s.visKm.toFixed(1) + ' km') : '—'}</b>
         <span>Nederbörd</span><b>${s.precip ?? 0} mm/h</b>
         <span>QNH (≈)</span><b>${s.qnh != null ? Math.round(s.qnh) + ' hPa' : '—'}</b>
-        <span>Nollgradersgräns</span><b>${s.frzFt != null ? Math.round(s.frzFt / 100) * 100 + ' ft' : '—'}</b>
+        <span>Nollgradersgräns</span><b>${s.frzFt != null ? fmtAlt(s.frzFt, true) : '—'}</b>
         <span>Solnedgång</span><b>${fmtUTC(sun.sunset)}Z</b></div></div>`;
     };
     box.classList.remove('muted');
@@ -357,10 +358,16 @@ function renderSettingsTab(el) {
     <option value="night" ${s.theme === 'night' ? 'selected' : ''}>Natt (rött)</option></select></div>
   <div class="field" style="flex-direction:column;align-items:stretch"><span>Min symbol på kartan<small>Visas för din GPS-position — och för andra piloter om du delar position</small></span>
     <div class="symgrid">${Object.entries(SYMBOLS).map(([id, sy]) => `<button type="button" class="symbtn ${s.ownSymbol === id ? 'on' : ''}" data-sym="${id}" aria-pressed="${s.ownSymbol === id}">${symbolSvg(id, { size: 36 })}<span>${esc(sy.name)}</span></button>`).join('')}</div></div>
-  <div class="field"><span>Fartenhet</span><select data-k="speedUnit"><option value="kt" ${s.speedUnit === 'kt' ? 'selected' : ''}>knop (kt)</option>
-    <option value="kmh" ${s.speedUnit === 'kmh' ? 'selected' : ''}>km/h</option></select></div>
-
   <div class="field"><span>Terrängskuggning i vektorkarta</span><input type="checkbox" data-k="vectorHillshade" ${s.vectorHillshade ? 'checked' : ''}></div>
+
+  <h3>Enheter</h3>
+  <div class="field"><span>Avstånd</span><select data-k="distUnit"><option value="nm" ${s.distUnit !== 'km' ? 'selected' : ''}>nautiska mil (NM)</option>
+    <option value="km" ${s.distUnit === 'km' ? 'selected' : ''}>kilometer (km)</option></select></div>
+  <div class="field"><span>Höjd</span><select data-k="altUnit"><option value="ft" ${s.altUnit !== 'm' ? 'selected' : ''}>fot (ft)</option>
+    <option value="m" ${s.altUnit === 'm' ? 'selected' : ''}>meter (m)</option></select></div>
+  <div class="field"><span>Fart</span><select data-k="speedUnit"><option value="kt" ${s.speedUnit === 'kt' ? 'selected' : ''}>knop (kt)</option>
+    <option value="kmh" ${s.speedUnit === 'kmh' ? 'selected' : ''}>km/h</option></select></div>
+  <div class="muted">Luftrumsgränser visas alltid som de är publicerade (ft/FL). Banlängder visas i meter.</div>
 
   <h3>Flygplan</h3>
   ${num('tas', `Marschfart TAS (${u})`, '', 1, spdOut)}
@@ -371,10 +378,10 @@ function renderSettingsTab(el) {
   ${num('glideRatio', 'Glidtal 1:x', 'för glidräckviddsring', 0.5)}
 
   <h3>Planering</h3>
-  ${num('cruiseAlt', 'Standardhöjd (ft MSL)', 'för nya brytpunkter', 100)}
-  ${num('minClearance', 'Terrängmarginal (ft)', 'varning i profil/navlogg', 100)}
+  ${num('cruiseAlt', `Standardhöjd (${altUnit()} MSL)`, 'för nya brytpunkter', s.altUnit === 'm' ? 50 : 100, altOut)}
+  ${num('minClearance', `Terrängmarginal (${altUnit()})`, 'varning i profil/navlogg', s.altUnit === 'm' ? 50 : 100, altOut)}
   ${num('variation', 'Magnetisk variation (°)', 'ost = +, väst = −. Hämta från aktuell karta/AIP', 0.5)}
-  ${num('arrivalRadius', 'Ankomstradie (NM)', 'byt till nästa punkt', 0.1)}
+  ${num('arrivalRadius', `Ankomstradie (${distUnit()})`, 'byt till nästa punkt', 0.1, distOut)}
 
   <h3>Positionsdelning</h3>
   <div class="field"><span>Dela min position med andra piloter<small>${s.shareTraffic ? `<b>På</b> på den här enheten${s.shareCallsign ? ' som ' + esc(s.shareCallsign) : ''} — delas medan GPS:en är igång` : '<b>Av</b> — andra ser inte var du är'}</small></span>
@@ -426,11 +433,13 @@ function renderSettingsTab(el) {
     const k = inp.dataset.k;
     let v = inp.type === 'checkbox' ? inp.checked : inp.type === 'number' ? +inp.value : inp.value.trim();
     if (k === 'tas') v = spdIn(v);
+    if (k === 'cruiseAlt' || k === 'minClearance') v = Math.round(altIn(v));
+    if (k === 'arrivalRadius') v = distIn(v);
     saveSettings({ [k]: v });
     if (k === 'theme') applyTheme();
     if (k === 'openaipKey') { resetOpenAip(); map.fire('moveend'); }
-    if (['tas', 'fuelBurn', 'variation', 'speedUnit', 'minClearance'].includes(k)) recompute();
-    if (k === 'speedUnit') renderSettingsTab(el);
+    if (['tas', 'fuelBurn', 'variation', 'speedUnit', 'distUnit', 'altUnit', 'minClearance'].includes(k)) recompute();
+    if (['speedUnit', 'distUnit', 'altUnit'].includes(k)) renderSettingsTab(el);
     updateInstruments();
   }));
   if (admin) {

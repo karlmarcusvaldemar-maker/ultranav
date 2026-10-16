@@ -2,7 +2,7 @@
 // Positionsdelning är frivillig och avstängd som standard. Positioner skickas direkt mellan
 // användarna och sparas inte. Simulerade flygningar delas aldrig.
 import { map, registerOverlay } from './map.js';
-import { settings, saveSettings } from './settings.js';
+import { settings, saveSettings, fmtDist, fmtAlt, altOut, altUnit, spdOut, spdUnit } from './settings.js';
 import { supa, onCloud, cloudStatus } from './cloud.js';
 import { nav, onNav } from './nav.js';
 import { esc, toast, modal, $, distNM, bearing, fmtDeg } from './util.js';
@@ -89,8 +89,9 @@ function prune() {
 // ---------- ritning ----------
 const planeSvg = (o, stale) => symbolSvg(o.sym, { fill: '#e8590c', stroke: '#fff', size: 34, rot: o.trk ?? 0, opacity: stale ? 0.45 : 1 });
 function label(o) {
-  const own = nav.pos?.altFt, d = o.alt != null && own != null ? Math.round((o.alt - own) / 100) * 100 : null;
-  return `${esc(o.call || 'Okänd')}${d != null ? ` ${d >= 0 ? '+' : '−'}${Math.abs(d)} ft${d > 0 ? ' ↑' : d < 0 ? ' ↓' : ''}` : o.alt != null ? ` ${o.alt} ft` : ''}`;
+  const own = nav.pos?.altFt, st = altUnit() === 'm' ? 30 : 100;
+  const d = o.alt != null && own != null ? Math.round(altOut(o.alt - own) / st) * st : null;
+  return `${esc(o.call || 'Okänd')}${d != null ? ` ${d >= 0 ? '+' : '−'}${Math.abs(d)} ${altUnit()}${d > 0 ? ' ↑' : d < 0 ? ' ↓' : ''}` : o.alt != null ? ` ${fmtAlt(o.alt)}` : ''}`;
 }
 function draw() {
   if (!viewOn) { layer.clearLayers(); markers.clear(); return; }
@@ -113,8 +114,8 @@ function popup(id) {
   const o = others.get(id); if (!o) return;
   const own = nav.pos, age = Math.round((Date.now() - o.rx) / 1000);
   L.popup().setLatLng([o.lat, o.lon]).setContent(`<h4 class="popinfo">${ic('plane', 18)} ${esc(o.call || 'Okänd pilot')}</h4>
-    <div>${o.alt != null ? `${o.alt} ft MSL` : 'höjd okänd'}${o.gs != null ? ` · ${o.gs} kt` : ''}${o.trk != null ? ` · ${fmtDeg(o.trk)}°T` : ''}</div>
-    ${own ? `<div>${distNM(own, o).toFixed(1)} NM · ${fmtDeg(bearing(own, o) - settings.variation)}°M från dig</div>` : ''}
+    <div>${o.alt != null ? `${fmtAlt(o.alt)} MSL` : 'höjd okänd'}${o.gs != null ? ` · ${Math.round(spdOut(o.gs))} ${spdUnit()}` : ''}${o.trk != null ? ` · ${fmtDeg(o.trk)}°T` : ''}</div>
+    ${own ? `<div>${fmtDist(distNM(own, o))} · ${fmtDeg(bearing(own, o) - settings.variation)}°M från dig</div>` : ''}
     <div class="muted">Uppdaterad för ${age} s sedan · Ultranav-pilot som delar sin position</div>`).openOn(map);
 }
 

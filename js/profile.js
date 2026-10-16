@@ -1,6 +1,6 @@
 // Terrängprofil (vertikal vy) längs rutten
 import { profile, crossings, getLegs, route } from './route.js';
-import { settings } from './settings.js';
+import { settings, altOut, altIn, altUnit, fmtAlt, fmtDist } from './settings.js';
 import { asStyle, AS_TYPE } from './openaip.js';
 import { $ } from './util.js';
 
@@ -33,9 +33,10 @@ export function drawProfile() {
 
   // rutnät
   g.strokeStyle = line; g.fillStyle = muted; g.lineWidth = 1;
-  const step = top > 6000 ? 2000 : top > 3000 ? 1000 : 500;
-  for (let f = 0; f <= top; f += step) { g.beginPath(); g.moveTo(L, y(f)); g.lineTo(W - Rm, y(f)); g.stroke(); g.fillText(f + '', 4, y(f) + 4); }
-  g.fillText('ft', 4, 12);
+  // skalstreck i vald höjdenhet
+  const topU = altOut(top), step = altUnit() === 'm' ? (topU > 1800 ? 500 : topU > 900 ? 250 : 100) : (top > 6000 ? 2000 : top > 3000 ? 1000 : 500);
+  for (let v = 0; v <= topU; v += step) { const f = altIn(v); g.beginPath(); g.moveTo(L, y(f)); g.lineTo(W - Rm, y(f)); g.stroke(); g.fillText(v + '', 4, y(f) + 4); }
+  g.fillText(altUnit(), 4, 12);
 
   // luftrum
   for (const c of crossings) {
@@ -83,5 +84,5 @@ export function drawProfile() {
     g.strokeStyle = '#f2b632'; g.lineWidth = 2; g.beginPath(); g.moveTo(x(own.d), T); g.lineTo(x(own.d), H - B); g.stroke();
     if (own.altFt != null) { g.fillStyle = '#f2b632'; g.beginPath(); g.arc(x(own.d), y(own.altFt), 6, 0, 7); g.fill(); }
   }
-  $('#profileLegend').textContent = `Högsta terräng ${Math.round(maxT)} ft · marginal ${settings.minClearance} ft · ${total.toFixed(0)} NM`;
+  $('#profileLegend').textContent = `Högsta terräng ${fmtAlt(maxT)} · marginal ${fmtAlt(settings.minClearance)} · ${fmtDist(total, 0)}`;
 }

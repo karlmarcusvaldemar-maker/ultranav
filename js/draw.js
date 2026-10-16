@@ -1,6 +1,6 @@
 // Ritverktyg: snabbmätning av avstånd, samt linjer, ytor (polygoner) och punkter som sparas
 import { map, registerOverlay } from './map.js';
-import { settings } from './settings.js';
+import { settings, distOut, distUnit, fmtDist } from './settings.js';
 import { icon, ic } from './icons.js';
 import * as lib from './library.js';
 import { addFieldAt } from './fields.js';
@@ -39,7 +39,12 @@ export function areaM2(c) {
   }
   return Math.abs(s * R_M * R_M / 2);
 }
-const fmtLen = (nm) => `${nm < 10 ? nm.toFixed(2) : nm.toFixed(1)} NM (${(nm * 1.852).toFixed(nm * 1.852 < 10 ? 2 : 1)} km)`;
+/** Längd i vald enhet, med den andra inom parentes (mätverktyget visar båda) */
+const fmtLen = (nm) => {
+  const n = `${nm < 10 ? nm.toFixed(2) : nm.toFixed(1)} NM`, km = nm * 1.852, k = `${km.toFixed(km < 10 ? 2 : 1)} km`;
+  return settings.distUnit === 'km' ? `${k} (${n})` : `${n} (${k})`;
+};
+const segLen = (nm) => { const v = distOut(nm); return `${v < 10 ? v.toFixed(2) : v.toFixed(1)} ${distUnit()}`; };
 function fmtArea(m2) {
   const km2 = m2 / 1e6;
   return km2 >= 1 ? `${km2.toFixed(km2 < 10 ? 2 : 1)} km² (${(km2 / 3.4299).toFixed(2)} NM²)` : `${Math.round(m2 / 1e4 * 10) / 10} ha (${Math.round(m2).toLocaleString('sv-SE')} m²)`;
@@ -143,7 +148,7 @@ function drawLive() {
       if (px < 90) continue;
       const m = interp(a, b, 0.5), d = distNM(a, b);
       L.tooltip({ permanent: true, direction: 'center', className: 'draw-seg', interactive: false })
-        .setLatLng(ll(m)).setContent(`${d < 10 ? d.toFixed(2) : d.toFixed(1)} NM · ${magBrg(a, b)}°M`).addTo(liveLayer);
+        .setLatLng(ll(m)).setContent(`${segLen(d)} · ${magBrg(a, b)}°M`).addTo(liveLayer);
     }
   }
   pts.forEach((p, i) => {
@@ -168,7 +173,7 @@ export function readout() {
   const last = distNM(pts[pts.length - 2], pts[pts.length - 1]);
   let h = mode === 'polygon'
     ? `<b>Yta ${pts.length > 2 ? fmtArea(areaM2(pts)) : '—'}</b> · omkrets ${fmtLen(lengthNM([...pts, pts[0]]))}`
-    : `<b>${fmtLen(total)}</b> · senaste ${last.toFixed(2)} NM ${magBrg(pts[pts.length - 2], pts[pts.length - 1])}°M`;
+    : `<b>${fmtLen(total)}</b> · senaste ${segLen(last)} ${magBrg(pts[pts.length - 2], pts[pts.length - 1])}°M`;
   if (mode !== 'polygon' && settings.tas) h += ` · ${fmtTime(total / settings.tas)} vid TAS`;
   el.innerHTML = h;
 }
@@ -214,7 +219,7 @@ export function drawSaved() {
       lyr = f.type === 'polygon'
         ? L.polygon(f.coords.map(ll), { pane: 'route', color: col, weight: 3, fillOpacity: 0.12, bubblingMouseEvents: false })
         : L.polyline(f.coords.map(ll), { pane: 'route', color: col, weight: 4, bubblingMouseEvents: false });
-      lyr.bindTooltip(`${esc(f.name)} · ${f.type === 'polygon' ? fmtArea(areaM2(f.coords)) : lengthNM(f.coords).toFixed(1) + ' NM'}`,
+      lyr.bindTooltip(`${esc(f.name)} · ${f.type === 'polygon' ? fmtArea(areaM2(f.coords)) : fmtDist(lengthNM(f.coords))}`,
         { permanent: true, direction: 'center', className: 'draw-label', sticky: false });
     }
     lyr.on('click', (e) => {
@@ -229,7 +234,7 @@ function popupHtml(f) {
   const id = f.id;
   const own = drawActions.ownPos();
   const c = f.type === 'point' ? f.coords[0] : null;
-  const rel = c && own ? `<div><b>${distNM(own, c).toFixed(1)} NM</b> · ${magBrg(own, c)}°M från dig</div>` : '';
+  const rel = c && own ? `<div><b>${fmtDist(distNM(own, c))}</b> · ${magBrg(own, c)}°M från dig</div>` : '';
   return `<h4>${esc(f.name)}</h4><div>${describe(f)}</div>${rel}
     <div class="pbtns">${f.type === 'point' ? `<button onclick="window.ulnavDraw.dto('${id}')">${ic('arrowRight')}Direkt till</button><button class="sec" onclick="window.ulnavDraw.addWp('${id}')">${ic('plus')}Rutt</button>` : ''}
     ${f.type === 'line' ? `<button onclick="window.ulnavDraw.asRoute('${id}')">${ic('route')}Använd som rutt</button>` : ''}
@@ -262,7 +267,7 @@ export function renderDrawTab(el) {
     <div class="btnrow"><button class="btn" data-m="measure">${ic('measure')}Mät avstånd</button><button class="btn" data-m="line">${ic('polyline')}Linje</button>
     <button class="btn" data-m="polygon">${ic('polygon')}Yta</button><button class="btn" data-m="point">${ic('pin')}Punkt</button>
     <button class="btn" data-m="field">${ic('runway')}Lägg till fält</button></div>
-    <div class="muted">Avstånd visas i NM och km, kurs i grader magnetiskt (variation ${settings.variation}°). Ytor räknas på jordklotet. <i>Lägg till fält</i> delar ett litet fält med alla Ultranav-piloter.</div>
+    <div class="muted">Avstånd visas i ${settings.distUnit === 'km' ? 'km och NM' : 'NM och km'}, kurs i grader magnetiskt (variation ${settings.variation}°). Ytor räknas på jordklotet. <i>Lägg till fält</i> delar ett litet fält med alla Ultranav-piloter.</div>
     <h3>Sparade (${drawings.length})</h3>
     ${drawings.length ? `<ul class="aplist">${drawings.map((f) => `<li><div class="info"><b class="popinfo">${ic({ point: 'pin', line: 'polyline', polygon: 'polygon' }[f.type], 16)} ${esc(f.name)}</b><span>${describe(f)}</span></div>
       <button class="btn small" onclick="window.ulnavDraw.zoom('${f.id}')">${ic('search')}Visa</button><button class="btn small icon" onclick="window.ulnavDraw.share('${f.id}')" aria-label="Dela">${ic('share')}</button><button class="btn small danger" onclick="window.ulnavDraw.del('${f.id}')" aria-label="Ta bort">${ic('trash')}</button></li>`).join('')}</ul>`

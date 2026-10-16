@@ -1,6 +1,6 @@
 // Ruttplanering och navlogg
 import { map } from './map.js';
-import { settings, spdOut, spdUnit, oaipKey, proxyUrl } from './settings.js';
+import { settings, spdOut, spdUnit, oaipKey, proxyUrl, distOut, distUnit, altOut, altIn, altUnit, fmtAlt } from './settings.js';
 import { distNM, bearing, interp, windTriangle, norm360, fmtDeg, fmtHM, fmtUTC, fmtLocal, esc, store, toast, debounce, download, $, note } from './util.js';
 import { ic } from './icons.js';
 import { fetchForecast, hourIndex, windAt } from './wx.js';
@@ -221,7 +221,7 @@ function drawLabels() {
     if (ny > 0 || (Math.abs(ny) < 0.2 && nx < 0)) { nx = -nx; ny = -ny; }
     const k = 22 + 40 * Math.abs(nx); // längre förskjutning när etiketten hamnar åt sidan (etiketten är bred)
     L.tooltip({ permanent: true, direction: 'center', className: 'leg-label', interactive: false, offset: [nx * k, ny * k] })
-      .setLatLng([mid.lat, mid.lon]).setContent(`${fmtDeg(isFinite(l.mh) ? l.mh : l.mt)}° ${l.d.toFixed(1)}NM ${fmtHM(l.ete)}`).addTo(labelLayer);
+      .setLatLng([mid.lat, mid.lon]).setContent(`${fmtDeg(isFinite(l.mh) ? l.mh : l.mt)}° ${distOut(l.d).toFixed(1)}${distUnit()} ${fmtHM(l.ete)}`).addTo(labelLayer);
   }
 }
 
@@ -240,20 +240,20 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
   if (!route.wps.length) h += `<div class="empty">${ic('route', 34)}<b>Ingen rutt ännu</b><span>Tryck på <b>Rutt</b> till höger och sedan på kartan, eller lägg till fält från fliken <b>Fält</b>. Tryck nära ett fält eller en rapportpunkt för att fästa vid den.</span></div>`;
   h += '<ul class="wplist">' + route.wps.map((w, i) => `<li class="${i === activeLeg + 1 ? 'active' : ''}"><span class="num">${i + 1}</span>
     <span class="nm"><input data-name="${i}" value="${esc(w.name)}"></span>
-    ${i > 0 ? `<input class="alt" type="number" inputmode="numeric" step="100" data-alt="${i}" value="${w.alt}" title="Höjd ft MSL på sträckan hit">` : '<span style="width:76px" class="muted">start</span>'}
+    ${i > 0 ? `<input class="alt" type="number" inputmode="numeric" step="${settings.altUnit === 'm' ? 50 : 100}" data-alt="${i}" value="${Math.round(altOut(w.alt))}" title="Höjd ${altUnit()} MSL på sträckan hit">` : '<span style="width:76px" class="muted">start</span>'}
     <button class="ib" data-up="${i}" aria-label="Flytta upp">${ic('arrowUp')}</button><button class="ib" data-dn="${i}" aria-label="Flytta ner">${ic('arrowDown')}</button><button class="ib" data-del="${i}" aria-label="Ta bort">${ic('close')}</button></li>`).join('') + '</ul>';
-  if (route.wps.length > 1) h += `<div class="muted" style="margin-top:4px">Höjdfältet = planerad höjd (ft MSL) på sträckan <i>till</i> punkten.</div>`;
+  if (route.wps.length > 1) h += `<div class="muted" style="margin-top:4px">Höjdfältet = planerad höjd (${altUnit()} MSL) på sträckan <i>till</i> punkten.</div>`;
 
   if (legs.length) {
     const u = spdUnit();
     h += `<h3>Navlogg <span class="muted">(TAS ${Math.round(spdOut(settings.tas))} ${u}, var ${settings.variation >= 0 ? settings.variation + '°E' : -settings.variation + '°W'})</span></h3>
-      <table class="navlog"><tr><th>Till</th><th>Höjd</th><th>MT</th><th>Vind</th><th>MH</th><th>NM</th><th>GS</th><th>Tid</th><th>ETA</th></tr>`;
+      <table class="navlog"><tr><th>Till</th><th>Höjd</th><th>MT</th><th>Vind</th><th>MH</th><th>${distUnit()}</th><th>GS</th><th>Tid</th><th>ETA</th></tr>`;
     for (const l of legs) {
-      h += `<tr class="${l.i === activeLeg ? 'active' : ''}"><td>${esc(l.to.name)}</td><td>${l.to.alt}${l.lowClear ? ' <span class="warnmark">' + ic('alert', 14) + '</span>' : ''}</td><td>${fmtDeg(l.mt)}</td>
-        <td>${l.wind ? fmtDeg(l.wind.dir) + '/' + Math.round(l.wind.spd) : '—'}</td><td><b>${fmtDeg(l.mh)}</b></td><td>${l.d.toFixed(1)}</td>
+      h += `<tr class="${l.i === activeLeg ? 'active' : ''}"><td>${esc(l.to.name)}</td><td>${Math.round(altOut(l.to.alt))}${l.lowClear ? ' <span class="warnmark">' + ic('alert', 14) + '</span>' : ''}</td><td>${fmtDeg(l.mt)}</td>
+        <td>${l.wind ? fmtDeg(l.wind.dir) + '/' + Math.round(l.wind.spd) : '—'}</td><td><b>${fmtDeg(l.mh)}</b></td><td>${distOut(l.d).toFixed(1)}</td>
         <td>${isFinite(l.gs) ? Math.round(spdOut(l.gs)) : '—'}</td><td>${fmtHM(l.ete)}</td><td>${fmtUTC(l.eta)}</td></tr>`;
     }
-    h += `<tr class="tot"><td>Totalt</td><td></td><td></td><td></td><td></td><td>${T.d.toFixed(1)}</td><td></td><td>${fmtHM(T.t)}</td><td>${fmtUTC(T.eta)}Z</td></tr></table>`;
+    h += `<tr class="tot"><td>Totalt</td><td></td><td></td><td></td><td></td><td>${distOut(T.d).toFixed(1)}</td><td></td><td>${fmtHM(T.t)}</td><td>${fmtUTC(T.eta)}Z</td></tr></table>`;
     h += `<div class="muted">Vind: Open-Meteo, interpolerad till sträckans höjd vid mitten av sträckan, beräknad tid. ${fc ? '' : '<b>Ingen vind hämtad — räknar utan vind.</b>'}</div>`;
 
     h += `<h3>Bränsle (liter)</h3><div class="kv">
@@ -272,7 +272,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
         ${late ? note('bad', 'Beräknad ankomst efter solnedgång.', 'moon') : ''}`;
     }
     const low = legs.filter((l) => l.lowClear);
-    if (low.length) h += note('warn', `Under ${settings.minClearance} ft terrängmarginal på: ${low.map((l) => `${esc(l.to.name)} (terräng ${Math.round(l.terr)} ft)`).join(', ')}. Höjddata saknar master och byggnader.`);
+    if (low.length) h += note('warn', `Under ${fmtAlt(settings.minClearance)} terrängmarginal på: ${low.map((l) => `${esc(l.to.name)} (terräng ${fmtAlt(l.terr)})`).join(', ')}. Höjddata saknar master och byggnader.`);
 
     h += `<h3>Luftrum längs rutten</h3>`;
     if (!oaipKey()) h += '<div class="muted">Luftrumskontroll är inte tillgänglig just nu.</div>';
@@ -281,7 +281,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
       const cls = c.inside && [1, 3, 4, 7, 13, 26, 36, 2].includes(c.as.type) ? 'asp-bad' : c.inside ? 'asp-warn' : '';
       return `<div class="asp ${cls}" style="border-left:5px solid ${asStyle(c.as).color};padding:6px 8px;margin:6px 0">
         <b>${esc(c.as.name)}</b> — ${esc(asLabel(c.as))}<br>${esc(fmtLimit(c.as.lowerLimit))} – ${esc(fmtLimit(c.as.upperLimit))}
-        · NM ${c.from.toFixed(0)}–${c.to.toFixed(0)} · ${c.inside ? '<b>du är inne vid ' + c.alt + ' ft</b>' : c.below ? 'du passerar under' : c.mixed ? 'du passerar under/över' : 'du passerar över'}
+        · ${distUnit()} ${distOut(c.from).toFixed(0)}–${distOut(c.to).toFixed(0)} · ${c.inside ? '<b>du är inne vid ' + fmtAlt(c.alt) + '</b>' : c.below ? 'du passerar under' : c.mixed ? 'du passerar under/över' : 'du passerar över'}
         ${c.as.frequencies?.length ? '<br>' + c.as.frequencies.map((f) => esc(f.value) + ' ' + esc(f.name || '')).join(', ') : ''}</div>`;
     }).join('');
   }
@@ -299,7 +299,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
   $('#rName', el).onchange = (e) => { route.name = e.target.value; persist(); };
   $('#rDep', el).onchange = (e) => { route.depTime = e.target.value ? new Date(e.target.value).toISOString() : null; changed(); };
   el.querySelectorAll('[data-name]').forEach((i) => i.onchange = () => { route.wps[+i.dataset.name].name = i.value; changed(false); });
-  el.querySelectorAll('[data-alt]').forEach((i) => i.onchange = () => { route.wps[+i.dataset.alt].alt = Math.max(0, +i.value || 0); changed(); });
+  el.querySelectorAll('[data-alt]').forEach((i) => i.onchange = () => { route.wps[+i.dataset.alt].alt = Math.max(0, Math.round(altIn(+i.value || 0))); changed(); });
   el.querySelectorAll('[data-up]').forEach((b) => b.onclick = () => moveWp(+b.dataset.up, -1));
   el.querySelectorAll('[data-dn]').forEach((b) => b.onclick = () => moveWp(+b.dataset.dn, 1));
   el.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => removeWp(+b.dataset.del));
