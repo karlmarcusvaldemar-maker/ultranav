@@ -3,7 +3,7 @@ import { map, registerOverlay } from './map.js';
 import { airspaces, reportingPoints, asStyle, asVisible, asLabel, fmtLimit, limitFt, loadBounds, onOpenAipData, airspacesAt } from './openaip.js';
 import { allAirports, onAirports, longestRwy } from './airports.js';
 import { esc, debounce, distNM, bearing, fmtDeg, fmtLatLon } from './util.js';
-import { settings, oaipKey, proxyUrl } from './settings.js';
+import { settings, oaipKey, proxyUrl, fmtDist, fmtAlt } from './settings.js';
 import { fetchMetarTaf, metarHtml } from './wx.js';
 import { ic } from './icons.js';
 import { sunInfo } from './sun.js';
@@ -97,14 +97,14 @@ export function placeBtns(p) {
 export function relPos(p) {
   const own = actions.ownPos();
   if (!own) return '';
-  return `<div><b>${distNM(own, p).toFixed(1)} NM</b> · ${fmtDeg(bearing(own, p) - settings.variation)}°M från dig</div>`;
+  return `<div><b>${fmtDist(distNM(own, p))}</b> · ${fmtDeg(bearing(own, p) - settings.variation)}°M från dig</div>`;
 }
 
 export function airportHtml(a) {
   const rw = a.rwys.length ? a.rwys.map((r) => `<tr><td><b>${esc(r.des)}</b></td><td>${r.lenM ? r.lenM + ' m' : ''}${r.widM ? ' × ' + r.widM : ''}</td><td>${esc(r.surf)}</td></tr>`).join('') : '<tr><td class="muted">Inga baner i data</td></tr>';
   const fq = a.freqs.length ? a.freqs.map((f) => `<tr><td>${esc(f.name)}</td><td><b>${esc(f.mhz)}</b></td></tr>`).join('') : '';
   return `<h4>${a.ul ? '<span class="tag ul">UL</span>' : ''}${esc(a.name)}</h4>
-    <div>${esc(a.icao || a.ident || '')} · ${esc(a.type)}${a.elevFt != null ? ' · ' + a.elevFt + ' ft' : ''}${a.ppr ? ' · <b>PPR</b>' : ''}${a.private ? ' · privat' : ''}</div>
+    <div>${esc(a.icao || a.ident || '')} · ${esc(a.type)}${a.elevFt != null ? ' · ' + fmtAlt(a.elevFt) : ''}${a.ppr ? ' · <b>PPR</b>' : ''}${a.private ? ' · privat' : ''}</div>
     ${relPos(a)}
     <table style="margin-top:6px">${rw}</table>${fq ? `<table style="margin-top:6px">${fq}</table>` : ''}
     ${a.icao ? `<div id="apwx-${esc(a.icao)}" class="muted" style="margin-top:6px">Hämtar METAR/TAF…</div>` : ''}
@@ -161,7 +161,7 @@ export function mapInfoPopup(latlng, elevFt) {
   const p = { lat: latlng.lat, lon: latlng.lng, name: 'Punkt' };
   const as = airspacesAt(p.lat, p.lon);
   L.popup({ maxWidth: 360 }).setLatLng(latlng).setContent(`<h4>${fmtLatLon(p.lat, p.lon)}</h4>
-    ${elevFt != null ? `<div>Terräng ≈ <b>${Math.round(elevFt)} ft</b></div>` : ''}${relPos(p)}
+    ${elevFt != null ? `<div>Terräng ≈ <b>${fmtAlt(elevFt)}</b></div>` : ''}${relPos(p)}
     ${oaipKey() ? airspaceListHtml(as) : '<div class="muted">Luftrumsinfo saknas just nu</div>'}
     ${placeBtns(p)}`).openOn(map);
 }

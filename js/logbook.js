@@ -5,6 +5,7 @@ import { nav, logStats } from './nav.js';
 import { nearestAirports } from './airports.js';
 import { esc, fmtHM, toast, download, FT_PER_M, modal, $ } from './util.js';
 import { ic } from './icons.js';
+import { fmtDist, fmtAlt } from './settings.js';
 
 const trackLayer = L.layerGroup();
 const fieldName = (p) => { const n = nearestAirports(p, 1)[0]; return n && n.d < 3 ? (n.a.icao || n.a.name) : `${p.lat.toFixed(2)}, ${p.lon.toFixed(2)}`; };
@@ -30,7 +31,7 @@ export function renderLogbook(el) {
     ${flights.length ? `<div class="kv" style="margin:4px 0 8px"><span>Flygningar</span><b>${flights.length}</b><span>Total tid</span><b>${fmtHM(totH)}</b></div>
     <ul class="aplist">${flights.map((f) => {
       const d = new Date(f.data.start);
-      return `<li><div class="info"><b>${esc(f.name)}</b><span>${d.toLocaleDateString('sv-SE')} ${d.toTimeString().slice(0, 5)} · ${fmtHM(f.data.durH)} · ${(f.data.distNM || 0).toFixed(0)} NM${f.data.maxAlt != null ? ` · max ${f.data.maxAlt} ft` : ''}${f.share ? ' · delad' : ''}</span></div>
+      return `<li><div class="info"><b>${esc(f.name)}</b><span>${d.toLocaleDateString('sv-SE')} ${d.toTimeString().slice(0, 5)} · ${fmtHM(f.data.durH)} · ${fmtDist(f.data.distNM || 0, 0)}${f.data.maxAlt != null ? ` · max ${fmtAlt(f.data.maxAlt)}` : ''}${f.share ? ' · delad' : ''}</span></div>
         <button class="btn small icon" data-show="${f.id}" aria-label="Visa på kartan">${ic('search')}</button>
         <button class="btn small icon" data-more="${f.id}" aria-label="Mer">${ic('dots', 18)}</button></li>`;
     }).join('')}</ul>`
@@ -63,7 +64,7 @@ function more(id, el) {
   const f = lib.get('flight', id); if (!f) return;
   modal(`<h3>${esc(f.name)}</h3>
     <div class="kv"><span>Datum</span><b>${new Date(f.data.start).toLocaleString('sv-SE')}</b><span>Tid</span><b>${fmtHM(f.data.durH)}</b>
-      <span>Sträcka</span><b>${(f.data.distNM || 0).toFixed(1)} NM</b><span>Max höjd</span><b>${f.data.maxAlt != null ? f.data.maxAlt + ' ft' : '—'}</b></div>
+      <span>Sträcka</span><b>${fmtDist(f.data.distNM || 0)}</b><span>Max höjd</span><b>${f.data.maxAlt != null ? fmtAlt(f.data.maxAlt) : '—'}</b></div>
     <div class="field" style="flex-direction:column;align-items:stretch;margin-top:8px"><span>Anteckning</span><textarea id="lbNote" rows="3" style="width:100%;font-size:16px;border-radius:10px;border:1px solid var(--line-strong);background:var(--bg);color:var(--text);padding:8px">${esc(f.data.note || '')}</textarea></div>
     <div class="btnrow">
       <button class="btn" id="lbGpx">${ic('download')}Exportera GPX</button>

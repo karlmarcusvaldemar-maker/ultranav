@@ -2,7 +2,7 @@
 import { map } from './map.js';
 import { ic } from './icons.js';
 import { symbolSvg, symbolTransform } from './aircraft.js';
-import { settings, onSettings, spdOut, spdUnit, oaipKey, proxyUrl } from './settings.js';
+import { settings, onSettings, spdOut, spdUnit, oaipKey, proxyUrl, fmtDist, fmtAlt } from './settings.js';
 import { route, onRouteChange, getLegs } from './route.js';
 import { airspacesAt, limitFt, asLabel, fmtLimit } from './openaip.js';
 import { elevationFt } from './terrain.js';
@@ -262,8 +262,8 @@ export function renderLogTab(el) {
   el.innerHTML = `<h3>Spårlogg</h3>
     <div class="field"><span>Logga spår när GPS är på</span><input type="checkbox" id="lgOn" ${nav.logging ? 'checked' : ''}></div>
     ${s ? `<div class="kv" style="margin-top:8px"><span>Start</span><b>${s.start.toLocaleString('sv-SE')}</b><span>Punkter</span><b>${s.n}</b>
-      <span>Sträcka</span><b>${s.d.toFixed(1)} NM</b><span>Tid</span><b>${fmtHM(s.h)}</b>
-      <span>Max höjd</span><b>${s.maxAlt != null ? s.maxAlt + ' ft' : '—'}</b><span>Max GS</span><b>${Math.round(spdOut(s.maxGs))} ${spdUnit()}</b></div>` : '<div class="muted">Ingen logg ännu.</div>'}
+      <span>Sträcka</span><b>${fmtDist(s.d)}</b><span>Tid</span><b>${fmtHM(s.h)}</b>
+      <span>Max höjd</span><b>${s.maxAlt != null ? fmtAlt(s.maxAlt) : '—'}</b><span>Max GS</span><b>${Math.round(spdOut(s.maxGs))} ${spdUnit()}</b></div>` : '<div class="muted">Ingen logg ännu.</div>'}
     <div class="btnrow"><button class="btn" id="lgExp">${ic('download')}Exportera GPX</button><button class="btn danger" id="lgClr">${ic('trash')}Rensa logg</button></div>
     <h3>Simulering (träning på marken)</h3>
     <div class="muted">Flyger rutten med din TAS och prognosvind ×10 i tid, så att du kan öva på instrumentlisten, sekvensering och varningar.</div>
