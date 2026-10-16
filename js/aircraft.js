@@ -57,14 +57,15 @@ export const SYMBOLS = {
     <circle cx="9.5" cy="25.27" r="3.33" fill="#1b1b1b"/><circle cx="9.5" cy="25.27" r="1.8" fill="#e8e4d8" stroke="none"/><circle cx="9.5" cy="25.27" r=".6" fill="#555" stroke="none"/>
     <circle cx="32.5" cy="25.27" r="3.33" fill="#1b1b1b"/><circle cx="32.5" cy="25.27" r="1.8" fill="#e8e4d8" stroke="none"/><circle cx="32.5" cy="25.27" r=".6" fill="#555" stroke="none"/>` },
   saab900: { name: 'Saab 900', vb: '0 0 40 40', profile: true, body: `
-    <path d="M2.4 23.23 V18.6 Q2.4 18.1 3 18 L4 17.8 Q8.4 15.2 12.6 14.4 Q17 14.1 21.4 14.3 Q22.4 14.4 23.2 15.2 L26 17.7 Q32 18 36.8 18.9 Q38.4 19.2 38.4 20.6 V23.23 H33.78 A3.4 3.4 0 0 0 27.02 23.23 H13.88 A3.4 3.4 0 0 0 7.12 23.23 Z"/>
-    <path d="M6.6 17.9 Q9.6 16 12.8 15.2 L14.5 15.05 V17.9 Z M15.3 15 H21 Q21.9 15.05 22.6 15.7 L24.8 17.9 H15.3 Z" fill="#17212c" stroke="none"/>
-    <path d="M15 18 V22.6 M25.4 18 L25.8 22.6" fill="none" stroke-width=".5"/>
-    <path d="M3 21 H37" fill="none" stroke="#1b1b1b" stroke-width=".8"/>
-    <path d="M1.4 20.6 H3.4 V23.6 H1.8 Z M36.8 20.4 H39 V23.4 H36.8 Z" fill="#1b1b1b" stroke="none"/>
-    <rect x="37.6" y="19.3" width=".9" height="1" fill="#ffe39a" stroke="none"/><rect x="2.4" y="18.5" width=".8" height="2" fill="#d9534f" stroke="none"/>
-    <circle cx="10.5" cy="22.85" r="2.75" fill="#1b1b1b"/><circle cx="10.5" cy="22.85" r="1.7" fill="#c9c9c9" stroke="none"/><path d="M10.5 21.450000000000003 Q11.3 22.150000000000002 10.5 22.85 M11.7 23.55 Q10.65 23.650000000000002 10.5 22.85 M9.3 23.55 Q9.5 22.6 10.5 22.85" fill="none" stroke="#555" stroke-width=".45"/>
-    <circle cx="30.4" cy="22.85" r="2.75" fill="#1b1b1b"/><circle cx="30.4" cy="22.85" r="1.7" fill="#c9c9c9" stroke="none"/><path d="M30.4 21.450000000000003 Q31.2 22.150000000000002 30.4 22.85 M31.599999999999998 23.55 Q30.549999999999997 23.650000000000002 30.4 22.85 M29.2 23.55 Q29.4 22.6 30.4 22.85" fill="none" stroke="#555" stroke-width=".45"/>` },
+    <path d="M2.6 22.9 V17.6 L3 17 Q3.4 16.6 4.2 16.5 Q8.6 14.2 12.6 13.4 Q17.4 13.1 21.8 13.3 Q23 13.4 23.6 14.2 Q24.6 15.8 25.8 17.4 Q30 17.5 32.6 17.9 Q36.2 18.4 37.6 19.6 Q38.4 20.3 38.4 21.2 V22.9 H33.9 A3.5 3.5 0 0 0 26.9 22.9 H14 A3.5 3.5 0 0 0 7 22.9 Z"/>
+    <path d="M6.4 17.3 Q9.6 15.2 12.9 14.3 L14.6 14.15 V17.4 Z M15.4 14.1 H21.5 Q22.3 14.15 22.7 14.8 L24.6 17.4 H15.4 Z" fill="#17212c" stroke="none"/>
+    <path d="M15 17.5 V22.4 M25 17.5 L25.6 22.4" fill="none" stroke-width=".5"/>
+    <path d="M1.5 19.8 H4 V23.3 H1.9 Z M36.6 20 H39.1 V23 H36.6 Z" fill="#1b1b1b" stroke="none"/>
+    <path d="M1.9 21 H3.8 M1.9 22 H3.8 M36.8 21.1 H38.9 M36.8 22 H38.9" stroke="#555" stroke-width=".3"/>
+    <path d="M4 20.4 H36.6" fill="none" stroke="#1b1b1b" stroke-width=".8"/>
+    <rect x="37.7" y="19.3" width=".8" height="1" fill="#ffe39a" stroke="none"/><rect x="2.6" y="17.6" width=".8" height="2" fill="#d9534f" stroke="none"/>
+    <circle cx="10.5" cy="22.9" r="2.9" fill="#1b1b1b"/><circle cx="10.5" cy="22.9" r="1.8" fill="#c9c9c9" stroke="none"/><path d="M10.5 21.4 Q11.4 22.15 10.5 22.9 M11.8 23.65 Q10.65 23.75 10.5 22.9 M9.2 23.65 Q9.45 22.6 10.5 22.9" fill="none" stroke="#555" stroke-width=".45"/>
+    <circle cx="30.4" cy="22.9" r="2.9" fill="#1b1b1b"/><circle cx="30.4" cy="22.9" r="1.8" fill="#c9c9c9" stroke="none"/><path d="M30.4 21.4 Q31.3 22.15 30.4 22.9 M31.7 23.65 Q30.55 23.75 30.4 22.9 M29.1 23.65 Q29.35 22.6 30.4 22.9" fill="none" stroke="#555" stroke-width=".45"/>` },
 };
 export const DEFAULT_SYMBOL = 'experimental';
 export const symbolOf = (id) => SYMBOLS[id] || SYMBOLS[DEFAULT_SYMBOL];
