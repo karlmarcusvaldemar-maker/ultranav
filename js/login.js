@@ -40,12 +40,15 @@ function dayCycle(svg) {
       c.add('day');
       // andra dagen klyver gubben ved vid stugan i stället för att ro ut och fiska
       if (++days === 2) { c.add('egg', 'chop'); }
+      // var tredje dag landar ett flygplan på gräsfältet
+      if (days % 3 === 0) c.add('landing');
       else { row(); at(5600, () => { if (c.contains('day')) c.add('fishing'); }); }
     });
     at(16000, () => {
       const chopped = c.contains('chop');
       c.remove('day', 'fishing', 'chop');
       if (!chopped) row();
+      if (c.contains('landing')) { c.add('landout'); at(2200, () => c.remove('landing', 'landout')); }
       if (c.contains('egg')) { c.add('eggout'); at(3000, () => c.remove('egg', 'eggout')); }
       // tredje natten smyger en björn förbi mellan träden
       if (++nights === 3) { at(500, () => c.add('bear-on')); at(7800, () => c.remove('bear-on')); }
