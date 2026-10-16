@@ -74,6 +74,37 @@ drop policy if exists "traffic: inloggade skickar" on realtime.messages;
 create policy "traffic: inloggade läser"  on realtime.messages for select to authenticated using (realtime.topic() = 'traffic');
 create policy "traffic: inloggade skickar" on realtime.messages for insert to authenticated with check (realtime.topic() = 'traffic');
 
+-- Fält från Ultranav-piloter: små privata fält som läggs till via Rita & mät › Lägg till fält.
+-- Alla inloggade kan se fälten. Bara den som lagt till ett fält, eller en administratör, kan ändra
+-- eller ta bort det. Raderas kontot försvinner även fälten som kontot lagt till.
+create table if not exists public.fields (
+  id          uuid             primary key default gen_random_uuid(),
+  user_id     uuid             not null default auth.uid() references auth.users (id) on delete cascade,
+  name        text             not null check (char_length(name) between 1 and 60),
+  lat         double precision not null check (lat between -90 and 90),
+  lon         double precision not null check (lon between -180 and 180),
+  rwy_len_m   integer          not null check (rwy_len_m between 50 and 5000),
+  contact     text             check (contact is null or char_length(contact) <= 120),  -- null = okänd
+  info        text             check (info is null or char_length(info) <= 1000),
+  added_by    text             check (added_by is null or char_length(added_by) <= 12), -- anropssignal
+  created_at  timestamptz      not null default now()
+);
+
+alter table public.fields enable row level security;
+
+drop policy if exists "fields: inloggade läser" on public.fields;
+drop policy if exists "fields: skapa egna"      on public.fields;
+drop policy if exists "fields: ändra egna"      on public.fields;
+drop policy if exists "fields: radera egna"     on public.fields;
+
+create policy "fields: inloggade läser" on public.fields for select to authenticated using (true);
+create policy "fields: skapa egna"      on public.fields for insert to authenticated with check (auth.uid() = user_id);
+create policy "fields: ändra egna"      on public.fields for update to authenticated
+  using (auth.uid() = user_id or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+  with check (auth.uid() = user_id or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "fields: radera egna"     on public.fields for delete to authenticated
+  using (auth.uid() = user_id or (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
 -- Administratör: ger kontot tillgång till Datakällor, CORS-proxy och Felsökning i appens inställningar.
 -- Byt e-postadressen och kör en gång. Logga sedan ut och in i appen.
 -- update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role":"admin"}' where email = 'din@epost.se';

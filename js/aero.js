@@ -83,7 +83,7 @@ function drawAll() {
   }
 }
 
-function btns(p) {
+export function placeBtns(p) {
   const id = 'p' + Math.random().toString(36).slice(2, 8);
   setTimeout(() => {
     document.getElementById(id + 'd')?.addEventListener('click', () => { map.closePopup(); actions.directTo(p); });
@@ -94,7 +94,7 @@ function btns(p) {
     ${p.icao ? `<button id="${id}w" class="sec">METAR/TAF</button>` : ''}</div>`;
 }
 
-function relPos(p) {
+export function relPos(p) {
   const own = actions.ownPos();
   if (!own) return '';
   return `<div><b>${distNM(own, p).toFixed(1)} NM</b> · ${fmtDeg(bearing(own, p) - settings.variation)}°M från dig</div>`;
@@ -110,7 +110,7 @@ export function airportHtml(a) {
     ${a.icao ? `<div id="apwx-${esc(a.icao)}" class="muted" style="margin-top:6px">Hämtar METAR/TAF…</div>` : ''}
     ${sunLine(a)}
     <div class="muted" style="margin-top:4px">Källa: ${esc(a.src)} — kontrollera alltid mot AIP/fältets info</div>
-    ${btns({ lat: a.lat, lon: a.lon, name: a.icao || a.name, icao: a.icao, elevFt: a.elevFt })}`;
+    ${placeBtns({ lat: a.lat, lon: a.lon, name: a.icao || a.name, icao: a.icao, elevFt: a.elevFt })}`;
 }
 
 function sunLine(a) {
@@ -163,6 +163,6 @@ export function mapInfoPopup(latlng, elevFt) {
   L.popup({ maxWidth: 360 }).setLatLng(latlng).setContent(`<h4>${fmtLatLon(p.lat, p.lon)}</h4>
     ${elevFt != null ? `<div>Terräng ≈ <b>${Math.round(elevFt)} ft</b></div>` : ''}${relPos(p)}
     ${oaipKey() ? airspaceListHtml(as) : '<div class="muted">Luftrumsinfo saknas just nu</div>'}
-    ${btns(p)}`).openOn(map);
+    ${placeBtns(p)}`).openOn(map);
 }
 export { longestRwy };
