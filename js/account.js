@@ -70,7 +70,7 @@ function renderLoggedIn(el, st) {
     <div class="btnrow"><button class="btn" id="accSync">${ic('sync')}Synka nu</button><button class="btn" id="accPwBtn">${ic('lock')}Byt lösenord</button>
       <button class="btn danger" id="accOut">${ic('logout')}Logga ut</button></div>
     <details class="danger-zone"><summary>Radera konto</summary>
-      <div class="muted">Kontot och allt du sparat i molnet — rutter, ritningar, kartmaterial, loggbok och delade länkar — raderas permanent. Det går inte att ångra.</div>
+      <div class="muted">Kontot och allt du sparat i molnet — rutter, ritningar, kartmaterial, loggbok och delade länkar — raderas permanent. Fält du delat med andra piloter finns kvar, men utan koppling till dig. Det går inte att ångra.</div>
       <div class="btnrow"><button class="btn danger" id="accDel">${ic('trash')}Radera mitt konto</button></div></details>
     <div class="muted"><a href="integritet.html" target="_blank" rel="noopener">Integritetspolicy och villkor</a></div>
     <div class="muted">Synken sker automatiskt när något ändras, när appen öppnas och var femte minut. Utan nät sparas ändringarna och skickas när nätet är tillbaka.</div>`;

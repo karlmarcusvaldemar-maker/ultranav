@@ -60,6 +60,8 @@ as $$
 begin
   if auth.uid() is null then raise exception 'inte inloggad'; end if;
   delete from public.items where user_id = auth.uid();
+  -- delade fält finns kvar för andra piloter, men utan koppling till kontot
+  update public.fields set added_by = null where user_id = auth.uid();
   delete from auth.users where id = auth.uid();
 end;
 $$;
@@ -76,10 +78,11 @@ create policy "traffic: inloggade skickar" on realtime.messages for insert to au
 
 -- Fält från Ultranav-piloter: små privata fält som läggs till via Rita & mät › Lägg till fält.
 -- Alla inloggade kan se fälten. Bara den som lagt till ett fält, eller en administratör, kan ändra
--- eller ta bort det. Raderas kontot försvinner även fälten som kontot lagt till.
+-- eller ta bort det. Raderas kontot finns fältet kvar utan ägare (user_id blir null) och förvaltas
+-- därefter av administratören; anropssignalen tas bort så att fältet inte längre pekar ut personen.
 create table if not exists public.fields (
   id          uuid             primary key default gen_random_uuid(),
-  user_id     uuid             not null default auth.uid() references auth.users (id) on delete cascade,
+  user_id     uuid             default auth.uid() references auth.users (id) on delete set null,
   name        text             not null check (char_length(name) between 1 and 60),
   lat         double precision not null check (lat between -90 and 90),
   lon         double precision not null check (lon between -180 and 180),
@@ -89,6 +92,11 @@ create table if not exists public.fields (
   added_by    text             check (added_by is null or char_length(added_by) <= 12), -- anropssignal
   created_at  timestamptz      not null default now()
 );
+
+-- Om tabellen skapades med en tidigare version av filen: låt fälten finnas kvar när ett konto raderas
+alter table public.fields alter column user_id drop not null;
+alter table public.fields drop constraint if exists fields_user_id_fkey;
+alter table public.fields add constraint fields_user_id_fkey foreign key (user_id) references auth.users (id) on delete set null;
 
 alter table public.fields enable row level security;
 
