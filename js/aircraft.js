@@ -44,7 +44,12 @@ export const SYMBOLS = {
     <ellipse cx="20" cy="17.5" rx="4.6" ry="6.6"/>
     <path d="M4 9 L36 26 M36 9 L4 26" fill="none" stroke-width="1.8"/>
     <circle cx="20" cy="17.5" r="1.4" fill="#17212c" stroke="none"/>` },
-  landrover: { name: 'Land Rover Series 3', vb: '0 0 40 40', profile: true, body: `
+  broom: { name: 'Kvast', vb: '0 0 40 40', body: `
+    <rect x="18.8" y="1.6" width="2.4" height="21.4" rx="1.2" fill="#8b5a2b"/>
+    <path d="M16.4 23 H23.6 L29.6 36.8 Q20 39.6 10.4 36.8 Z"/>
+    <path d="M18.2 25 L14.6 36.8 M20 25 V37.8 M21.8 25 L25.4 36.8" fill="none" stroke-width=".7"/>
+    <rect x="15.8" y="21.4" width="8.4" height="3.2" rx="1.2" fill="#5a3a1a"/>` },
+  landrover: { name: 'Land Rover', vb: '0 0 40 40', profile: true, body: `
     <path d="M1.5 24.3 V12.3 H26.9 L27.7 17.4 L27.9 18 H37.9 V24.3 H36.4 V21.4 Q36.4 20.4 35.4 20.4 H29.6 Q28.6 20.4 28.6 21.4 V24.3 H13.4 V21.4 Q13.4 20.4 12.4 20.4 H6.6 Q5.6 20.4 5.6 21.4 V24.3 Z"/>
     <path d="M2 12.3 V11.4 H25.8 V12.3 Z" fill="#f4f0e6" stroke-width=".7"/>
     <path d="M3 13.8 H9.6 V17 H3 Z M10.4 13.8 H16.4 V17 H10.4 Z M17.4 13.8 H21.8 V17 H17.4 Z M22.6 13.8 H26.4 L26.9 17 H22.6 Z" fill="#17212c" stroke="none"/>
