@@ -23,7 +23,7 @@ import { sunInfo } from './sun.js';
 import { testOpenAip, testProxy, testWeather, testOverlays } from './diag.js';
 import { oaipStatus, resetOpenAip } from './openaip.js';
 import { initTraffic, openShareDialog } from './traffic.js';
-import { initFields } from './fields.js';
+import { initFields, fieldMoving, moveTap, userFieldNear, openUserField } from './fields.js';
 import { SYMBOLS, symbolSvg } from './aircraft.js';
 import { applyIcons, icon, ic } from './icons.js';
 
@@ -87,9 +87,12 @@ window.ulnav = { directTo, removeWp: (i) => { map.closePopup(); removeWp(i); }, 
 
 // ---------- kartinteraktion ----------
 map.on('click', async (e) => {
+  if (fieldMoving()) { moveTap(e.latlng); return; }
   if (drawActive()) { drawTap(e.latlng); return; }
   if (editing) { handleEditTap(e.latlng); return; }
-  // Tryck nära ett flygfält öppnar fältinfo även om pricken missades
+  // Tryck nära ett flygfält eller pilotfält öppnar fältinfo även om pricken missades
+  const uf = userFieldNear(e.latlng);
+  if (uf) { openUserField(uf); return; }
   const ap = airportNear(e.latlng);
   if (ap) { openAirport(ap); return; }
   const el = await elevationFt(e.latlng.lat, e.latlng.lng).catch(() => null);
