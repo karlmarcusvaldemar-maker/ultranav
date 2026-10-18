@@ -16,6 +16,7 @@ export const nav = {
 let watchId = null, last = null, wakeLock = null, simTimer = null;
 const ownLayer = L.layerGroup();
 let ownMarker, vecLine, glideCircle, dtoLine;
+const vecTicks = []; // punkter på fartvektorn vid 2 och 5 min
 const listeners = new Set();
 export const onNav = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f(nav));
@@ -175,15 +176,19 @@ function update() {
     ownMarker = L.marker(ll, { pane: 'own', interactive: false, icon: L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: planeHtml() }) }).addTo(ownLayer);
     vecLine = L.polyline([], { pane: 'ownPath', color: '#f2b632', weight: 3, dashArray: '2 6', interactive: false }).addTo(ownLayer);
     dtoLine = L.polyline([], { pane: 'route', color: '#ff2fd0', weight: 4, dashArray: '10 8', interactive: false }).addTo(ownLayer);
+    for (const min of [2, 5]) vecTicks.push(L.marker(ll, { pane: 'own', interactive: false, keyboard: false, opacity: 0,
+      icon: L.divIcon({ className: 'vtick', iconSize: [14, 14], iconAnchor: [7, 7], html: `<i></i><b>${min}</b>` }) }).addTo(ownLayer));
     glideCircle = L.circle(ll, { pane: 'ownPath', radius: 1, color: '#2ecc71', weight: 2, fill: true, fillOpacity: 0.05, dashArray: '6 6', interactive: false }).addTo(ownLayer);
   }
   ownMarker.setLatLng(ll);
   const svg = ownMarker.getElement()?.querySelector('svg');
   const mb = map.getBearing ? map.getBearing() : 0;
   if (svg) svg.style.transform = symbolTransform(settings.ownSymbol, (p.trk ?? 0) + mb);
-  // fartvektor 5 min
-  if (p.trk != null && p.gsKt > 10) vecLine.setLatLngs([ll, Object.values(destPoint(p, p.trk, p.gsKt * 5 / 60))]);
+  // fartvektor 5 min, med punkter där du är om 2 och 5 minuter
+  const vec = p.trk != null && p.gsKt > 10;
+  if (vec) vecLine.setLatLngs([ll, Object.values(destPoint(p, p.trk, p.gsKt * 5 / 60))]);
   else vecLine.setLatLngs([]);
+  [2, 5].forEach((min, i) => { if (vec) vecTicks[i].setLatLng(Object.values(destPoint(p, p.trk, p.gsKt * min / 60))); vecTicks[i].setOpacity(vec ? 1 : 0); });
   // glidräckvidd
   if (nav.aglFt != null && nav.aglFt > 100) {
     glideCircle.setLatLng(ll).setRadius(nav.aglFt * settings.glideRatio / FT_PER_M);
