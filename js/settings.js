@@ -19,6 +19,7 @@ const DEFAULTS = {
   speedUnit: 'kt',        // 'kt' | 'kmh'
   distUnit: 'nm',         // 'nm' | 'km'
   altUnit: 'ft',          // 'ft' | 'm'
+  vectorMin: 10,          // fartvektorns längd i minuter framåt
   tas: 80,                // kt (lagras alltid i knop)
   fuelBurn: 14,           // l/h
   fuelUsable: 65,         // l
@@ -70,6 +71,9 @@ export const proxyUrl = () => settings.corsProxy?.trim() || DEFAULT_PROXY;
 export const spdOut = (kt) => (settings.speedUnit === 'kmh' ? kt * 1.852 : kt);
 export const spdIn = (v) => (settings.speedUnit === 'kmh' ? v / 1.852 : v);
 export const spdUnit = () => (settings.speedUnit === 'kmh' ? 'km/h' : 'kt');
+
+/** Valbara längder på fartvektorn (minuter). Punkter sätts ut vid varje kortare tid längs linjen. */
+export const VECTOR_MINS = [2, 5, 10, 15, 20, 30, 45];
 
 // Avstånd och höjd — internt alltid NM och ft
 export const distOut = (nm) => (settings.distUnit === 'km' ? nm * 1.852 : nm);
