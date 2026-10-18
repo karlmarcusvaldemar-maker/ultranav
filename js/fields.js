@@ -5,7 +5,7 @@ import { map, registerOverlay, showOverlay } from './map.js';
 import { supa, cloudStatus, onCloud } from './cloud.js';
 import { allAirports } from './airports.js';
 import { actions, placeBtns, relPos } from './aero.js';
-import { settings } from './settings.js';
+import { settings, fmtDist } from './settings.js';
 import { esc, toast, modal, note, $, distNM, store, fmtLatLon } from './util.js';
 import { ic } from './icons.js';
 
@@ -38,13 +38,16 @@ async function load() {
 }
 
 // ---------- karta ----------
-const fIcon = L.divIcon({ className: 'ufield-ic', iconSize: [18, 18], iconAnchor: [9, 9], html: '<div class="ufield"></div>' });
+// Romben är liten men träffytan 44 × 44 px, så att den är lätt att träffa med fingret
+const fIcon = L.divIcon({ className: 'ufield-ic', iconSize: [44, 44], iconAnchor: [22, 22], html: '<div class="ufield"></div>' });
+const moveIcon = L.divIcon({ className: 'ufield-ic moving', iconSize: [56, 56], iconAnchor: [28, 28], html: '<div class="ufield"></div>' });
 function draw() {
   layer.clearLayers();
   if (!on) return;
   const z = map.getZoom();
   if (z < 6) return;
   for (const f of fields) {
+    if (moving?.f.id === f.id) continue; // visas som flyttbar markör medan den flyttas
     const m = L.marker([f.lat, f.lon], { icon: fIcon, bubblingMouseEvents: false, keyboard: false }).addTo(layer);
     if (z >= 10) m.bindTooltip(esc(f.name), { permanent: true, direction: 'right', className: 'ap-label uf-label', offset: [8, 0] });
     m.on('click', () => {
@@ -66,7 +69,9 @@ function openField(f) {
     <div class="muted" style="margin-top:4px">Tillagt av ${esc(f.added_by || 'en Ultranav-pilot')}${date ? ' · ' + date : ''}. Okontrollerade uppgifter — kontakta fältets ägare före landning.</div>
     ${placeBtns({ lat: f.lat, lon: f.lon, name: f.name })}
     <div class="ufc"><div class="ufc-head">Kommentarer</div><div class="ufc-list muted">Hämtar kommentarer…</div></div>
-    ${mine(f) || isAdmin() ? '<div class="pbtns"><button class="sec uf-del">' + ic('trash') + (mine(f) ? 'Ta bort mitt fält' : 'Ta bort (admin)') + '</button></div>' : ''}`;
+    ${mine(f) || isAdmin() ? `<div class="pbtns"><button class="sec uf-move">${ic('crosshair')}Flytta${mine(f) ? '' : ' (admin)'}</button>
+      <button class="sec uf-del">${ic('trash')}${mine(f) ? 'Ta bort mitt fält' : 'Ta bort (admin)'}</button></div>` : ''}`;
+  box.querySelector('.uf-move')?.addEventListener('click', () => startMove(f));
   box.querySelector('.uf-del')?.addEventListener('click', () => removeField(f));
   const popup = L.popup({ maxWidth: 340, autoPanPaddingTopLeft: [10, 10], autoPanPaddingBottomRight: [90, 10] }).setLatLng([f.lat, f.lon]).setContent(box).openOn(map);
   loadComments(f, box, popup);
@@ -115,6 +120,57 @@ async function removeField(f) {
   map.closePopup();
   fields = fields.filter((x) => x.id !== f.id); store.set('ulnav.userfields', fields); draw();
   toast(`${f.name} är borttaget`);
+}
+
+/** Pilotfält inom px pixlar från en skärmpunkt (för tryck som missar romben) */
+export function userFieldNear(latlng, px = 30) {
+  if (!on || map.getZoom() < 6) return null;
+  const pt = map.latLngToContainerPoint(latlng);
+  let best = null, bd = px;
+  for (const f of fields) {
+    const d = pt.distanceTo(map.latLngToContainerPoint([f.lat, f.lon]));
+    if (d < bd) { bd = d; best = f; }
+  }
+  return best;
+}
+export const openUserField = (f) => openField(f);
+
+// ---------- flytta ----------
+// Ägaren och administratören kan flytta ett fält: dra romben eller tryck på kartan, och spara.
+let moving = null; // { f, m, bar }
+export const fieldMoving = () => !!moving;
+export function moveTap(latlng) { if (moving) { moving.m.setLatLng(latlng); moveInfo(); } }
+function moveInfo() {
+  const ll = moving.m.getLatLng(), d = distNM(moving.f, { lat: ll.lat, lon: ll.lng });
+  $('#ufMoveInfo').textContent = d < 0.002 ? 'Dra romben dit fältet ligger, eller tryck på kartan.' : `Flyttas ${fmtDist(d, 2)} från nuvarande plats.`;
+}
+function startMove(f) {
+  map.closePopup();
+  stopMove();
+  const m = L.marker([f.lat, f.lon], { icon: moveIcon, draggable: true, autoPan: true, zIndexOffset: 1000, keyboard: false }).addTo(map);
+  const bar = document.createElement('div');
+  bar.id = 'ufMoveBar';
+  bar.innerHTML = `<div class="info"><b>Flytta ${esc(f.name)}</b><span id="ufMoveInfo"></span></div>
+    <button class="btn" id="ufMoveCancel">Avbryt</button><button class="btn primary" id="ufMoveSave">${ic('check')}Spara</button>`;
+  $('#mapwrap').appendChild(bar);
+  L.DomEvent.disableClickPropagation(bar);
+  moving = { f, m, bar };
+  m.on('drag dragend', moveInfo);
+  moveInfo(); draw();
+  $('#ufMoveCancel').onclick = () => { stopMove(); draw(); };
+  $('#ufMoveSave').onclick = async (e) => {
+    const ll = m.getLatLng(), pos = { lat: +ll.lat.toFixed(6), lon: +ll.lng.toFixed(6) };
+    e.currentTarget.disabled = true;
+    const { error } = await supa().from('fields').update(pos).eq('id', f.id);
+    if (error) { e.currentTarget.disabled = false; toast('Kunde inte flytta: ' + error.message, 5000); return; }
+    fields = fields.map((x) => (x.id === f.id ? { ...x, ...pos } : x)); store.set('ulnav.userfields', fields);
+    stopMove(); draw();
+    toast(`${f.name} är flyttat`);
+  };
+}
+function stopMove() {
+  if (!moving) return;
+  map.removeLayer(moving.m); moving.bar.remove(); moving = null;
 }
 
 // ---------- lägg till ----------
