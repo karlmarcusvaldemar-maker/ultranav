@@ -2,7 +2,7 @@
 import { map } from './map.js';
 import { ic } from './icons.js';
 import { symbolSvg, symbolTransform } from './aircraft.js';
-import { settings, onSettings, spdOut, spdUnit, oaipKey, proxyUrl, fmtDist, fmtAlt } from './settings.js';
+import { settings, onSettings, spdOut, spdUnit, oaipKey, proxyUrl, fmtDist, fmtAlt, VECTOR_MINS } from './settings.js';
 import { route, onRouteChange, getLegs } from './route.js';
 import { airspacesAt, limitFt, asLabel, fmtLimit } from './openaip.js';
 import { elevationFt } from './terrain.js';
@@ -16,7 +16,7 @@ export const nav = {
 let watchId = null, last = null, wakeLock = null, simTimer = null;
 const ownLayer = L.layerGroup();
 let ownMarker, vecLine, glideCircle, dtoLine;
-const vecTicks = []; // punkter på fartvektorn vid 2 och 5 min
+const vecTicks = []; // punkter på fartvektorn, en per valbar tid (VECTOR_MINS)
 const listeners = new Set();
 export const onNav = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f(nav));
@@ -28,7 +28,7 @@ export async function initNav() {
   ownLayer.addTo(map);
   nav.log = (await idb.get('tracklog')) || [];
   onRouteChange(() => { if (nav.pos) { pickLeg(); update(); } });
-  onSettings((s, patch) => { if ('ownSymbol' in patch && ownMarker) { ownMarker.setIcon(L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: planeHtml() })); update(); } });
+  onSettings((s, patch) => { if ('ownSymbol' in patch && ownMarker) { ownMarker.setIcon(L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: planeHtml() })); update(); } if ('vectorMin' in patch && nav.pos) update(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && nav.tracking) requestWake(); });
   map.on('dragstart', () => { if (nav.follow && nav.tracking) { nav.follow = false; emit(); } });
 }
@@ -176,7 +176,7 @@ function update() {
     ownMarker = L.marker(ll, { pane: 'own', interactive: false, icon: L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: planeHtml() }) }).addTo(ownLayer);
     vecLine = L.polyline([], { pane: 'ownPath', color: '#f2b632', weight: 3, dashArray: '2 6', interactive: false }).addTo(ownLayer);
     dtoLine = L.polyline([], { pane: 'route', color: '#ff2fd0', weight: 4, dashArray: '10 8', interactive: false }).addTo(ownLayer);
-    for (const min of [2, 5]) vecTicks.push(L.marker(ll, { pane: 'own', interactive: false, keyboard: false, opacity: 0,
+    for (const min of VECTOR_MINS) vecTicks.push(L.marker(ll, { pane: 'own', interactive: false, keyboard: false, opacity: 0,
       icon: L.divIcon({ className: 'vtick', iconSize: [14, 14], iconAnchor: [7, 7], html: `<i></i><b>${min}</b>` }) }).addTo(ownLayer));
     glideCircle = L.circle(ll, { pane: 'ownPath', radius: 1, color: '#2ecc71', weight: 2, fill: true, fillOpacity: 0.05, dashArray: '6 6', interactive: false }).addTo(ownLayer);
   }
@@ -184,11 +184,15 @@ function update() {
   const svg = ownMarker.getElement()?.querySelector('svg');
   const mb = map.getBearing ? map.getBearing() : 0;
   if (svg) svg.style.transform = symbolTransform(settings.ownSymbol, (p.trk ?? 0) + mb);
-  // fartvektor 5 min, med punkter där du är om 2 och 5 minuter
-  const vec = p.trk != null && p.gsKt > 10;
-  if (vec) vecLine.setLatLngs([ll, Object.values(destPoint(p, p.trk, p.gsKt * 5 / 60))]);
+  // fartvektor (vald längd i minuter), med punkter där du är efter varje kortare tid
+  const vec = p.trk != null && p.gsKt > 10, len = VECTOR_MINS.includes(settings.vectorMin) ? settings.vectorMin : 10;
+  if (vec) vecLine.setLatLngs([ll, Object.values(destPoint(p, p.trk, p.gsKt * len / 60))]);
   else vecLine.setLatLngs([]);
-  [2, 5].forEach((min, i) => { if (vec) vecTicks[i].setLatLng(Object.values(destPoint(p, p.trk, p.gsKt * min / 60))); vecTicks[i].setOpacity(vec ? 1 : 0); });
+  VECTOR_MINS.forEach((min, i) => {
+    const show = vec && min <= len;
+    if (show) vecTicks[i].setLatLng(Object.values(destPoint(p, p.trk, p.gsKt * min / 60)));
+    vecTicks[i].setOpacity(show ? 1 : 0);
+  });
   // glidräckvidd
   if (nav.aglFt != null && nav.aglFt > 100) {
     glideCircle.setLatLng(ll).setRadius(nav.aglFt * settings.glideRatio / FT_PER_M);

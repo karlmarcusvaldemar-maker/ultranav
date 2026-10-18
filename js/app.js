@@ -1,5 +1,5 @@
 // Ultranav — huvudmodul
-import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES, onSettings, oaipKey, proxyUrl, distOut, distIn, distUnit, fmtDist, altOut, altIn, altUnit, fmtAlt } from './settings.js';
+import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES, onSettings, oaipKey, proxyUrl, distOut, distIn, distUnit, fmtDist, altOut, altIn, altUnit, fmtAlt, VECTOR_MINS } from './settings.js';
 import * as lib from './library.js';
 import { OPENAIP_KEY } from './config.js';
 import { APP_VERSION } from './version.js';
@@ -362,6 +362,8 @@ function renderSettingsTab(el) {
   <div class="field" style="flex-direction:column;align-items:stretch"><span>Min symbol på kartan<small>Visas för din GPS-position — och för andra piloter om du delar position</small></span>
     <div class="symgrid">${Object.entries(SYMBOLS).map(([id, sy]) => `<button type="button" class="symbtn ${s.ownSymbol === id ? 'on' : ''}" data-sym="${id}" aria-pressed="${s.ownSymbol === id}">${symbolSvg(id, { size: 36 })}<span>${esc(sy.name)}</span></button>`).join('')}</div></div>
   <div class="field"><span>Terrängskuggning i vektorkarta</span><input type="checkbox" data-k="vectorHillshade" ${s.vectorHillshade ? 'checked' : ''}></div>
+  <div class="field"><span>Linje framför flygplanet<small>Visar var du är om … minuter, med punkter vid kortare tider</small></span><select data-k="vectorMin">
+    ${[...VECTOR_MINS].reverse().map((m) => `<option value="${m}" ${(s.vectorMin ?? 10) === m ? 'selected' : ''}>${m} min</option>`).join('')}</select></div>
 
   <h3>Enheter</h3>
   <div class="field"><span>Avstånd</span><select data-k="distUnit"><option value="nm" ${s.distUnit !== 'km' ? 'selected' : ''}>nautiska mil (NM)</option>
@@ -436,6 +438,7 @@ function renderSettingsTab(el) {
     const k = inp.dataset.k;
     let v = inp.type === 'checkbox' ? inp.checked : inp.type === 'number' ? +inp.value : inp.value.trim();
     if (k === 'tas') v = spdIn(v);
+    if (k === 'vectorMin') v = +v;
     if (k === 'cruiseAlt' || k === 'minClearance') v = Math.round(altIn(v));
     if (k === 'arrivalRadius') v = distIn(v);
     saveSettings({ [k]: v });
