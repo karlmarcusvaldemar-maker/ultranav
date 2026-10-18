@@ -714,3 +714,9 @@ body.gated #shareChip { display: none; }
 .ufc-in { width: 100%; margin-top: 6px; font: 15px var(--sans); padding: 6px 8px; border-radius: 8px; border: 1px solid var(--popup-line); background: var(--popup-bg); color: var(--popup-text); resize: vertical; }
 .ufc-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; font-size: 12px; }
 .ufc-send { display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 8px; padding: 6px 12px; font: 600 14px var(--sans); background: var(--popup-primary); color: var(--popup-primary-text); cursor: pointer; }
+
+/* punkter på fartvektorn: där du är om 2 och 5 minuter */
+.vtick { background: none; border: 0; }
+.vtick i { position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #f2b632; border: 2px solid #1b1b1b; box-sizing: border-box; }
+.vtick b { position: absolute; left: 15px; top: -3px; font: 800 14px var(--sans); color: #1b1b1b; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff; }
+body.night .vtick b { color: #f2b632; text-shadow: 0 0 3px #000, 0 0 3px #000; }
