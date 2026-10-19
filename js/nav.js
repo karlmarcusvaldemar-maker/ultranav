@@ -1,4 +1,4 @@
-// GPS, rörlig karta, aktiv sträcka, direkt-till, glidräckvidd, spårlogg och varningar
+// GPS, rörlig karta, aktiv sträcka, direkt-till, glidräckvidd och varningar (loggning av flygningar: flight.js)
 import { map } from './map.js';
 import { ic } from './icons.js';
 import { symbolSvg, symbolTransform } from './aircraft.js';
@@ -11,7 +11,7 @@ import { distNM, bearing, destPoint, crossTrack, norm360, fmtDeg, fmtHM, fmtUTC,
 
 export const nav = {
   pos: null, tracking: false, follow: true, trackUp: false, activeLeg: 0, dto: null, simulating: false,
-  log: [], logging: true, aglFt: null, terrFt: null,
+  aglFt: null, terrFt: null,
 };
 let watchId = null, last = null, wakeLock = null, simTimer = null;
 const ownLayer = L.layerGroup();
@@ -26,7 +26,6 @@ const planeHtml = () => symbolSvg(settings.ownSymbol, { size: 40 });
 
 export async function initNav() {
   ownLayer.addTo(map);
-  nav.log = (await idb.get('tracklog')) || [];
   onRouteChange(() => { if (nav.pos) { pickLeg(); update(); } });
   onSettings((s, patch) => { if ('ownSymbol' in patch && ownMarker) { ownMarker.setIcon(L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: planeHtml() })); update(); } if ('vectorMin' in patch && nav.pos) update(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && nav.tracking) requestWake(); });
@@ -75,7 +74,6 @@ function ingest(fix) {
   const first = !nav.pos;
   nav.pos = fix;
   if (first) pickLeg();
-  logFix(fix);
   terrainCheck(fix);
   airspaceCheck(fix);
   update();
@@ -243,43 +241,9 @@ export function setTrackUp(v) {
   update(); emit();
 }
 
-// ---------- spårlogg ----------
-let lastSave = 0;
-function logFix(f) {
-  if (!nav.logging || nav.simulating) return;
-  const prev = nav.log[nav.log.length - 1];
-  if (prev && f.t - prev.t < 5000 && distNM(prev, f) < 0.03) return;
-  nav.log.push({ lat: +f.lat.toFixed(6), lon: +f.lon.toFixed(6), alt: f.altFt != null ? Math.round(f.altFt) : null, t: f.t, gs: f.gsKt != null ? Math.round(f.gsKt) : null });
-  if (Date.now() - lastSave > 30000) { lastSave = Date.now(); idb.set('tracklog', nav.log); }
-}
-export function clearLog() { nav.log = []; idb.set('tracklog', []); emit(); }
-export function exportLog() {
-  if (!nav.log.length) { toast('Loggen är tom'); return; }
-  const pts = nav.log.map((p) => `      <trkpt lat="${p.lat}" lon="${p.lon}">${p.alt != null ? `<ele>${(p.alt / FT_PER_M).toFixed(1)}</ele>` : ''}<time>${new Date(p.t).toISOString()}</time></trkpt>`).join('\n');
-  const d = new Date(nav.log[0].t).toISOString().slice(0, 16).replace(/[:T]/g, '-');
-  download(`spar-${d}.gpx`, `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Ultranav" xmlns="http://www.topografix.com/GPX/1/1">\n  <trk><name>Flygning ${d}</name><trkseg>\n${pts}\n  </trkseg></trk>\n</gpx>\n`);
-}
-export function logStats() {
-  const l = nav.log;
-  if (l.length < 2) return null;
-  let d = 0, maxAlt = -Infinity, maxGs = 0;
-  for (let i = 1; i < l.length; i++) { d += distNM(l[i - 1], l[i]); if (l[i].alt != null) maxAlt = Math.max(maxAlt, l[i].alt); if (l[i].gs) maxGs = Math.max(maxGs, l[i].gs); }
-  return { n: l.length, d, h: (l[l.length - 1].t - l[0].t) / 3600e3, maxAlt: isFinite(maxAlt) ? maxAlt : null, maxGs, start: new Date(l[0].t) };
-}
 export function renderLogTab(el) {
-  const s = logStats();
-  el.innerHTML = `<h3>Spårlogg</h3>
-    <div class="field"><span>Logga spår när GPS är på</span><input type="checkbox" id="lgOn" ${nav.logging ? 'checked' : ''}></div>
-    ${s ? `<div class="kv" style="margin-top:8px"><span>Start</span><b>${s.start.toLocaleString('sv-SE')}</b><span>Punkter</span><b>${s.n}</b>
-      <span>Sträcka</span><b>${fmtDist(s.d)}</b><span>Tid</span><b>${fmtHM(s.h)}</b>
-      <span>Max höjd</span><b>${s.maxAlt != null ? fmtAlt(s.maxAlt) : '—'}</b><span>Max GS</span><b>${Math.round(spdOut(s.maxGs))} ${spdUnit()}</b></div>` : '<div class="muted">Ingen logg ännu.</div>'}
-    <div class="btnrow"><button class="btn" id="lgExp">${ic('download')}Exportera GPX</button><button class="btn danger" id="lgClr">${ic('trash')}Rensa logg</button></div>
-    <h3>Simulering (träning på marken)</h3>
-    <div class="muted">Flyger rutten med din TAS och prognosvind ×10 i tid, så att du kan öva på instrumentlisten, sekvensering och varningar.</div>
+  el.innerHTML = `<h3>Simulering</h3>
     <div class="btnrow"><button class="btn ${nav.simulating ? 'primary' : ''}" id="simBtn">${nav.simulating ? ic('stop') + 'Stoppa simulering' : ic('play') + 'Simulera rutten'}</button></div>`;
-  $('#lgOn', el).onchange = (e) => { nav.logging = e.target.checked; };
-  $('#lgExp', el).onclick = exportLog;
-  $('#lgClr', el).onclick = () => { if (confirm('Rensa spårloggen?')) clearLog(); };
   $('#simBtn', el).onclick = () => { nav.simulating ? stopSim() : startSim(); renderLogTab(el); };
 }
 
