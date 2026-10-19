@@ -242,7 +242,6 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
     <span class="nm"><input data-name="${i}" value="${esc(w.name)}"></span>
     ${i > 0 ? `<input class="alt" type="number" inputmode="numeric" step="${settings.altUnit === 'm' ? 50 : 100}" data-alt="${i}" value="${Math.round(altOut(w.alt))}" title="Höjd ${altUnit()} MSL på sträckan hit">` : '<span style="width:76px" class="muted">start</span>'}
     <button class="ib" data-up="${i}" aria-label="Flytta upp">${ic('arrowUp')}</button><button class="ib" data-dn="${i}" aria-label="Flytta ner">${ic('arrowDown')}</button><button class="ib" data-del="${i}" aria-label="Ta bort">${ic('close')}</button></li>`).join('') + '</ul>';
-  if (route.wps.length > 1) h += `<div class="muted" style="margin-top:4px">Höjdfältet = planerad höjd (${altUnit()} MSL) på sträckan <i>till</i> punkten.</div>`;
 
   if (legs.length) {
     const u = spdUnit();
@@ -254,7 +253,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
         <td>${isFinite(l.gs) ? Math.round(spdOut(l.gs)) : '—'}</td><td>${fmtHM(l.ete)}</td><td>${fmtUTC(l.eta)}</td></tr>`;
     }
     h += `<tr class="tot"><td>Totalt</td><td></td><td></td><td></td><td></td><td>${distOut(T.d).toFixed(1)}</td><td></td><td>${fmtHM(T.t)}</td><td>${fmtUTC(T.eta)}Z</td></tr></table>`;
-    h += `<div class="muted">Vind: Open-Meteo, interpolerad till sträckans höjd vid mitten av sträckan, beräknad tid. ${fc ? '' : '<b>Ingen vind hämtad — räknar utan vind.</b>'}</div>`;
+    if (!fc) h += '<div class="muted">Utan vind — prognosen kunde inte hämtas.</div>';
 
     h += `<h3>Bränsle (liter)</h3><div class="kv">
       <span>Färd</span><b>${T.trip.toFixed(1)} l</b>
@@ -276,7 +275,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
 
     h += `<h3>Luftrum längs rutten</h3>`;
     if (!oaipKey()) h += '<div class="muted">Luftrumskontroll är inte tillgänglig just nu.</div>';
-    else if (!crossings.length) h += '<div class="muted">Inga luftrum funna längs rutten i OpenAIP-data (eller ännu ej inläst).</div>';
+    else if (!crossings.length) h += '<div class="muted">Inga luftrum längs rutten.</div>';
     else h += crossings.map((c) => {
       const cls = c.inside && [1, 3, 4, 7, 13, 26, 36, 2].includes(c.as.type) ? 'asp-bad' : c.inside ? 'asp-warn' : '';
       return `<div class="asp ${cls}" style="border-left:5px solid ${asStyle(c.as).color};padding:6px 8px;margin:6px 0">

@@ -7,7 +7,7 @@ const SHELL = [
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'vendor/leaflet/leaflet-rotate.js',
   'js/app.js', 'js/util.js', 'js/settings.js', 'js/map.js', 'js/openaip.js', 'js/airports.js', 'js/aero.js',
   'js/terrain.js', 'js/vector.js', 'js/draw.js', 'js/diag.js', 'js/icons.js', 'js/config.js', 'js/library.js', 'js/cloud.js', 'js/account.js', 'js/customlayers.js', 'js/logbook.js', 'js/login.js', 'js/scene.js',
-  'vendor/maplibre/maplibre-gl.js', 'vendor/maplibre/maplibre-gl.css', 'vendor/maplibre/leaflet-maplibre-gl.js', 'vendor/supabase/supabase.js', 'vendor/shp/shp.min.js', 'vendor/jszip/jszip.min.js', 'js/sun.js', 'js/wx.js', 'js/route.js', 'js/profile.js', 'js/nav.js', 'js/offline.js', 'js/version.js', 'js/hillshade.js', 'js/traffic.js', 'js/aircraft.js', 'js/fields.js',
+  'vendor/maplibre/maplibre-gl.js', 'vendor/maplibre/maplibre-gl.css', 'vendor/maplibre/leaflet-maplibre-gl.js', 'vendor/supabase/supabase.js', 'vendor/shp/shp.min.js', 'vendor/jszip/jszip.min.js', 'js/sun.js', 'js/wx.js', 'js/route.js', 'js/profile.js', 'js/nav.js', 'js/offline.js', 'js/version.js', 'js/hillshade.js', 'js/traffic.js', 'js/aircraft.js', 'js/fields.js', 'js/flight.js',
   'icons/icon.svg', 'fonts/outfit-700.woff2', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 const TILE_HOSTS = /tile\.openstreetmap\.org|tile\.opentopomap\.org|arcgisonline\.com|newaydata\.com|tiles\.openaip\.net|elevation-tiles-prod|tilecache\.rainviewer\.com|tiles\.openfreemap\.org|cache\.kartverket\.no|geodata\.naturvardsverket\.se|lansstyrelsen\.se/;

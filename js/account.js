@@ -72,8 +72,7 @@ function renderLoggedIn(el, st) {
     <details class="danger-zone"><summary>Radera konto</summary>
       <div class="muted">Kontot och allt du sparat i molnet — rutter, ritningar, kartmaterial, loggbok och delade länkar — raderas permanent. Fält du delat med andra piloter finns kvar, men utan koppling till dig. Det går inte att ångra.</div>
       <div class="btnrow"><button class="btn danger" id="accDel">${ic('trash')}Radera mitt konto</button></div></details>
-    <div class="muted"><a href="integritet.html" target="_blank" rel="noopener">Integritetspolicy och villkor</a></div>
-    <div class="muted">Synken sker automatiskt när något ändras, när appen öppnas och var femte minut. Utan nät sparas ändringarna och skickas när nätet är tillbaka.</div>`;
+    <div class="muted"><a href="integritet.html" target="_blank" rel="noopener">Integritetspolicy och villkor</a></div>`;
   $('#accSync', el).onclick = () => sync();
   $('#accDel', el).onclick = async () => {
     const v = prompt(`Skriv RADERA för att radera kontot ${st.user.email} och allt innehåll permanent.`);

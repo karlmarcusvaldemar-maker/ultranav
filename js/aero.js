@@ -109,7 +109,6 @@ export function airportHtml(a) {
     <table style="margin-top:6px">${rw}</table>${fq ? `<table style="margin-top:6px">${fq}</table>` : ''}
     ${a.icao ? `<div id="apwx-${esc(a.icao)}" class="muted" style="margin-top:6px">Hämtar METAR/TAF…</div>` : ''}
     ${sunLine(a)}
-    <div class="muted" style="margin-top:4px">Källa: ${esc(a.src)} — kontrollera alltid mot AIP/fältets info</div>
     ${placeBtns({ lat: a.lat, lon: a.lon, name: a.icao || a.name, icao: a.icao, elevFt: a.elevFt })}`;
 }
 
@@ -151,7 +150,7 @@ export function airportNear(latlng, px = 30) {
 }
 
 export function airspaceListHtml(list) {
-  if (!list.length) return '<div class="muted">Inget luftrum i OpenAIP-data på denna punkt (klass G eller ej inläst).</div>';
+  if (!list.length) return '<div class="muted">Inget luftrum här (klass G).</div>';
   return list.map((a) => `<div class="asp" style="border-left-color:${asStyle(a).color}"><b>${esc(a.name)}</b><br>${esc(asLabel(a))}
     · ${esc(fmtLimit(a.lowerLimit))} – ${esc(fmtLimit(a.upperLimit))}${a.frequencies?.length ? '<br>' + a.frequencies.map((f) => esc(f.value) + ' ' + esc(f.name || '')).join(', ') : ''}</div>`).join('');
 }

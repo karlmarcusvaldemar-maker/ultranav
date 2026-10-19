@@ -56,7 +56,7 @@ async function ensureChannel() {
         subscribed = status === 'SUBSCRIBED';
         stat.status = { SUBSCRIBED: 'ansluten', CHANNEL_ERROR: 'fel', TIMED_OUT: 'tidsgräns', CLOSED: 'stängd' }[status] || status;
         if (err) stat.err = err.message || String(err);
-        if (status === 'CHANNEL_ERROR') toast('Trafik: kunde inte ansluta (är realtidsreglerna installerade? se README)', 6000);
+        if (status === 'CHANNEL_ERROR') toast('Kunde inte ansluta till andra piloter', 5000);
         if (subscribed) { lastSent = 0; maybeSend(); }
         renderChip();
       });
@@ -161,7 +161,7 @@ export function openShareDialog() {
     </ul>
     <div class="field"><span>Anropssignal eller registrering<small>Visas för andra, t.ex. SE-VXA</small></span>
       <input type="text" id="shCall" maxlength="12" autocapitalize="characters" value="${esc(settings.shareCallsign || '')}"></div>
-    <div class="muted">Hjälpmedel för lägesuppfattning — inte ett antikollisionssystem. Bara piloter som själva delar syns.</div>
+    <div class="muted">Inte ett antikollisionssystem — bara piloter som delar syns.</div>
     <div class="muted small" style="text-align:left;margin-top:6px">Status: ${esc(stat.status)} · skickade ${stat.sent} · mottagna ${stat.recv} · piloter på kartan ${others.size}${stat.err ? ' · fel: ' + esc(stat.err) : ''}${viewOn ? '' : ' · lagret Andra Ultranav-piloter är av'}</div>
     <div class="btnrow">${on
       ? `<button class="btn danger" id="shOff">${ic('close')}Sluta dela min position</button><button class="btn" id="shSave">${ic('check')}Spara</button>`

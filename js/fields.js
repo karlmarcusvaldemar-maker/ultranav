@@ -66,7 +66,7 @@ function openField(f) {
     <div>Kontakt: ${f.contact ? `<b>${esc(f.contact)}</b>` : '<span class="muted">okänd</span>'}</div>
     ${f.info ? `<div class="uf-info">${esc(f.info)}</div>` : ''}
     ${relPos(f)}
-    <div class="muted" style="margin-top:4px">Tillagt av ${esc(f.added_by || 'en Ultranav-pilot')}${date ? ' · ' + date : ''}. Okontrollerade uppgifter — kontakta fältets ägare före landning.</div>
+    <div class="muted" style="margin-top:4px">Tillagt av ${esc(f.added_by || 'en Ultranav-pilot')}${date ? ' · ' + date : ''}. Kontakta ägaren före landning.</div>
     ${placeBtns({ lat: f.lat, lon: f.lon, name: f.name })}
     <div class="ufc"><div class="ufc-head">Kommentarer</div><div class="ufc-list muted">Hämtar kommentarer…</div></div>
     ${mine(f) || isAdmin() ? `<div class="pbtns"><button class="sec uf-move">${ic('crosshair')}Flytta${mine(f) ? '' : ' (admin)'}</button>
@@ -91,7 +91,7 @@ async function loadComments(f, box, popup) {
   sec.innerHTML = `<div class="ufc-head">Kommentarer${data.length ? ` (${data.length})` : ''}</div>
     <div class="ufc-list">${data.length ? data.map((c) => `<div class="ufc-item"><div class="ufc-body">${esc(c.body)}</div>
       <div class="ufc-meta">${esc(c.added_by || 'Ultranav-pilot')} · ${when(c.created_at)}${canDel(c) ? ` <button class="ufc-del" data-id="${c.id}" aria-label="Ta bort kommentaren">${ic('trash', 14)}</button>` : ''}</div></div>`).join('')
-      : '<div class="muted">Inga kommentarer ännu. Har du varit här? Berätta hur banan ser ut.</div>'}</div>
+      : '<div class="muted">Inga kommentarer ännu.</div>'}</div>
     <textarea class="ufc-in" maxlength="500" rows="2" placeholder="Skriv en kommentar, t.ex. om banans skick"></textarea>
     <div class="ufc-row"><span class="muted">Syns för alla Ultranav-piloter</span><button class="ufc-send">${ic('check', 16)}Skicka</button></div>`;
   L.DomEvent.disableClickPropagation(sec); L.DomEvent.disableScrollPropagation(sec);

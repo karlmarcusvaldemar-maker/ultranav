@@ -269,7 +269,7 @@ export function renderDrawTab(el) {
     <div class="btnrow"><button class="btn" data-m="measure">${ic('measure')}Mät avstånd</button><button class="btn" data-m="line">${ic('polyline')}Linje</button>
     <button class="btn" data-m="polygon">${ic('polygon')}Yta</button><button class="btn" data-m="point">${ic('pin')}Punkt</button>
     <button class="btn" data-m="field">${ic('runway')}Lägg till fält</button></div>
-    <div class="muted">Avstånd visas i ${settings.distUnit === 'km' ? 'km och NM' : 'NM och km'}, kurs i grader magnetiskt (variation ${settings.variation}°). Ytor räknas på jordklotet. <i>Lägg till fält</i> delar ett litet fält med alla Ultranav-piloter.</div>
+    
     <h3>Sparade (${drawings.length})</h3>
     ${drawings.length ? `<ul class="aplist">${drawings.map((f) => `<li><div class="info"><b class="popinfo">${ic({ point: 'pin', line: 'polyline', polygon: 'polygon' }[f.type], 16)} ${esc(f.name)}</b><span>${describe(f)}</span></div>
       <button class="btn small" onclick="window.ulnavDraw.zoom('${f.id}')">${ic('search')}Visa</button><button class="btn small icon" onclick="window.ulnavDraw.share('${f.id}')" aria-label="Dela">${ic('share')}</button><button class="btn small danger" onclick="window.ulnavDraw.del('${f.id}')" aria-label="Ta bort">${ic('trash')}</button></li>`).join('')}</ul>`
