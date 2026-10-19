@@ -6,7 +6,7 @@ import { hillshadeLayer } from './hillshade.js';
 import { ic } from './icons.js';
 
 export let map;
-const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspace', 'fields', 'userfields'], opacity: {}, v: 3 });
+const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspace', 'fields', 'userfields', 'traffic'], opacity: {}, v: 4 });
 // Migrering: tidigare versioner sparade lagernamn som inte längre finns, vilket stängde av luftrum/fält
 {
   const MAP = { openaipVec: ['airspace', 'rp'], oa: ['fields'], route: [] };
@@ -18,6 +18,8 @@ const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspa
   if ((state.v || 1) < 2) { state.base = 'vecLiberty'; state.v = 2; store.set('ulnav.layers', state); }
   // Fält från Ultranav-piloter (version 3) visas från start för den som har flygfälten på
   if (state.v < 3) { if (state.overlays.includes('fields')) state.overlays.push('userfields'); state.v = 3; store.set('ulnav.layers', state); }
+  // Andra Ultranav-piloter (version 4) är påslaget från start — slås på en gång, därefter gäller användarens val
+  if (state.v < 4) { if (!state.overlays.includes('traffic')) state.overlays.push('traffic'); state.v = 4; store.set('ulnav.layers', state); }
 }
 const save = () => store.set('ulnav.layers', state);
 
