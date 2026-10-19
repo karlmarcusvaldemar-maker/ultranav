@@ -223,7 +223,9 @@ export function drawSaved() {
         { permanent: true, direction: 'center', className: 'draw-label', sticky: false });
     }
     lyr.on('click', (e) => {
-      if (mode) { drawTap(e.latlng); return; }
+      // Pågår en ritning fästs trycket som en punkt; annars öppnas ritningens meny (ta bort, byt namn, dela)
+      // även när ett verktyg är valt — förut skapade ett tryck på en sparad punkt en ny punkt i stället
+      if (mode === 'route' || (mode && mode !== 'point' && pts.length)) { drawTap(e.latlng); return; }
       L.popup({ maxWidth: 340 }).setLatLng(e.latlng).setContent(popupHtml(f)).openOn(map);
     });
     lyr.addTo(savedLayer);

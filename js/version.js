@@ -1,2 +1,2 @@
 // Appens version (visas i Inställningar och på inloggningssidan). Höj vid varje publicering.
-export const APP_VERSION = '2026-10-19.1';
+export const APP_VERSION = '2026-10-19.2';
