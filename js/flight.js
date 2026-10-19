@@ -1,4 +1,4 @@
-// Loggning av flygningar. Över 10 kt frågar appen om flygningen ska loggas, ritar ett snigelspår under
+// Loggning av flygningar. Över 30 kt frågar appen om flygningen ska loggas, ritar ett snigelspår under
 // flygningen och frågar "Har du landat?" när man står still efter att ha varit i luften (över 30 kt).
 // Efter landning visas en sammanfattning som sparas i loggboken (synkas med kontot).
 // Med en bil som symbol (Land Rover, Saab) ställs inga automatiska frågor.
@@ -12,10 +12,10 @@ import * as lib from './library.js';
 import { distNM, fmtHM, fmtUTC, toast, modal, note, esc, $, store, idb } from './util.js';
 import { ic } from './icons.js';
 
-const ASK_KT = 10, AIR_KT = 30, STILL_KT = 3, STILL_MS = 20000, REARM_MS = 60000, RE_ASK_MS = 120000;
+const ASK_KT = 30, AIR_KT = 30, STILL_KT = 3, STILL_MS = 20000, REARM_MS = 60000, RE_ASK_MS = 120000;
 let f = store.get('ulnav.flight', null); // pågående flygning: { start, takeoff, landing, lastAir, air }
 let pts = [];                              // spårpunkter [{lat, lon, alt, t, gs}]
-let lastT = 0, stillSince = null, declined = false, askedLanded = 0, lastSave = 0;
+let lastT = 0, stillSince = null, fastSince = null, declined = false, askedLanded = 0, lastSave = 0;
 const trail = L.polyline([], { pane: 'ownPath', color: '#7048e8', weight: 4, opacity: 0.85, interactive: false });
 const listeners = new Set();
 export const onFlight = (fn) => listeners.add(fn);
@@ -39,6 +39,7 @@ function tick(p) {
   const gs = p.gsKt ?? 0;
   if (gs < STILL_KT) stillSince ??= p.t; else stillSince = null;
   if (!f) {
+    fastSince = gs >= AIR_KT ? (fastSince ?? p.t) : null; // när farten gick över 30 kt — blir starttiden om man loggar
     if (isCar() || !nav.tracking) return;
     if (declined && stillSince && p.t - stillSince > REARM_MS) declined = false; // fråga igen efter att ha stått still en stund
     if (gs > ASK_KT && !declined && !$('#flightBar')) askStart();
@@ -87,7 +88,8 @@ function askLanded() {
 export function startFlight() {
   if (f) return;
   const p = nav.pos;
-  f = { start: p?.t ?? Date.now(), takeoff: null, landing: null, lastAir: null, air: false };
+  const t0 = fastSince && p && p.t - fastSince < 300000 ? fastSince : null;
+  f = { start: t0 ?? p?.t ?? Date.now(), takeoff: t0, landing: null, lastAir: t0, air: !!t0 };
   pts = []; trail.setLatLngs([]);
   if (p) record(p);
   persist(true); emit();
