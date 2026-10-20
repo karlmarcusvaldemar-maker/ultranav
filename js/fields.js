@@ -69,8 +69,9 @@ function openField(f) {
     <div class="muted" style="margin-top:4px">Tillagt av ${esc(f.added_by || 'en Ultranav-pilot')}${date ? ' · ' + date : ''}. Kontakta ägaren före landning.</div>
     ${placeBtns({ lat: f.lat, lon: f.lon, name: f.name })}
     <div class="ufc"><div class="ufc-head">Kommentarer</div><div class="ufc-list muted">Hämtar kommentarer…</div></div>
-    ${mine(f) || isAdmin() ? `<div class="pbtns"><button class="sec uf-move">${ic('crosshair')}Flytta${mine(f) ? '' : ' (admin)'}</button>
+    ${mine(f) || isAdmin() ? `<div class="pbtns"><button class="sec uf-edit">${ic('edit')}Ändra${mine(f) ? '' : ' (admin)'}</button><button class="sec uf-move">${ic('crosshair')}Flytta</button>
       <button class="sec uf-del">${ic('trash')}${mine(f) ? 'Ta bort mitt fält' : 'Ta bort (admin)'}</button></div>` : ''}`;
+  box.querySelector('.uf-edit')?.addEventListener('click', () => { map.closePopup(); formStep(f, { name: f.name, len: f.rwy_len_m, contact: f.contact || '', unknown: !f.contact, info: f.info || '' }, null, f); });
   box.querySelector('.uf-move')?.addEventListener('click', () => startMove(f));
   box.querySelector('.uf-del')?.addEventListener('click', () => removeField(f));
   const popup = L.popup({ maxWidth: 340, autoPanPaddingTopLeft: [10, 10], autoPanPaddingBottomRight: [90, 10] }).setLatLng([f.lat, f.lon]).setContent(box).openOn(map);
@@ -199,8 +200,9 @@ export function addFieldAt(p, onDone) {
   $('#ufNearNo').onclick = closeModal;
 }
 
-function formStep(p, v, onDone) {
-  modal(`<h3>Lägg till fält</h3>
+/** Formuläret för ett fält. edit = befintligt fält som ändras (sparas direkt, utan delningsfrågan — det är redan delat) */
+function formStep(p, v, onDone, edit = null) {
+  modal(`<h3>${edit ? 'Ändra fält' : 'Lägg till fält'}</h3>
     <div class="muted">${ic('pin', 16)} ${fmtLatLon(p.lat, p.lon)}</div>
     <div class="field"><span>Namn på fältet</span><input type="text" id="ufName" maxlength="60" value="${esc(v.name || '')}" placeholder="t.ex. Norrbyns gärde"></div>
     <div class="field"><span>Banlängd<small>meter</small></span><input type="number" id="ufLen" min="50" max="5000" step="10" inputmode="numeric" value="${v.len || ''}"></div>
@@ -208,7 +210,7 @@ function formStep(p, v, onDone) {
     <div class="field"><span>Kontaktperson okänd</span><input type="checkbox" id="ufUnknown" ${v.unknown ? 'checked' : ''}></div>
     <div class="field col"><span>Information<small>valfritt — underlag, hinder, inflygning, PPR…</small></span><textarea id="ufInfo" maxlength="1000" rows="3">${esc(v.info || '')}</textarea></div>
     <div id="ufErr"></div>
-    <div class="btnrow"><button class="btn primary" id="ufNext">${ic('arrowRight')}Fortsätt</button><button class="btn" id="ufCancel">Avbryt</button></div>`);
+    <div class="btnrow"><button class="btn primary" id="ufNext">${edit ? ic('check') + 'Spara ändringarna' : ic('arrowRight') + 'Fortsätt'}</button><button class="btn" id="ufCancel">Avbryt</button></div>`);
   $('#ufUnknown').onchange = (e) => { $('#ufContact').disabled = e.target.checked; if (e.target.checked) $('#ufContact').value = ''; };
   $('#ufCancel').onclick = closeModal;
   $('#ufNext').onclick = () => {
@@ -218,9 +220,18 @@ function formStep(p, v, onDone) {
       : !(val.len >= 50 && val.len <= 5000) ? ['#ufLen', 'Ange banlängden i meter (50–5000).']
       : !val.contact && !val.unknown ? ['#ufContact', 'Ange en kontaktperson, eller kryssa i att den är okänd.'] : null;
     if (err) { $('#ufErr').innerHTML = note('bad', err[1]); $(err[0]).focus(); return; }
-    confirmStep(p, val, onDone);
+    if (edit) saveEdit(edit, val); else confirmStep(p, val, onDone);
   };
   $('#ufName').focus();
+}
+
+async function saveEdit(f, v) {
+  $('#ufNext').disabled = true;
+  const patch = { name: v.name, rwy_len_m: v.len, contact: v.unknown ? null : v.contact, info: v.info || null };
+  const { error } = await supa().from('fields').update(patch).eq('id', f.id);
+  if (error) { $('#ufNext').disabled = false; $('#ufErr').innerHTML = note('bad', 'Kunde inte spara: ' + esc(error.message)); return; }
+  fields = fields.map((x) => (x.id === f.id ? { ...x, ...patch } : x)); store.set('ulnav.userfields', fields);
+  closeModal(); draw(); toast(`${v.name} är uppdaterat`);
 }
 
 function confirmStep(p, v, onDone) {

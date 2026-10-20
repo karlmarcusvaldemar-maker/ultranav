@@ -27,6 +27,7 @@ const DEFAULTS = {
   taxiFuel: 1.5,          // l
   glideRatio: 10,         // glidtal 1:x
   minClearance: 500,      // ft över terräng (planering)
+  aircraftReg: '',        // flygplanets registrering, förifylls i loggboken
   aglWarn: 300,           // ft AGL: instrumentet AGL blir rött under denna höjd i fart (0 = av)
   variation: 6,           // magnetisk variation, + = ost (E)
   cruiseAlt: 1500,        // ft MSL standard

@@ -188,6 +188,7 @@ function summary(fl, track) {
       <span>Total flygtid i loggboken</span><b>${fmtHM(totH)}</b>
     </div>
     ${late ? note('warn', `Landningen skedde efter solnedgång (${utc(+sun.sunset)}).`, 'moon') : ''}
+    <div class="field"><span>Flygplan</span><input type="text" id="fsAc" maxlength="12" autocapitalize="characters" value="${esc(settings.aircraftReg || settings.shareCallsign || '')}"></div>
     <div class="field"><span>Bränsle vid start (l)</span><input type="number" id="fsStart" inputmode="decimal" step="1" value="${settings.fuelUsable}"></div>
     <div class="field"><span>Antal landningar</span><input type="number" id="fsLdg" inputmode="numeric" min="0" step="1" value="${fl.takeoff ? 1 : 0}"></div>
     <div class="field col"><span>Anteckning</span><textarea id="fsNote" rows="2"></textarea></div>
@@ -202,7 +203,7 @@ function summary(fl, track) {
     await lib.put('flight', { id: lib.newId(), name: $('#fsName').value.trim() || `${s.from} – ${s.to}`, data: {
       start: fl.start, end: fl.end, takeoff: fl.takeoff, landing: fl.landing, durH: s.airH, blockH: s.blockH, distNM: s.dist,
       maxAlt: s.maxAlt, maxGs: s.maxGs, avgGs: s.avgGs, from: s.from, to: s.to, fuelStart: +$('#fsStart').value, fuelUsed: +fuelUsed.toFixed(1),
-      landings: +$('#fsLdg').value || 0, note: $('#fsNote').value.trim(), track: tr } });
+      landings: +$('#fsLdg').value || 0, note: $('#fsNote').value.trim(), aircraft: $('#fsAc').value.trim().toUpperCase(), track: tr } });
     close(); toast('Flygningen är sparad i loggboken');
   };
 }

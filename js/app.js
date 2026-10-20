@@ -378,6 +378,7 @@ function renderSettingsTab(el) {
     <option value="kmh" ${s.speedUnit === 'kmh' ? 'selected' : ''}>km/h</option></select></div>
 
   <h3>Flygplan</h3>
+  <div class="field"><span>Registrering</span><input type="text" data-k="aircraftReg" maxlength="12" autocapitalize="characters" placeholder="t.ex. SE-VXA" value="${esc(s.aircraftReg || '')}"></div>
   ${num('tas', `Marschfart TAS (${u})`, '', 1, spdOut)}
   ${num('fuelBurn', 'Förbrukning (l/h)', '', 0.5)}
   ${num('fuelUsable', 'Användbart bränsle (l)', '', 1)}
@@ -442,6 +443,7 @@ function renderSettingsTab(el) {
     let v = inp.type === 'checkbox' ? inp.checked : inp.type === 'number' ? +inp.value : inp.value.trim();
     if (k === 'tas') v = spdIn(v);
     if (k === 'vectorMin') v = +v;
+    if (k === 'aircraftReg') v = v.toUpperCase().slice(0, 12);
     if (k === 'cruiseAlt' || k === 'minClearance' || k === 'aglWarn') v = Math.max(0, Math.round(altIn(v)));
     if (k === 'arrivalRadius') v = distIn(v);
     saveSettings({ [k]: v });
