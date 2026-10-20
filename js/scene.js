@@ -220,6 +220,13 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
   </g>
   ${forest(1240, 1660, (x) => 820 - 10 * Math.sin(x / 70), 18, 1.3, 'tr near')}
 
+  <!-- andra dagen: ett flygplan drar en banner med klubbens namn över himlen -->
+  <g class="banner"><g class="bobsky"><g transform="translate(0 22) scale(1.1)">
+    <path class="bn-rope" d="M1 13 L-34 12"/>
+    <g class="bn-flag"><path class="bn-cloth" d="M-224 2 H-34 V23 H-224 Q-219 12.5 -224 2 Z"/>
+    <text class="bn-txt" x="-129" y="17" text-anchor="middle">ÅSELE FLYGKLUBB</text></g>
+    ${BUSH}
+  </g></g></g>
   <!-- bushflygplanet flyger förbi -->
   <g class="fly near"><g class="bobsky"><g transform="translate(0 300) scale(1.05) rotate(-3)">${BUSH}</g></g></g>
 </svg>`;
