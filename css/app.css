@@ -730,3 +730,6 @@ details.about summary { cursor: pointer; color: var(--muted); font-size: 14px; p
 
 /* låst ruta (sammanfattning efter flygning): stängs bara med rutans egna knappar */
 #modal.locked #modalClose { display: none; }
+
+/* länkar som ser ut som knappar */
+a.btn { text-decoration: none; }
