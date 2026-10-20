@@ -3,7 +3,7 @@ const APP = 'ulnav-app-v74';
 const TILES = 'ulnav-tiles-v1';
 const DATA = 'ulnav-data-v1';
 const SHELL = [
-  './', 'index.html', 'integritet.html', 'manifest.webmanifest', 'css/app.css',
+  './', 'index.html', 'integritet.html', 'manual.html', 'manifest.webmanifest', 'css/app.css',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css', 'vendor/leaflet/leaflet-rotate.js',
   'js/app.js', 'js/util.js', 'js/settings.js', 'js/map.js', 'js/openaip.js', 'js/airports.js', 'js/aero.js',
   'js/terrain.js', 'js/vector.js', 'js/draw.js', 'js/diag.js', 'js/icons.js', 'js/config.js', 'js/library.js', 'js/cloud.js', 'js/account.js', 'js/customlayers.js', 'js/logbook.js', 'js/login.js', 'js/scene.js',

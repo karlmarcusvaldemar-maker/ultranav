@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Användarmanual – Ultranav</title>
+<link rel="icon" href="icons/icon.svg">
+<style>
+  :root { --bg: #0f1720; --panel: #17212c; --text: #e7edf3; --muted: #9fb0c0; --accent: #f2b632; --line: #2a3846; }
+  @media (prefers-color-scheme: light) { :root { --bg: #f4f6f8; --panel: #fff; --text: #17212c; --muted: #52606d; --accent: #9a6a00; --line: #d9e0e6; } }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 820px; margin: 0 auto; padding: 32px 16px 64px; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  header img { border-radius: 12px; }
+  h1 { font-size: 28px; line-height: 1.15; margin: 0; }
+  header p { margin: 2px 0 0; color: var(--muted); }
+  section, .toc { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 4px 20px 16px; margin-top: 16px; scroll-margin-top: 12px; }
+  h2 { font-size: 21px; margin: 18px 0 8px; }
+  h3 { font-size: 17px; margin: 22px 0 6px; }
+  a { color: var(--accent); }
+  ul, ol { padding-left: 22px; } li { margin: 4px 0; }
+  .toc ol { columns: 2; column-gap: 28px; margin: 6px 0 4px; }
+  .tw { overflow-x: auto; margin: 8px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .4px; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  .back { display: inline-block; margin-top: 28px; font-weight: 600; }
+  .top { position: fixed; right: 16px; bottom: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 8px 14px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+  @media (max-width: 600px) { .toc ol { columns: 1; } td:first-child { white-space: normal; } }
+</style>
+</head>
+<body>
+<main id="start">
+  <header>
+    <img src="icons/icon.svg" alt="" width="52" height="52">
+    <div><h1>Användarmanual</h1><p>Ultranav — navigeringsapp för ultralätt flyg</p></div>
+  </header>
+  <a class="back" href="./" style="margin-top:0">‹ Till Ultranav</a>
+<nav class="toc"><h2>Innehåll</h2><ol><li><a href="#kom-igang">Kom igång</a></li><li><a href="#kartan-och-instrumentlisten">Kartan och instrumentlisten</a></li><li><a href="#gps-och-egen-position">GPS och egen position</a></li><li><a href="#kartor-och-kartlager">Kartor och kartlager</a></li><li><a href="#planera-en-rutt">Planera en rutt</a></li><li><a href="#terrangprofil">Terrängprofil</a></li><li><a href="#rita-och-mat">Rita och mät</a></li><li><a href="#pilotfalt">Pilotfält</a></li><li><a href="#flygfalt-vader-och-varningar">Flygfält, väder och varningar</a></li><li><a href="#andra-ultranav-piloter">Andra Ultranav-piloter</a></li><li><a href="#logga-flygningar-och-loggbok">Logga flygningar och loggbok</a></li><li><a href="#installningar">Inställningar</a></li><li><a href="#konto-synk-och-delning">Konto, synk och delning</a></li><li><a href="#vanliga-fragor">Vanliga frågor</a></li><li><a href="#viktigt-om-flygsakerhet">Viktigt om flygsäkerhet</a></li></ol></nav>
+<section id="kom-igang"><h2>Kom igång</h2>
+<p>Ultranav är en gratis navigeringsapp för ultralätt flyg. Den är byggd för iPad men fungerar även på iPhone och dator, direkt i webbläsaren på <b>www.ultranav.se</b>.</p>
+<h3>Skapa konto och logga in</h3>
+<ol><li>Öppna www.ultranav.se i Safari (eller annan webbläsare).</li><li>Välj <b>Skapa konto</b>, ange e-post och ett lösenord på minst 8 tecken två gånger, och godkänn villkoren.</li><li>Klicka på länken i bekräftelsemejlet. Titta i skräpposten om det dröjer.</li><li>Logga in. Första gången godkänner du villkoren.</li></ol>
+<p>Har du glömt lösenordet trycker du på <b>Glömt lösenord?</b> på inloggningssidan och får en länk via e-post.</p>
+<h3>Lägg appen på hemskärmen</h3>
+<p>På iPad och iPhone fungerar Ultranav bäst som en app på hemskärmen. Den startar då i helskärm och fungerar även utan nät.</p>
+<ol><li>Öppna www.ultranav.se i <b>Safari</b>.</li><li>Tryck på <b>Dela</b>-knappen och välj <b>Lägg till på hemskärmen</b>.</li><li>Starta Ultranav från ikonen i fortsättningen.</li></ol>
+<h3>Uppdateringar</h3>
+<p>Appen uppdaterar sig själv när du har nät. Versionen står längst ner på inloggningssidan och under <b>Inställningar › Om appen</b>. Där finns också knappen <b>Tvinga uppdatering</b> om du vill hämta den senaste versionen direkt.</p>
+</section>
+<section id="kartan-och-instrumentlisten"><h2>Kartan och instrumentlisten</h2>
+<p>När du har loggat in ser du kartan med instrumentlisten överst och snabbknapparna till höger. Menyn ☰ uppe till vänster öppnar sidopanelen med flikarna Rutt, Väder, Fält, Rita och mät, Logg, Inställningar och Konto.</p>
+<h3>Snabbknapparna</h3>
+<div class="tw"><table><thead><tr><th>Knapp</th><th>Vad den gör</th></tr></thead><tbody><tr><td>GPS</td><td>Startar och stoppar GPS:en. Skärmen hålls tänd medan GPS:en är på.</td></tr><tr><td>Följ</td><td>Kartan följer din position. Drar du i kartan släpper den taget tills du trycker igen.</td></tr><tr><td>Norr</td><td>Växlar mellan norr upp och kurs upp. Med kurs upp hamnar flygplanet längre ner på skärmen så att du ser mer framåt.</td></tr><tr><td>Rutt</td><td>Startar ruttplanering: tryck på kartan för att lägga till brytpunkter.</td></tr><tr><td>Profil</td><td>Visar terrängprofilen längs rutten.</td></tr><tr><td>Rita och mät</td><td>Öppnar verktygen för att mäta, rita och lägga till fält.</td></tr><tr><td>Kartor</td><td>Väljer baskarta och kartlager.</td></tr><tr><td>Närmast</td><td>Visar närmaste flygfält.</td></tr><tr><td>NOTAM</td><td>Öppnar LFV:s drönarkarta med aktuella NOTAM i en ny flik.</td></tr><tr><td>+ och −</td><td>Zoomar in och ut.</td></tr></tbody></table></div>
+<h3>Instrumentlisten</h3>
+<div class="tw"><table><thead><tr><th>Fält</th><th>Betydelse</th></tr></thead><tbody><tr><td>GS</td><td>Fart över marken, i knop eller km/h.</td></tr><tr><td>TRK</td><td>Faktisk färdriktning över marken, i grader magnetiskt.</td></tr><tr><td>ALT</td><td>Höjd enligt GPS, i fot eller meter.</td></tr><tr><td>AGL</td><td>Höjd över terrängen. Blir röd när du är lägre över terrängen än varningshöjden (standard 300 ft) och farten är över 30 kt.</td></tr><tr><td>NÄSTA</td><td>Nästa brytpunkt. Tryck för att välja vilken sträcka som är aktiv.</td></tr><tr><td>BRG</td><td>Kurs till nästa punkt, i grader magnetiskt.</td></tr><tr><td>DIST</td><td>Avstånd till nästa punkt.</td></tr><tr><td>ETE</td><td>Tid kvar till nästa punkt.</td></tr><tr><td>ETA</td><td>Beräknad ankomsttid till nästa punkt, i UTC.</td></tr><tr><td>UTC</td><td>Aktuell tid i UTC.</td></tr></tbody></table></div>
+<p>Vilka enheter som visas väljer du under <b>Inställningar › Enheter</b>.</p>
+</section>
+<section id="gps-och-egen-position"><h2>GPS och egen position</h2>
+<p>Tryck på <b>GPS</b> för att visa din position. Första gången frågar iPaden om Ultranav får använda platstjänster – svara Tillåt. Har du nekat ändrar du det under iPadens Inställningar › Integritet › Platstjänster › Safari.</p>
+<p>Håll appen öppen under flygningen. Släcks skärmen eller byter du app stannar GPS:en i iPad och iPhone. Ultranav håller skärmen tänd så länge GPS:en är på.</p>
+<h3>Det du ser runt flygplanet</h3>
+<ul><li><b>Symbolen</b> är du. Den pekar i färdriktningen. Vilken symbol som visas väljer du under Inställningar › Visning – bland annat flera flygplanstyper, helikopter eller bilar. Bilarna visas från sidan och vänder sig efter färdriktningen. Använder du bil så aktiveras inte automatisk spårloggning.</li><li><b>Den gula streckade linjen</b> visar var du är om ett antal minuter med samma kurs och fart. Punkterna längs linjen visar var du är efter 2, 5, 10 minuter och så vidare. Längden väljer du under Inställningar › Visning › Linje framför flygplanet (2–45 min, standard 10). Linjen visas bara när du rör dig fortare än 10 kt.</li><li><b>Den gröna streckade cirkeln</b> visar ungefär hur långt du kan glida utan motor från din höjd över marken. Den räknas från ditt glidtal under Inställningar › Flygplan och visas när du är högre än 100 ft över terrängen. Vind och terräng räknas inte in.</li></ul>
+<h3>Följ och kurs upp</h3>
+<p>Med <b>Följ</b> på hålls din position i mitten av kartan. När du drar i kartan för att titta någon annanstans släpper den taget – tryck på Följ igen för att komma tillbaka. Med <b>Norr</b> växlar du mellan norr upp och kurs upp.</p>
+</section>
+<section id="kartor-och-kartlager"><h2>Kartor och kartlager</h2>
+<p>Tryck på <b>Kartor</b> för att välja baskarta och slå kartlager av och på. Panelen stängs när du trycker på kartan.</p>
+<h3>Baskartor</h3>
+<div class="tw"><table><thead><tr><th>Baskarta</th><th>Passar för</th></tr></thead><tbody><tr><td>Standardkarta</td><td>Tydlig vektorkarta som även kan sparas offline.</td></tr><tr><td>Vägkarta</td><td>Vägar och orter i detalj.</td></tr><tr><td>Topografikarta</td><td>Höjdkurvor och terräng.</td></tr><tr><td>Satellitkarta</td><td>Flygfoto med vägar och ortnamn ovanpå. Bra för att känna igen landmärken.</td></tr><tr><td>Norgekarta</td><td>Kartverkets topografiska karta för flygning i Norge.</td></tr></tbody></table></div>
+<h3>Kartlager</h3>
+<div class="tw"><table><thead><tr><th>Lager</th><th>Visar</th><th>På från start</th></tr></thead><tbody><tr><td>Luftrum</td><td>Kontrollerade och restriktionsområden med gränser.</td><td>Ja</td></tr><tr><td>Flygfält</td><td>Flygplatser och mindre fält.</td><td>Ja</td></tr><tr><td>Fält från Ultranav-piloter</td><td>Egna fält som gröna romber.</td><td>Ja</td></tr><tr><td>Andra Ultranav-piloter</td><td>Piloter som delar sin position, i orange.</td><td>Ja</td></tr><tr><td>Skyddade områden Natur</td><td>Naturreservat, nationalparker och liknande.</td><td>Nej</td></tr><tr><td>Vindkraftverk</td><td>Byggda vindkraftverk.</td><td>Nej</td></tr><tr><td>Terrängskuggning</td><td>Skuggar berg och dalar.</td><td>Nej</td></tr><tr><td>METAR-stationer</td><td>METAR-stationer visas som punkter i kartan.</td><td>Nej</td></tr><tr><td>Nederbördsradar</td><td>Senaste radarbilden och hur gammal den är.</td><td>Nej</td></tr><tr><td>Molnbild</td><td>Satellitbild av molnen.</td><td>Nej</td></tr><tr><td>Mina ritningar</td><td>Dina sparade linjer, ytor och punkter.</td><td>Nej</td></tr></tbody></table></div>
+<p>Under de flesta bildlager visas ett reglage för genomskinlighet när lagret är på. Flygfält visas från zoomnivå 6, och namnen från nivå 10.</p>
+<h3>Eget kartmaterial</h3>
+<p>Längst ner i panelen kan du lägga till egna kartor via <b>Lägg till kartmaterial</b>:</p>
+<ul><li><b>Fil:</b> KML, KMZ, GPX, GeoJSON eller shapefil (som zip med .shp, .dbf, .shx och .prj).</li><li><b>WMS-tjänst:</b> ange adressen, tryck <b>Hämta lager</b>, välj lager och namn, och tryck <b>Lägg till WMS</b>.</li></ul>
+<p>Via <b>…</b> bredvid lagret kan du visa det på kartan, byta färg, dela, byta namn eller ta bort det. Stora filer, över cirka 9 MB, sparas bara på enheten och synkas inte med ditt konto.</p>
+</section>
+<section id="planera-en-rutt"><h2>Planera en rutt</h2>
+<p>En rutt består av brytpunkter. Ultranav räknar fram kurs, tid, vind, bränsle och luftrum för varje sträcka.</p>
+<h3>Lägg till brytpunkter</h3>
+<ol><li>Tryck på <b>Rutt</b>. En rad visas överst med <b>Ångra</b> och <b>Klar</b>.</li><li>Tryck på kartan för varje brytpunkt. Trycker du nära ett flygfält eller en rapportpunkt fästs punkten där och får dess namn.</li><li>Trycker du på en befintlig sträcka läggs en ny punkt in mitt i den.</li><li>Dra i punkterna för att flytta dem. <b>Ångra</b> tar bort den senaste punkten.</li><li>Tryck <b>Klar</b>.</li></ol>
+<p>Du kan också lägga till punkter med <b>Lägg till i rutt</b> i ett fälts eller en punkts ruta, med <b>+</b> i fliken Fält, eller genom att importera en GPX-fil.</p>
+<h3>Fliken Rutt</h3>
+<p>Under ☰ › <b>Rutt</b> finns hela planeringen:</p>
+<ul><li><b>Namn</b> och <b>Avgång</b> – avgångstiden styr vindprognosen.</li><li><b>Brytpunkter</b> – ändra namn, höjd för sträckan <i>till</i> punkten, ordning eller ta bort.</li><li><b>Navlogg</b> – per sträcka: höjd, magnetisk kurs (MT), vind, magnetisk styrkurs (MH), avstånd, fart över marken (GS), tid och ETA. En varningssymbol visar sträckor med för liten terrängmarginal.</li><li><b>Bränsle</b> – färd, taxi, reserv, minst ombord och uthållighet. Räcker inte bränslet får du en röd varning.</li><li><b>Dagsljus vid destination</b> – solnedgång, civil skymning och soluppgång, med varning om du beräknas landa efter solnedgång.</li><li><b>Luftrum längs rutten</b> – varje luftrum du passerar, dess gränser och om du är inne i det, passerar under eller över, med frekvenser.</li><li><b>Rutthantering</b> – Vänd, Spara, Exportera GPX, Importera GPX och Rensa.</li><li><b>Sparade rutter</b> – öppna, dela eller ta bort.</li></ul>
+<p>Vinden hämtas från en väderprognos för varje sträckas höjd och beräknade tid.</p>
+<h3>Navigera rutten</h3>
+<p>När GPS:en är på väljer appen själv den sträcka du är närmast, och byter till nästa när du är inom ankomstradien (standard 0,5 NM). Du får ett meddelande med nästa punkt och kurs. Vill du välja sträcka själv trycker du på <b>NÄSTA</b> i instrumentlisten.</p>
+<h3>Direkt till</h3>
+<p><b>Direkt till</b> finns i rutorna för fält, punkter och brytpunkter, i Närmast och i fliken Fält. En magentafärgad linje dras från din position till målet, och instrumentlisten visar <b>D→</b> framför namnet. Går du direkt till en brytpunkt i rutten fortsätter rutten därefter. Avbryt genom att trycka på NÄSTA.</p>
+</section>
+<section id="terrangprofil"><h2>Terrängprofil</h2>
+<p>Tryck på <b>Profil</b> för att se rutten från sidan. Du behöver en rutt med minst två brytpunkter.</p>
+<ul><li><b>Brun och grön yta</b> – terrängen längs rutten.</li><li><b>Lila linje</b> – din planerade höjd på varje sträcka.</li><li><b>Färgade rutor</b> – luftrum du passerar, med typ och namn.</li><li><b>Röda markeringar</b> – platser där du är lägre över terrängen än din terrängmarginal.</li><li><b>Gul linje och prick</b> – din position under flygning.</li></ul>
+<p>Under profilen står högsta terräng, din marginal och ruttens längd. Höjddata visar inte master och byggnader, så håll alltid ordentlig marginal.</p>
+</section>
+<section id="rita-och-mat"><h2>Rita och mät</h2>
+<p>Med <b>Rita och mät</b> mäter du avstånd och ritar egna linjer, ytor och punkter som sparas på ditt konto. Knappen öppnar ett verktygsfält överst på kartan med <b>Mät</b> valt.</p>
+<div class="tw"><table><thead><tr><th>Verktyg</th><th>Så gör du</th></tr></thead><tbody><tr><td>Mät</td><td>Tryck på kartan punkt för punkt. Total sträcka, senaste sträckan och kurs visas. Dra i punkterna för att justera.</td></tr><tr><td>Linje</td><td>Tryck ut punkterna och tryck <b>Spara</b>. Linjen får ett namn.</td></tr><tr><td>Yta</td><td>Tryck ut hörnen och avsluta med <b>Spara</b> eller ett tryck på första punkten. Arean visas i hektar eller km².</td></tr><tr><td>Punkt</td><td>Tryck på kartan och ge punkten ett namn.</td></tr><tr><td>Fält</td><td>Lägger till ett pilotfält, se avsnittet Pilotfält.</td></tr></tbody></table></div>
+<p>I verktygsfältet finns också <b>Min pos</b> som börjar från din GPS-position, <b>Ångra</b> som tar bort senaste punkten och <b>Stäng</b>. Tryck nära ett flygfält så fästs punkten vid fältet.</p>
+<h3>Sparade ritningar</h3>
+<p>Tryck på en sparad linje, yta eller punkt för att öppna dess meny, även när verktygsfältet är öppet:</p>
+<ul><li><b>Direkt till</b> och <b>Rutt</b> (punkter) – navigera dit eller lägg till i rutten.</li><li><b>Använd som rutt</b> (linjer) – gör linjen till din rutt.</li><li><b>Dela</b>, <b>Byt namn</b> och <b>Ta bort</b>.</li></ul>
+<p>Under ☰ › <b>Rita och mät</b> finns en lista över alla sparade ritningar med knappar för att visa, dela och ta bort. Där kan du också exportera och importera ritningar som GeoJSON. Ritningarna visas på kartan i lagret <i>Mina ritningar</i>.</p>
+</section>
+<section id="pilotfalt"><h2>Pilotfält</h2>
+<p>Pilotfält är små privata fält som Ultranav-piloter lägger till och delar med varandra. De syns som <b>gröna romber</b> på kartan i lagret <i>Fält från Ultranav-piloter</i>. Uppgifterna är okontrollerade – kontakta alltid fältets ägare före landning.</p>
+<h3>Lägg till ett fält</h3>
+<ol><li>Öppna <b>Rita och mät</b> och välj <b>Fält</b>.</li><li>Tryck på kartan där fältet ligger, eller på <b>Min pos</b> om du står på fältet.</li><li>Finns det redan ett fält inom 2 km frågar appen om du verkligen vill lägga till ett nytt.</li><li>Fyll i namn, banlängd i meter och kontaktperson. Är kontaktpersonen okänd kryssar du i det. Information om underlag, hinder och inflygning är valfri.</li><li>Bekräfta att fältet ska delas med alla som använder Ultranav.</li></ol>
+<p>Ange bara kontaktuppgifter som personen har gått med på att dela.</p>
+<h3>Kommentera ett fält</h3>
+<p>Tryck på romben för att öppna fältet. Längst ner kan alla inloggade skriva en kommentar, till exempel om banans skick eller ett träd som fallit. De nyaste kommentarerna visas överst. Du kan ta bort dina egna kommentarer, och fältets ägare kan ta bort kommentarer på sitt fält.</p>
+<h3>Flytta eller ta bort</h3>
+<p>Den som har lagt till ett fält ser knapparna <b>Ändra</b>, <b>Flytta</b> och <b>Ta bort mitt fält</b> i fältets ruta.</p>
+<ul><li><b>Ändra:</b> rätta namn, banlängd, kontaktperson och information. Ändringen syns direkt för alla.</li><li><b>Flytta:</b> dra romben dit fältet ligger, eller tryck på kartan. Raden längst ner visar hur långt fältet flyttas. Tryck <b>Spara</b>.</li><li><b>Ta bort:</b> fältet och dess kommentarer försvinner för alla.</li></ul>
+<p>Raderar du ditt konto finns dina fält kvar för andra piloter, men utan koppling till dig.</p>
+</section>
+<section id="flygfalt-vader-och-varningar"><h2>Flygfält, väder och varningar</h2>
+<h3>Tryck på kartan</h3>
+<ul><li><b>På ett flygfält:</b> namn, ICAO-kod, typ, höjd, banor, frekvenser, avstånd från dig, solupp- och nedgång samt aktuell METAR och TAF när fältet har det. Knapparna <b>Direkt till</b>, <b>Lägg till i rutt</b> och <b>METAR/TAF</b>. Du behöver inte träffa pricken exakt.</li><li><b>Var som helst annars:</b> koordinater, terränghöjd, avstånd och kurs från dig samt vilka luftrum som finns på platsen.</li></ul>
+<h3>Fliken Fält</h3>
+<p>Under ☰ › <b>Fält</b> listas de 30 närmaste fälten, eller sökresultat om du skriver namn eller ICAO-kod i sökrutan. Varje rad visar längsta banan, frekvens, avstånd och kurs, med knapparna Direkt till, Info och Lägg till i rutt.</p>
+<h3>Närmast</h3>
+<p><b>Närmast</b> visar de tolv närmaste fälten med en stor knapp för Direkt till – tänkt för en snabb beslutssituation i luften. När du flyger med GPS visas också din ungefärliga glidräckvidd. Utan GPS räknas avstånden från kartans mitt.</p>
+<h3>Väder</h3>
+<p>Under ☰ › <b>Väder</b>:</p>
+<ul><li><b>METAR och TAF</b> – sök på flygplats och lägg till den. Dina val sparas. <b>Fält i rutten</b> lägger till alla flygplatser i rutten. Varje rapport får en färgmarkering: VFR, MVFR, IFR eller LIFR.</li><li><b>Prognos för rutten</b> – vid avgång och ankomst: vind vid marken och på din standardhöjd, temperatur, uppskattad molnbas, låga moln, sikt, nederbörd, QNH, nollgradersgräns och solnedgång.</li></ul>
+<p>På kartan finns dessutom lagren METAR-stationer, Nederbördsradar och Molnbild.</p>
+<h3>NOTAM</h3>
+<p>Knappen <b>NOTAM</b> öppnar LFV:s drönarkarta, där aktuella NOTAM och tillfälliga restriktionsområden visas på karta. Kontrollera alltid NOTAM före flygning.</p>
+<h3>Varningar under flygning</h3>
+<ul><li><b>Luftrum:</b> på väg in i, eller inne i, ett kontrollerat eller restriktionsområde (R, D, P, CTR, TMA, ATZ, CTA) på din höjd får du en varning – cirka två minuter innan och när du är inne.</li><li><b>Låg höjd:</b> fältet AGL blir rött när du är lägre över terrängen än varningshöjden (standard 300 ft, ändras under Inställningar › Planering › Varning låg höjd) och farten är över 30 kt.</li></ul>
+<p>Varningarna visas som meddelanden på skärmen. Appen ger inga ljud.</p>
+</section>
+<section id="andra-ultranav-piloter"><h2>Andra Ultranav-piloter</h2>
+<p>Du ser andra Ultranav-piloter som delar sin position som <b>orange symboler</b> på kartan. Lagret <i>Andra Ultranav-piloter</i> är på från start. Det är ett hjälpmedel för lägesuppfattning – inte ett antikollisionssystem, och bara piloter som själva delar syns.</p>
+<h3>Dela din egen position</h3>
+<p>Delningen är <b>avstängd</b> tills du själv slår på den, och den gäller bara den enhet du slår på den på.</p>
+<ol><li>Tryck på rutan <b>Delar inte position</b> uppe till vänster på kartan (eller Inställningar › Positionsdelning).</li><li>Skriv din anropssignal eller registrering, till exempel SE-VXA. Den visas för de andra.</li><li>Tryck <b>Ja, dela min position</b>.</li></ol>
+<p>Rutan blir grön och visar <i>Delning på</i>. Positionen skickas var femte sekund medan GPS:en är på och appen är öppen. Tryck på rutan igen för att stänga av.</p>
+<h3>Så läser du de andra</h3>
+<ul><li>Bredvid symbolen står anropssignalen och höjdskillnaden mot dig, till exempel <i>SE-VXA +300 ft ↑</i>.</li><li>Tryck på symbolen för höjd, fart, riktning och avstånd.</li><li>Har det gått 25 sekunder utan ny position blir symbolen blek. Efter 90 sekunder försvinner den.</li></ul>
+<p>Positionerna sparas inte någonstans. De skickas direkt till de andra piloterna och syns bara medan de är aktuella.</p>
+</section>
+<section id="logga-flygningar-och-loggbok"><h2>Logga flygningar och loggbok</h2>
+<p>Ultranav loggar dina flygningar och sparar dem i loggboken under <b>Logg</b>. Loggboken synkas med ditt konto, så den finns på alla dina enheter.</p>
+<h3>Så fungerar loggningen</h3>
+<ol><li><b>Starta GPS:en</b> innan du taxar ut.</li><li>När farten går över <b>30 kt</b> frågar appen <i>Logga flygningen?</i> – tryck <b>Starta loggning</b>. Gränsen är densamma för alla symboler och går inte att ändra. Starttiden räknas från när du passerade 30 kt.</li><li>Under flygningen ritas ett <b>lila spår</b> som visar var du har flugit.</li><li>När du har landat och står still frågar appen <i>Har du landat?</i> – tryck <b>Ja, avsluta</b>. Spåret försvinner från kartan.</li><li>En sammanfattning visas. Kontrollera uppgifterna och tryck <b>Spara i loggboken</b>.</li></ol>
+<p>Svarar du <i>Nej</i> på frågan om loggning frågar appen inte igen förrän du har stått still en minut. Har du valt en bil som symbol loggas inga flygningar alls.</p>
+<p>Du kan också starta, avsluta eller avbryta loggningen för hand under <b>Logg › Flygning</b>. Vill du ha med taxningen i den totala tiden startar du loggningen där innan du taxar.</p>
+<h3>Sammanfattningen efter landning</h3>
+<div class="tw"><table><thead><tr><th>Uppgift</th><th>Förklaring</th></tr></thead><tbody><tr><td>Namn</td><td>Föreslås som närmaste fält vid start och landning. Kan ändras.</td></tr><tr><td>Start och Landning</td><td>Tiden då farten gick över respektive under starthastigheten (i minst 30 sekunder), i UTC och lokal tid.</td></tr><tr><td>Flygtid</td><td>Från start till landning. Det är den som summeras i loggboken.</td></tr><tr><td>Total tid</td><td>Från att loggningen startade till att den avslutades.</td></tr><tr><td>Sträcka, maxhöjd, fart</td><td>Beräknat från GPS-spåret.</td></tr><tr><td>Bränsle</td><td>Uppskattning: taxibränsle plus förbrukning gånger flygtid, från Inställningar › Flygplan.</td></tr><tr><td>Bränsle vid start</td><td>Förifyllt med fulla tankar. Ändra så räknas bränslet kvar om.</td></tr><tr><td>Antal landningar</td><td>Förifyllt med 1. Ändra vid till exempel flera sättningar.</td></tr><tr><td>Anteckning</td><td>Fri text, till exempel passagerare eller väder.</td></tr></tbody></table></div>
+<p>Skedde landningen efter solnedgång får du en varning.</p>
+<h3>Loggboken</h3>
+<p>Under <b>Logg › Loggbok</b> ser du alla sparade flygningar och den totala flygtiden. Flygningar som andra delat med dig räknas inte in. Tryck på förstoringsglaset för att visa spåret på kartan, och på de tre prickarna för detaljer, anteckning, export till GPX, delning, namnbyte eller borttagning.</p>
+<p><b>Lägg till flygning</b> låter dig föra in en flygning för hand, till exempel om du glömde logga: datum, från, till, start- och landningstid, flygplan, antal landningar och anteckning. Sådana flygningar har inget spår.</p>
+<p>Ange flygplanets registrering under <b>Inställningar › Flygplan › Registrering</b>, så förifylls den i sammanfattningen och när du lägger till en flygning.</p>
+</section>
+<section id="installningar"><h2>Inställningar</h2>
+<p>Inställningarna hittar du under ☰ › <b>Inställningar</b>. De sparas på enheten och synkas med ditt konto.</p>
+<div class="tw"><table><thead><tr><th>Del</th><th>Inställning</th><th>Vad den påverkar</th></tr></thead><tbody><tr><td>Visning</td><td>Tema</td><td>Mörkt, Ljust (sol) för starkt solljus, eller Natt (rött) för att bevara mörkerseendet.</td></tr><tr><td>Visning</td><td>Min symbol på kartan</td><td>Symbolen för din position, även för andra om du delar position. Med bil ställs inga loggningsfrågor.</td></tr><tr><td>Visning</td><td>Terrängskuggning i vektorkarta</td><td>Skuggar berg och dalar i Standardkartan.</td></tr><tr><td>Visning</td><td>Linje framför flygplanet</td><td>Hur många minuter framåt linjen visar, 2–45 min.</td></tr><tr><td>Enheter</td><td>Avstånd, Höjd, Fart</td><td>NM eller km, fot eller meter, knop eller km/h. Luftrumsgränser visas alltid som publicerade, och banlängder i meter.</td></tr><tr><td>Flygplan</td><td>Marschfart TAS</td><td>Används i navloggen och för tid till mål.</td></tr><tr><td>Flygplan</td><td>Förbrukning, Användbart bränsle, Taxi/start, Reserv</td><td>Bränslepanering i navloggen och bränsleuppskattningen efter landning.</td></tr><tr><td>Flygplan</td><td>Glidtal 1:x</td><td>Storleken på glidräckviddscirkeln.</td></tr><tr><td>Planering</td><td>Standardhöjd</td><td>Höjden nya brytpunkter får.</td></tr><tr><td>Planering</td><td>Terrängmarginal</td><td>Under denna höjd över terrängen varnar profilen och navloggen.</td></tr><tr><td>Planering</td><td>Magnetisk variation</td><td>Ost plus, väst minus. Används för alla kurser i grader magnetiskt.</td></tr><tr><td>Planering</td><td>Ankomstradie</td><td>Hur nära en brytpunkt du ska vara innan appen byter till nästa sträcka.</td></tr><tr><td>Positionsdelning</td><td>Dela min position</td><td>Se avsnittet Andra Ultranav-piloter.</td></tr><tr><td>Offline</td><td>Spara rutten offline, Töm kartcache</td><td>Se avsnittet Offline nedan.</td></tr><tr><td>Om appen</td><td>Version, Tvinga uppdatering</td><td>Versionsnummer och hämtning av senaste version. Under Datakällor och villkor finns källförteckningen.</td></tr></tbody></table></div>
+<h3>Offline</h3>
+<p>Tryck <b>Spara rutten offline</b> innan du flyger till ett område utan täckning. Appen sparar Standardkartan och terrängen längs din aktuella rutt. Luftrum och flygfält sparas automatiskt när du har tittat på dem. Övriga baskartor går inte att spara i förväg. <b>Töm kartcache</b> frigör utrymme på enheten.</p>
+</section>
+<section id="konto-synk-och-delning"><h2>Konto, synk och delning</h2>
+<h3>Synk mellan enheter</h3>
+<p>Rutter, ritningar, eget kartmaterial, loggbok och inställningar sparas på ditt konto och synkas automatiskt mellan dina enheter – när du ändrar något, när appen öppnas och var femte minut. Utan nät sparas ändringarna och skickas när nätet är tillbaka. Tema och positionsdelning ställs in per enhet.</p>
+<p>Har du loggat in tidigare på en enhet kommer du in i appen även utan nät, så du blir aldrig utelåst i luften.</p>
+<h3>Fliken Konto</h3>
+<ul><li>Status för synken och antal sparade rutter, ritningar, kartmaterial och flygningar.</li><li><b>Synka nu</b>, <b>Byt lösenord</b> och <b>Logga ut</b>. Det som finns på enheten ligger kvar när du loggar ut.</li><li><b>Radera konto</b> – skriv RADERA för att bekräfta. Kontot och allt du sparat raderas direkt. Pilotfält och kommentarer du delat finns kvar utan koppling till dig.</li><li>Länk till integritetspolicy och villkor.</li></ul>
+<h3>Dela med andra</h3>
+<p>Rutter, ritningar, kartmaterial och flygningar kan delas med en länk via <b>Dela</b> i respektive lista eller ruta.</p>
+<ol><li>Tryck <b>Dela</b> och sedan <b>Kopiera länk</b> eller <b>Dela via…</b> för att skicka med till exempel Meddelanden.</li><li>Mottagaren loggar in eller skapar konto och trycker <b>Spara i min Ultranav</b> för att få en egen kopia.</li><li>Vill du att länken ska sluta fungera trycker du <b>Sluta dela</b>.</li></ol>
+<p>Delade objekt markeras med <i>delad</i> i listorna.</p>
+<h3>Integritet</h3>
+<p>Ultranav använder inga spårningskakor och visar ingen reklam. Din GPS-position behandlas i enheten och sparas bara när du sparar en flygning eller själv slår på positionsdelning. Allt om hur uppgifterna hanteras finns i integritetspolicyn, länkad från inloggningssidan och fliken Konto.</p>
+</section>
+<section id="vanliga-fragor"><h2>Vanliga frågor</h2>
+<div class="tw"><table><thead><tr><th>Problem</th><th>Gör så här</th></tr></thead><tbody><tr><td>Jag får inget bekräftelsemejl</td><td>Titta i skräpposten. Vänta någon minut och försök igen – vid många försök i rad spärras registreringen en stund.</td></tr><tr><td>GPS:en hittar ingen position</td><td>Kontrollera att platstjänster är tillåtna för Safari i iPadens inställningar. iPads utan mobildata saknar ofta egen GPS – använd en modell med mobildata eller en extern GPS-mottagare.</td></tr><tr><td>Spåret har glapp</td><td>iPaden har låsts eller appen legat i bakgrunden. Håll appen öppen och skärmen på under flygningen.</td></tr><tr><td>Frågan om loggning kommer inte</td><td>Kontrollera att GPS:en är på och att du inte har valt en bil som symbol. Du kan alltid starta loggningen under Logg.</td></tr><tr><td>Kartan är tom</td><td>Prova en annan baskarta under Kartor, eller kontrollera nätet. Utan nät visas bara kartor du sparat eller tittat på tidigare.</td></tr><tr><td>Jag ser inte en annan pilot</td><td>Den andra piloten måste ha slått på delning, ha GPS:en igång och appen öppen. Kontrollera att lagret Andra Ultranav-piloter är på.</td></tr><tr><td>Något ser gammalt ut efter en uppdatering</td><td>Gå till Inställningar › Om appen › <b>Tvinga uppdatering</b>.</td></tr></tbody></table></div>
+</section>
+<section id="viktigt-om-flygsakerhet"><h2>Viktigt om flygsäkerhet</h2>
+<p>Ultranav är ett hjälpmedel för planering och lägesuppfattning. Appen ersätter <b>inte</b> officiell AIP, ICAO-karta, NOTAM, väderbriefing eller godkänd navigationsutrustning.</p>
+<ul><li>Kartor, luftrum, flygfält och väder kommer från öppna källor och kan vara ofullständiga eller inaktuella.</li><li>Pilotfält och kommentarer är okontrollerade uppgifter från andra användare.</li><li>Höjddata saknar master, kraftledningar och byggnader.</li><li>Bränsleuppskattningar bygger på tid och den förbrukning du angett, inte på verklig mätning.</li></ul>
+<p>Befälhavaren ansvarar alltid för planering och genomförande av flygningen.</p>
+<p>Hittar du fel eller har förslag? Skriv till <a href="mailto:hej@ultranav.se">hej@ultranav.se</a>.</p>
+</section>
+  <a class="back" href="./">‹ Till Ultranav</a>
+</main>
+<a class="top" href="#start" aria-label="Till början">↑ Början</a>
+</body>
+</html>

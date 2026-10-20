@@ -430,6 +430,7 @@ function renderSettingsTab(el) {
 
   <h3>Om appen</h3>
   <div class="field"><span>Version</span><b>${APP_VERSION}</b></div>
+  <div class="field"><span>Användarmanual</span><a class="btn" href="manual.html">${ic('book')}Öppna</a></div>
   <div class="btnrow"><button class="btn" id="forceUpd">${ic('refresh')}Tvinga uppdatering</button></div>
   <details class="about"><summary>Datakällor och villkor</summary><div class="muted" style="line-height:1.5">
   Kartdata © OpenStreetMap-bidragsgivare (ODbL) · OpenFreeMap/OpenMapTiles · MapLibre GL (BSD-3) · OpenTopoMap (CC-BY-SA) · Kartverket (CC BY 4.0) · Esri World Imagery · Naturvårdsverket (skyddade områden) · Länsstyrelsen (Vindbrukskollen) · EUMETSAT (molnbild) ·
