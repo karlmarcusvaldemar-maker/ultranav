@@ -9,7 +9,9 @@ import { distNM, bearing, norm360, fmtDeg, fmtLatLon, esc, store, toast, downloa
 const R_M = 6371008.8;
 // Ritningarna lagras i biblioteket (synkas med kontot); här hålls en arbetslista i minnet
 export const drawings = [];
-const fromLib = (i) => ({ id: i.id, name: i.name, type: i.data.type, coords: i.data.coords, color: i.data.color, share: i.share });
+// färgen kan komma från en delad ritning: bara hex-färger släpps in i stilen
+const safeColor = (c) => (typeof c === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : undefined);
+const fromLib = (i) => ({ id: i.id, name: i.name, type: i.data.type, coords: i.data.coords, color: safeColor(i.data.color), share: i.share });
 function reloadDrawings() { drawings.splice(0, drawings.length, ...lib.list('drawing').map(fromLib)); }
 const saveOne = (f) => lib.put('drawing', { id: f.id, name: f.name, data: { type: f.type, coords: f.coords, color: f.color } });
 const listeners = new Set();

@@ -161,9 +161,15 @@ export function toast(msg, ms = 3000) {
   el.textContent = msg; el.classList.remove('hidden');
   clearTimeout(toastT); toastT = setTimeout(() => el.classList.add('hidden'), ms);
 }
-export function modal(html) {
+/** Visa en ruta. lock: rutan kan bara stängas med sina egna knappar (t.ex. sammanfattningen efter en flygning),
+ *  och ersätts inte av andra rutor medan den är öppen. */
+export function modal(html, { lock = false } = {}) {
+  const m = document.getElementById('modal');
+  if (m.classList.contains('locked') && !m.classList.contains('hidden') && !lock) return false;
   document.getElementById('modalBody').innerHTML = html;
-  document.getElementById('modal').classList.remove('hidden');
+  m.classList.toggle('locked', lock);
+  m.classList.remove('hidden');
+  return true;
 }
 /** Meddelanderuta med ikon: kind = 'ok' | 'warn' | 'bad' */
 export const note = (kind, html, ico) => `<div class="${kind}box">${icon(ico || { ok: 'ok', warn: 'alert', bad: 'alert' }[kind], 20)}<div>${html}</div></div>`;

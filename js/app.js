@@ -7,7 +7,7 @@ import { initCloud, onCloud, cloudConfigured, cloudStatus, shareItem, unshareIte
 import { renderAccountTab, askNewPassword } from './account.js';
 import { initCustomLayers, addSharedLayer } from './customlayers.js';
 import { renderLogbook, showFlight } from './logbook.js';
-import { initFlight, renderFlightCard, onFlight } from './flight.js';
+import { initFlight, renderFlightCard, onFlight, flightActive } from './flight.js';
 import { initLogin, setGateNote } from './login.js';
 import { $, $$, esc, toast, modal, note, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store } from './util.js';
 import { initMap, map, renderLayerPanel, testCurrentBase } from './map.js';
@@ -15,7 +15,7 @@ import { initAero, actions, airportHtml, mapInfoPopup, openAirport, airportNear 
 import { initDraw, drawActive, drawTap, renderDrawTab, drawActions, onDrawings, openDrawBar, closeDrawBar, drawBarOpen, syncBar, readout } from './draw.js';
 import { loadOurAirports, nearestAirports, searchAirports, oaInfo, longestRwy, onAirports } from './airports.js';
 import { initRoute, route, addWaypoint, removeWp, handleEditTap, setEditing, renderRouteTab, onRouteChange, getLegs, fitRoute, depDate, recompute, setRoute } from './route.js';
-import { initNav, nav, startGps, stopGps, directTo, cancelDto, setFollow, setTrackUp, instrumentData, onNav, renderLogTab, setActiveLeg } from './nav.js';
+import { initNav, nav, startGps, stopGps, directTo, cancelDto, setFollow, setTrackUp, instrumentData, onNav, setActiveLeg } from './nav.js';
 import { drawProfile } from './profile.js';
 import { initWxOverlay, fetchMetarTaf, metarHtml, fetchForecast, hourIndex, surfaceWx, windAt, searchStations, loadStationList } from './wx.js';
 import { elevationFt } from './terrain.js';
@@ -103,7 +103,7 @@ map.on('click', async (e) => {
 
 // ---------- snabbknappar ----------
 const fab = (id, fn) => $(id).addEventListener('click', fn);
-fab('#btnGps', () => (nav.tracking && !nav.simulating ? stopGps() : startGps()));
+fab('#btnGps', () => (nav.tracking ? stopGps() : startGps()));
 fab('#btnFollow', () => setFollow(!nav.follow));
 fab('#btnOrient', () => {
   if (!map.setBearing) return toast('Rotation stöds inte');
@@ -123,8 +123,8 @@ fab('#btnZoomIn', () => map.zoomIn());
 fab('#btnZoomOut', () => map.zoomOut());
 fab('#btnMenu', () => toggleSide());
 fab('#btnCloseSide', () => toggleSide(false));
-fab('#modalClose', () => $('#modal').classList.add('hidden'));
-$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') $('#modal').classList.add('hidden'); });
+fab('#modalClose', () => { if (!$('#modal').classList.contains('locked')) $('#modal').classList.add('hidden'); });
+$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal' && !$('#modal').classList.contains('locked')) $('#modal').classList.add('hidden'); });
 map.on('click', () => { $('#layerPanel').classList.add('hidden'); syncFab(); });
 
 function setEdit(v) {
@@ -137,7 +137,6 @@ function setEdit(v) {
 }
 function syncFab() {
   $('#btnGps').classList.toggle('on', nav.tracking);
-  $('#btnGps small').textContent = nav.simulating ? 'SIM' : 'GPS';
   $('#btnFollow').classList.toggle('on', nav.follow && nav.tracking);
   $('#btnOrient').innerHTML = nav.trackUp ? icon('heading') + '<small>Kurs</small>' : icon('north') + '<small>Norr</small>';
   $('#btnOrient').classList.toggle('on', nav.trackUp);
@@ -171,8 +170,8 @@ function renderTab() {
   if (currentTab === 'wx') renderWxTab(el);
   if (currentTab === 'fields') renderFieldsTab(el);
   if (currentTab === 'track') {
-    const fc = document.createElement('div'), lb = document.createElement('div'), sim = document.createElement('div');
-    el.replaceChildren(fc, lb, sim); renderFlightCard(fc); renderLogbook(lb); renderLogTab(sim);
+    const fc = document.createElement('div'), lb = document.createElement('div');
+    el.replaceChildren(fc, lb); renderFlightCard(fc); renderLogbook(lb);
   }
   if (currentTab === 'account') renderAccountTab(el);
   if (currentTab === 'draw') renderDrawTab(el);
@@ -196,7 +195,7 @@ function updateInstruments() {
   $('#iGSu').textContent = spdUnit();
   setI('#iTRK', o.trk != null ? fmtDeg(o.trk - settings.variation) : '---');
   setI('#iALT', o.alt != null ? Math.round(altOut(o.alt)) : '----');
-  setI('#iAGL', o.agl != null ? Math.round(altOut(o.agl)) : '----', o.agl != null && o.agl < 300 && (o.gs || 0) > 30);
+  setI('#iAGL', o.agl != null ? Math.round(altOut(o.agl)) : '----', o.agl != null && settings.aglWarn > 0 && o.agl < settings.aglWarn && (o.gs || 0) > 30);
   $('#iALTu').textContent = $('#iAGLu').textContent = altUnit(); $('#iDISTu').textContent = distUnit();
   setI('#iWP', o.wp ? (nav.dto ? 'D→ ' : '') + o.wp : '—');
   setI('#iBRG', o.brg != null ? fmtDeg(o.brg) : '---');
@@ -249,7 +248,7 @@ function renderFieldsTab(el) {
   const info = oaInfo();
   el.innerHTML = `<input class="search" type="search" id="fq" placeholder="Sök namn eller ICAO (t.ex. ESSB, Långtora)…" value="${esc(fieldQuery)}" autocomplete="off">
     <div id="fres"></div>
-    <div class="muted" style="margin-top:10px">${info ? `OurAirports: ${info.n} fält (${esc(settings.oaCountries)}), hämtat ${info.t.toLocaleDateString('sv-SE')}` : 'OurAirports ej inläst'}${oaipKey() ? ' · OpenAIP: fält laddas för kartvyn' : ''}</div>`;
+    ${isAdmin() ? `<div class="muted" style="margin-top:10px">${info ? `OurAirports: ${info.n} fält (${esc(settings.oaCountries)}), hämtat ${info.t.toLocaleDateString('sv-SE')}` : 'OurAirports ej inläst'}${oaipKey() ? ' · OpenAIP: fält laddas för kartvyn' : ''}</div>` : ''}`;
   const draw = () => {
     const q = $('#fq', el).value;
     fieldQuery = q;
@@ -338,7 +337,7 @@ async function routeForecast(box) {
         <div class="kv"><span>Vind 10 m</span><b>${fmtDeg(s.wdir)}° / ${Math.round(s.wspd)} kt${s.gust > s.wspd + 5 ? ' (byar ' + Math.round(s.gust) + ')' : ''}</b>
         <span>Vind ${fmtAlt(settings.cruiseAlt, true)}</span><b>${fmtDeg(wa.dir)}° / ${Math.round(wa.spd)} kt</b>
         <span>Temp / dagg</span><b>${s.temp?.toFixed(0)}° / ${s.dew?.toFixed(0)}°</b>
-        <span>Molnbas (uppsk.)</span><b>${s.baseFt != null ? '≈ ' + fmtAlt(s.baseFt, true) + ' AGL' : '—'}</b>
+        <span>Molnbas (uppskattad)</span><b>${s.baseFt != null ? '≈ ' + fmtAlt(s.baseFt, true) + ' AGL' : '—'}</b>
         <span>Låga moln</span><b>${s.low ?? '—'} %</b>
         <span>Sikt</span><b>${s.visKm != null ? (s.visKm >= 10 ? '≥ 10 km' : s.visKm.toFixed(1) + ' km') : '—'}</b>
         <span>Nederbörd</span><b>${s.precip ?? 0} mm/h</b>
@@ -389,6 +388,7 @@ function renderSettingsTab(el) {
   <h3>Planering</h3>
   ${num('cruiseAlt', `Standardhöjd (${altUnit()} MSL)`, '', s.altUnit === 'm' ? 50 : 100, altOut)}
   ${num('minClearance', `Terrängmarginal (${altUnit()})`, '', s.altUnit === 'm' ? 50 : 100, altOut)}
+  ${num('aglWarn', `Varning låg höjd (${altUnit()} AGL)`, '0 = av', s.altUnit === 'm' ? 10 : 50, altOut)}
   ${num('variation', 'Magnetisk variation (°)', 'ost +, väst −', 0.5)}
   ${num('arrivalRadius', `Ankomstradie (${distUnit()})`, '', 0.1, distOut)}
 
@@ -442,7 +442,7 @@ function renderSettingsTab(el) {
     let v = inp.type === 'checkbox' ? inp.checked : inp.type === 'number' ? +inp.value : inp.value.trim();
     if (k === 'tas') v = spdIn(v);
     if (k === 'vectorMin') v = +v;
-    if (k === 'cruiseAlt' || k === 'minClearance') v = Math.round(altIn(v));
+    if (k === 'cruiseAlt' || k === 'minClearance' || k === 'aglWarn') v = Math.max(0, Math.round(altIn(v)));
     if (k === 'arrivalRadius') v = distIn(v);
     saveSettings({ [k]: v });
     if (k === 'theme') applyTheme();
@@ -551,7 +551,7 @@ function openTab(tab) {
       if (it.kind === 'route') { await lib.put('route', { id, name: it.name, data: it.data }); setRoute({ name: it.name, ...it.data }); fitRoute(); }
       else if (it.kind === 'drawing') { await lib.put('drawing', { id, name: it.name, data: it.data }); }
       else if (it.kind === 'layer') await addSharedLayer(it.name, it.data);
-      else if (it.kind === 'flight') { await lib.put('flight', { id, name: it.name, data: it.data }); showFlight(id); }
+      else if (it.kind === 'flight') { await lib.put('flight', { id, name: it.name, data: { ...it.data, imported: true } }); showFlight(id); } // räknas inte i egen flygtid
       $('#modal').classList.add('hidden'); setGateNote(''); toast(`${it.name} är sparad`);
     };
   } catch (e) { toast('Kunde inte öppna delningen: ' + e.message, 5000); }
@@ -567,9 +567,14 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   // När en ny version tagit över: ladda om en gång så att alla filer kommer från samma version
   let reloaded = false;
   const hadController = !!navigator.serviceWorker.controller; // första besöket: ingen omladdning
+  // Under flygning (GPS eller loggning igång) eller med en ruta öppen väntar omladdningen tills det är lugnt
+  const busy = () => nav.tracking || flightActive() || !$('#modal').classList.contains('hidden') || drawBarOpen();
+  const reloadWhenIdle = () => { if (busy()) { setTimeout(reloadWhenIdle, 20000); return; } toast('Ny version installerad — laddar om…'); setTimeout(() => location.reload(), 600); };
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (reloaded || !hadController) return;
-    reloaded = true; toast('Ny version installerad — laddar om…'); setTimeout(() => location.reload(), 600);
+    reloaded = true;
+    if (busy()) toast('Ny version finns — den laddas när GPS:en är avstängd', 5000);
+    reloadWhenIdle();
   });
 }
 

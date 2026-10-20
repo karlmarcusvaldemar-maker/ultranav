@@ -1,9 +1,9 @@
-// Loggning av flygningar. Över 30 kt frågar appen om flygningen ska loggas, ritar ett snigelspår under
-// flygningen och frågar "Har du landat?" när man står still efter att ha varit i luften (över 30 kt).
-// Efter landning visas en sammanfattning som sparas i loggboken (synkas med kontot).
-// Med en bil som symbol (Land Rover, Saab) ställs inga automatiska frågor.
+// Loggning av flygningar. Över starthastigheten (30 kt, lägre för trike, skärm och ballong) frågar appen om
+// flygningen ska loggas, ritar ett snigelspår och frågar "Har du landat?" när man står still efter att ha varit i luften.
+// Efter landning visas en sammanfattning som sparas i loggboken (synkas med kontot). Sammanfattningen ligger kvar
+// (även efter omladdning) tills man sparar eller slänger. Med en bil som symbol ställs inga automatiska frågor.
 import { map } from './map.js';
-import { nav, onNav } from './nav.js';
+import { nav, onNav, startGps } from './nav.js';
 import { settings, fmtDist, fmtAlt, spdOut, spdUnit } from './settings.js';
 import { symbolOf } from './aircraft.js';
 import { nearestAirports } from './airports.js';
@@ -12,22 +12,39 @@ import * as lib from './library.js';
 import { distNM, fmtHM, fmtUTC, toast, modal, note, esc, $, store, idb } from './util.js';
 import { ic } from './icons.js';
 
-const ASK_KT = 30, AIR_KT = 30, STILL_KT = 3, STILL_MS = 20000, REARM_MS = 60000, RE_ASK_MS = 120000;
-let f = store.get('ulnav.flight', null); // pågående flygning: { start, takeoff, landing, lastAir, air }
+const STILL_KT = 3, STILL_MS = 20000, REARM_MS = 60000, RE_ASK_MS = 120000;
+const LAND_MS = 30000;   // så länge farten ska vara under starthastigheten innan det räknas som landning
+const GAP_MS = 60000;    // längre glapp mellan GPS-punkter (låst skärm) = ingen kunskap om vad som hände däremellan
+const PRE_MS = 300000;   // spår från de senaste 5 minuterna före "Starta loggning" tas med
+let f = store.get('ulnav.flight', null); // pågående flygning: { start, takeoff, landing, lastAir, air, belowSince }
 let pts = [];                              // spårpunkter [{lat, lon, alt, t, gs}]
-let lastT = 0, stillSince = null, fastSince = null, declined = false, askedLanded = 0, lastSave = 0;
+let pre = [];                              // spår medan ingen loggning pågår (för sen start)
+let lastT = 0, stillSince = null, fastSince = null, declined = false, askedLanded = 0, lastSave = 0, lastEmit = 0;
 const trail = L.polyline([], { pane: 'ownPath', color: '#7048e8', weight: 4, opacity: 0.85, interactive: false });
 const listeners = new Set();
 export const onFlight = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((fn) => fn());
 const isCar = () => !!symbolOf(settings.ownSymbol).profile;
+/** Starthastighet för vald symbol (kt) */
+const airKt = () => symbolOf(settings.ownSymbol).logKt ?? 30;
 export const flightActive = () => !!f;
 export const flightState = () => f && { ...f, pts: pts.length, dist: trackDist(pts) };
 
 export async function initFlight() {
   trail.addTo(map);
-  if (f) { pts = (await idb.get('flightlog')) || []; trail.setLatLngs(pts.map((p) => [p.lat, p.lon])); }
-  onNav((n) => { const p = n.pos; if (!p || p.t === lastT || n.simulating) return; lastT = p.t; tick(p); });
+  if (f) {
+    pts = (await idb.get('flightlog')) || []; trail.setLatLngs(pts.map((p) => [p.lat, p.lon]));
+    if (!nav.tracking) startGps(); // appen laddades om under en flygning: fortsätt logga
+    toast('Loggningen av flygningen fortsätter');
+  }
+  onNav((n) => { const p = n.pos; if (!p || p.t === lastT) return; const prev = lastT; lastT = p.t; tick(p, prev); });
+  // spara spåret direkt när appen läggs i bakgrunden eller stängs
+  const flush = () => { if (f) { store.set('ulnav.flight', f); idb.set('flightlog', pts); } };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+  window.addEventListener('pagehide', flush);
+  // en sammanfattning som inte sparats eller slängts visas igen
+  const done = store.get('ulnav.flightDone', null);
+  if (done) { const track = (await idb.get('flightdone')) || []; if (track.length > 1) setTimeout(() => summary(done, track), 1500); else clearDone(); }
 }
 
 function persist(force = false) {
@@ -35,50 +52,60 @@ function persist(force = false) {
   if (force || Date.now() - lastSave > 30000) { lastSave = Date.now(); idb.set('flightlog', pts); }
 }
 
-function tick(p) {
-  const gs = p.gsKt ?? 0;
+function tick(p, prevT) {
+  const gs = p.gsKt ?? 0, T = airKt(), gap = prevT && p.t - prevT > GAP_MS;
   if (gs < STILL_KT) stillSince ??= p.t; else stillSince = null;
   if (!f) {
-    fastSince = gs >= AIR_KT ? (fastSince ?? p.t) : null; // när farten gick över 30 kt — blir starttiden om man loggar
+    fastSince = gs >= T ? (fastSince ?? p.t) : null; // när farten gick över starthastigheten — blir starttiden om man loggar
+    add(pre, p); while (pre.length && p.t - pre[0].t > PRE_MS) pre.shift();
+    const bar = $('#flightBar');
+    if (bar?.dataset.kind === 'start' && stillSince && p.t - stillSince > REARM_MS) bar.remove(); // obesvarad fråga försvinner när man stått still
     if (isCar() || !nav.tracking) return;
     if (declined && stillSince && p.t - stillSince > REARM_MS) declined = false; // fråga igen efter att ha stått still en stund
-    if (gs > ASK_KT && !declined && !$('#flightBar')) askStart();
+    if (gs > T && !declined && !bar) askStart();
     return;
   }
+  const was = f.air;
+  // glapp i luften (låst skärm) och nu långsamt: landningen skedde någon gång efter senaste kända tid i luften
+  if (f.air && gap && gs < T) { f.air = false; f.landing = f.lastAir; f.belowSince = null; }
   record(p);
-  if (gs >= AIR_KT) { f.takeoff ??= p.t; f.air = true; f.lastAir = p.t; f.landing = null; }
-  else if (f.air) { f.air = false; f.landing = p.t; } // farten föll under 30 kt: landning
+  if (gs >= T) { f.takeoff ??= p.t; f.air = true; f.lastAir = p.t; f.landing = null; f.belowSince = null; }
+  else if (f.air) { // under starthastigheten en stund (inte bara en vindby eller GPS-brus): landning
+    f.belowSince ??= p.t;
+    if (p.t - f.belowSince >= LAND_MS) { f.air = false; f.landing = f.belowSince; f.belowSince = null; }
+  }
   persist();
   if (f.takeoff && !f.air && stillSince && p.t - stillSince > STILL_MS && Date.now() - askedLanded > RE_ASK_MS && !isCar() && !$('#flightBar')) askLanded();
-  emit();
+  if (was !== f.air || Date.now() - lastEmit > 15000) { lastEmit = Date.now(); emit(); }
 }
 
-function record(p) {
-  const prev = pts[pts.length - 1];
-  if (prev && p.t - prev.t < 5000 && distNM(prev, p) < 0.03) return;
-  pts.push({ lat: +p.lat.toFixed(6), lon: +p.lon.toFixed(6), alt: p.altFt != null ? Math.round(p.altFt) : null, t: p.t, gs: p.gsKt != null ? Math.round(p.gsKt) : null });
-  trail.addLatLng([p.lat, p.lon]);
+function add(arr, p) {
+  const prev = arr[arr.length - 1];
+  if (prev && p.t - prev.t < 5000 && distNM(prev, p) < 0.03) return false;
+  arr.push({ lat: +p.lat.toFixed(6), lon: +p.lon.toFixed(6), alt: p.altFt != null ? Math.round(p.altFt) : null, t: p.t, gs: p.gsKt != null ? Math.round(p.gsKt) : null });
+  return true;
 }
+function record(p) { if (add(pts, p)) trail.addLatLng([p.lat, p.lon]); }
 
 // ---------- frågor på kartan ----------
-function bar(html, buttons) {
+function bar(kind, html, buttons) {
   $('#flightBar')?.remove();
   const el = document.createElement('div');
-  el.id = 'flightBar';
+  el.id = 'flightBar'; el.dataset.kind = kind;
   el.innerHTML = `<div class="info">${html}</div>${buttons.map((b, i) => `<button class="btn ${b.primary ? 'primary' : ''}" data-i="${i}">${b.label}</button>`).join('')}`;
   $('#mapwrap').appendChild(el);
   L.DomEvent.disableClickPropagation(el);
   el.querySelectorAll('[data-i]').forEach((btn) => btn.onclick = () => { el.remove(); buttons[+btn.dataset.i].fn(); });
 }
 function askStart() {
-  bar('<b>Logga flygningen?</b>', [
+  bar('start', '<b>Logga flygningen?</b>', [
     { label: 'Nej', fn: () => { declined = true; } },
     { label: `${ic('play')}Starta loggning`, primary: true, fn: startFlight },
   ]);
 }
 function askLanded() {
   askedLanded = Date.now();
-  bar('<b>Har du landat?</b>', [
+  bar('landed', '<b>Har du landat?</b>', [
     { label: 'Nej', fn: () => { askedLanded = Date.now(); } },
     { label: `${ic('check')}Ja, avsluta`, primary: true, fn: finishFlight },
   ]);
@@ -88,9 +115,11 @@ function askLanded() {
 export function startFlight() {
   if (f) return;
   const p = nav.pos;
-  const t0 = fastSince && p && p.t - fastSince < 300000 ? fastSince : null;
-  f = { start: t0 ?? p?.t ?? Date.now(), takeoff: t0, landing: null, lastAir: t0, air: !!t0 };
-  pts = []; trail.setLatLngs([]);
+  const t0 = fastSince && p && p.t - fastSince < PRE_MS ? fastSince : null;
+  f = { start: t0 ?? p?.t ?? Date.now(), takeoff: t0, landing: null, lastAir: t0, air: !!t0, belowSince: null };
+  // sen start: ta med spåret från strax före starten, så att "Från" och sträckan blir rätt
+  pts = t0 ? pre.filter((q) => q.t >= t0 - 60000) : []; pre = [];
+  trail.setLatLngs(pts.map((q) => [q.lat, q.lon]));
   if (p) record(p);
   persist(true); emit();
   toast('Loggning startad');
@@ -100,14 +129,18 @@ export function startFlight() {
 export function finishFlight() {
   if (!f) return;
   $('#flightBar')?.remove();
-  const done = { ...f, end: nav.pos?.t ?? Date.now(), landing: f.landing ?? (f.air ? (nav.pos?.t ?? Date.now()) : null) };
+  const now = Date.now();
+  const done = { ...f, end: Math.max(now, f.start), landing: f.landing ?? (f.air ? (f.belowSince ?? f.lastAir ?? now) : null) };
   const track = pts.slice();
   f = null; pts = []; trail.setLatLngs([]);
   store.set('ulnav.flight', null); idb.set('flightlog', []);
   emit();
   if (track.length < 2) { toast('Flygningen var för kort för att sparas'); return; }
+  // sammanfattningen sparas tills man väljer Spara eller Släng — även om appen laddas om
+  store.set('ulnav.flightDone', done); idb.set('flightdone', track);
   summary(done, track);
 }
+function clearDone() { store.set('ulnav.flightDone', null); idb.set('flightdone', []); }
 /** Avbryt utan att spara */
 export function discardFlight() {
   if (!f || !confirm('Avbryta loggningen utan att spara?')) return;
@@ -135,7 +168,7 @@ function stats(fl, track) {
 function summary(fl, track) {
   const s = stats(fl, track);
   const fuelUsed = (settings.taxiFuel || 0) + (settings.fuelBurn || 0) * s.airH;
-  const totH = lib.list('flight').reduce((a, x) => a + (x.data.durH || 0), 0) + s.airH;
+  const totH = lib.list('flight').filter((x) => !x.data.imported).reduce((a, x) => a + (x.data.durH || 0), 0) + s.airH;
   const end = track[track.length - 1], sun = sunInfo(new Date(fl.end), end.lat, end.lon);
   const late = fl.landing && sun.sunset && fl.landing > +sun.sunset;
   const d = new Date(fl.start);
@@ -152,16 +185,16 @@ function summary(fl, track) {
       <span>Max höjd</span><b>${s.maxAlt != null ? fmtAlt(s.maxAlt) : '—'}</b>
       <span>Fart</span><b>${s.avgGs != null ? `snitt ${Math.round(spdOut(s.avgGs))} · ` : ''}max ${Math.round(spdOut(s.maxGs))} ${spdUnit()}</b>
       <span>Bränsle</span><b id="fsFuel"></b>
-      <span>Loggbok totalt</span><b>${fmtHM(totH)}</b>
+      <span>Total flygtid i loggboken</span><b>${fmtHM(totH)}</b>
     </div>
     ${late ? note('warn', `Landningen skedde efter solnedgång (${utc(+sun.sunset)}).`, 'moon') : ''}
     <div class="field"><span>Bränsle vid start (l)</span><input type="number" id="fsStart" inputmode="decimal" step="1" value="${settings.fuelUsable}"></div>
     <div class="field"><span>Antal landningar</span><input type="number" id="fsLdg" inputmode="numeric" min="0" step="1" value="${fl.takeoff ? 1 : 0}"></div>
     <div class="field col"><span>Anteckning</span><textarea id="fsNote" rows="2"></textarea></div>
-    <div class="btnrow"><button class="btn primary" id="fsSave">${ic('book')}Spara i loggboken</button><button class="btn danger" id="fsDrop">Släng</button></div>`);
+    <div class="btnrow"><button class="btn primary" id="fsSave">${ic('book')}Spara i loggboken</button><button class="btn danger" id="fsDrop">Släng</button></div>`, { lock: true });
   const fuel = () => { const left = +$('#fsStart').value - fuelUsed; $('#fsFuel').innerHTML = `≈ ${fuelUsed.toFixed(1)} l förbrukat · ≈ ${left.toFixed(1)} l kvar`; };
   $('#fsStart').oninput = fuel; fuel();
-  const close = () => $('#modal').classList.add('hidden');
+  const close = () => { clearDone(); $('#modal').classList.remove('locked'); $('#modal').classList.add('hidden'); };
   $('#fsDrop').onclick = () => { if (confirm('Slänga flygningen utan att spara?')) close(); };
   $('#fsSave').onclick = async () => {
     const step = Math.max(1, Math.ceil(track.length / 3000)); // högst ≈ 3000 punkter
@@ -185,6 +218,6 @@ export function renderFlightCard(el) {
     <div class="btnrow"><button class="btn primary" id="flEnd">${ic('check')}Avsluta flygning</button><button class="btn" id="flDrop">Avbryt loggning</button></div>`
     : `<div class="btnrow"><button class="btn primary" id="flStart">${ic('play')}Starta loggning</button></div>`}`;
   $('#flStart', el)?.addEventListener('click', () => { startFlight(); renderFlightCard(el); });
-  $('#flEnd', el)?.addEventListener('click', () => finishFlight());
+  $('#flEnd', el)?.addEventListener('click', () => { if (!flightState()?.air || confirm('Du verkar vara i luften. Avsluta flygningen ändå?')) finishFlight(); });
   $('#flDrop', el)?.addEventListener('click', () => { discardFlight(); renderFlightCard(el); });
 }

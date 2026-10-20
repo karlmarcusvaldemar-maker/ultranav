@@ -238,7 +238,7 @@ function confirmStep(p, v, onDone) {
     if (error) {
       e.target.disabled = false;
       $('#ufErr').innerHTML = note('bad', /relation|does not exist|schema cache/i.test(error.message)
-        ? 'Fälttabellen finns inte i databasen ännu (administratören behöver köra supabase/schema.sql).' : 'Kunde inte spara: ' + esc(error.message));
+        ? 'Det går inte att lägga till fält just nu.' : 'Kunde inte spara: ' + esc(error.message));
       return;
     }
     closeModal();

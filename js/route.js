@@ -103,7 +103,7 @@ async function updateWind() {
     const mids = route.wps.slice(1).map((w, i) => interp(route.wps[i], w, 0.5));
     fc = await fetchForecast(mids);
     fcSig = s;
-  } catch (e) { toast('Vind (Open-Meteo): ' + e.message); }
+  } catch (e) { toast('Vindprognosen kunde inte hämtas'); }
 }
 async function updateProfile() {
   try { profile = route.wps.length > 1 ? await routeProfile(route.wps) : []; }
