@@ -632,6 +632,16 @@ body.gated #shareChip { display: none; }
 .scene .mast-light { fill: #ff3b30; animation: scBlink 1.6s steps(1) infinite; }
 @keyframes scBlink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: .15; } }
 
+/* banner (andra dagen): flygplan som drar klubbens namn över himlen */
+.scene .banner { opacity: 0; transform: translateX(-300px); }
+.scene .bn-rope { fill: none; stroke: #8ea2b6; stroke-width: .9; }
+.scene .bn-cloth { fill: #f4f0e6; stroke: #c9c2b4; stroke-width: .6; }
+.scene .bn-txt { fill: #a3352a; font: 700 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; letter-spacing: 1.2px; }
+.scene .bn-flag { transform-box: fill-box; transform-origin: 100% 50%; }
+.scene.egg .banner { animation: scBanner 11s linear .4s both; }
+.scene.egg .bn-flag { animation: scFlag .6s ease-in-out infinite alternate; }
+@keyframes scBanner { 0% { transform: translateX(-120px); opacity: 1; } 100% { transform: translateX(1900px); opacity: 1; } }
+@keyframes scFlag { from { transform: skewY(-1.2deg) scaleY(.97); } to { transform: skewY(1.2deg) scaleY(1); } }
 /* vedklyvning (andra dagen) */
 .scene .chopper { opacity: 0; transition: opacity .4s ease; }
 .scene.chop.day .chopper { opacity: 1; }
