@@ -8,12 +8,12 @@ import { fmtDist, fmtAlt, spdOut, spdUnit } from './settings.js';
 const trackLayer = L.layerGroup();
 export function renderLogbook(el) {
   const flights = lib.list('flight').sort((a, b) => b.data.start - a.data.start);
-  const totH = flights.reduce((s, f) => s + (f.data.durH || 0), 0);
+  const totH = flights.filter((f) => !f.data.imported).reduce((s, f) => s + (f.data.durH || 0), 0); // delade flygningar från andra räknas inte
   el.innerHTML = `<h3>Loggbok</h3>
-    ${flights.length ? `<div class="kv" style="margin:4px 0 8px"><span>Flygningar</span><b>${flights.length}</b><span>Total tid</span><b>${fmtHM(totH)}</b></div>
+    ${flights.length ? `<div class="kv" style="margin:4px 0 8px"><span>Flygningar</span><b>${flights.length}</b><span>Total flygtid</span><b>${fmtHM(totH)}</b></div>
     <ul class="aplist">${flights.map((f) => {
       const d = new Date(f.data.start);
-      return `<li><div class="info"><b>${esc(f.name)}</b><span>${d.toLocaleDateString('sv-SE')} ${d.toTimeString().slice(0, 5)} · ${fmtHM(f.data.durH)} · ${fmtDist(f.data.distNM || 0, 0)}${f.data.maxAlt != null ? ` · max ${fmtAlt(f.data.maxAlt)}` : ''}${f.share ? ' · delad' : ''}</span></div>
+      return `<li><div class="info"><b>${esc(f.name)}</b><span>${d.toLocaleDateString('sv-SE')} ${d.toTimeString().slice(0, 5)} · ${fmtHM(f.data.durH)} · ${fmtDist(f.data.distNM || 0, 0)}${f.data.maxAlt != null ? ` · max ${fmtAlt(f.data.maxAlt)}` : ''}${f.share ? ' · delad' : ''}${f.data.imported ? ' · från annan pilot' : ''}</span></div>
         <button class="btn small icon" data-show="${f.id}" aria-label="Visa på kartan">${ic('search')}</button>
         <button class="btn small icon" data-more="${f.id}" aria-label="Mer">${ic('dots', 18)}</button></li>`;
     }).join('')}</ul>`
@@ -47,8 +47,8 @@ function rows(d) {
     ['Start', tUL(d.takeoff)], ['Landning', tUL(d.landing)], ['Flygtid', fmtHM(d.durH)], ['Total tid', d.blockH != null ? fmtHM(d.blockH) : null],
     ['Sträcka', fmtDist(d.distNM || 0)], ['Max höjd', d.maxAlt != null ? fmtAlt(d.maxAlt) : null],
     ['Fart', d.maxGs ? `${d.avgGs ? `snitt ${Math.round(spdOut(d.avgGs))} · ` : ''}max ${Math.round(spdOut(d.maxGs))} ${spdUnit()}` : null],
-    ['Bränsle', d.fuelUsed != null ? `≈ ${d.fuelUsed} l förbrukat${d.fuelStart ? ` · ≈ ${(d.fuelStart - d.fuelUsed).toFixed(1)} l kvar` : ''}` : null],
-    ['Landningar', d.landings != null ? d.landings : null]];
+    ['Bränsle', Number.isFinite(+d.fuelUsed) && d.fuelUsed != null ? `≈ ${(+d.fuelUsed).toFixed(1)} l förbrukat${+d.fuelStart ? ` · ≈ ${(d.fuelStart - d.fuelUsed).toFixed(1)} l kvar` : ''}` : null],
+    ['Landningar', Number.isFinite(+d.landings) && d.landings != null ? Math.round(+d.landings) : null]];
   return r.filter(([, v]) => v != null).map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join('');
 }
 

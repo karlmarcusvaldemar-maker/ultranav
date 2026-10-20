@@ -727,3 +727,6 @@ details.about summary { cursor: pointer; color: var(--muted); font-size: 14px; p
 
 #flightBar .info b { font-size: 17px; }
 .kv.fsum { margin: 6px 0 8px; }
+
+/* låst ruta (sammanfattning efter flygning): stängs bara med rutans egna knappar */
+#modal.locked #modalClose { display: none; }

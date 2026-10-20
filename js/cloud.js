@@ -88,7 +88,7 @@ export async function deleteAccount() {
   if (!client || !user) throw new Error('Inte inloggad.');
   const { error } = await client.rpc('delete_my_account');
   if (error) throw new Error(/function .* does not exist|Could not find the function/i.test(error.message)
-    ? 'Radering är inte aktiverad i databasen ännu (kör supabase/schema.sql igen).' : sv(error));
+    ? 'Kontot kan inte raderas just nu. Kontakta hej@ultranav.se.' : sv(error));
   await client.auth.signOut().catch(() => {});
   user = null;
   await clearLibrary();

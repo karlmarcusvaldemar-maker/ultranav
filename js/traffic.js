@@ -7,7 +7,7 @@ import { supa, onCloud, cloudStatus } from './cloud.js';
 import { nav, onNav } from './nav.js';
 import { esc, toast, modal, $, distNM, bearing, fmtDeg } from './util.js';
 import { ic } from './icons.js';
-import { symbolSvg } from './aircraft.js';
+import { symbolSvg, SYMBOLS } from './aircraft.js';
 
 const SEND_MS = 5000, STALE_MS = 25000, DROP_MS = 90000;
 const others = new Map();   // id → senaste position
@@ -21,7 +21,8 @@ const emit = () => listeners.forEach((f) => f());
 
 /** Delar jag position just nu (inställningen på, GPS på, inte simulering)? */
 export const sharingWanted = () => !!settings.shareTraffic;
-export const sharingActive = () => sharingWanted() && nav.tracking && !nav.simulating && !!nav.pos && subscribed;
+const isAdmin = () => cloudStatus().user?.app_metadata?.role === 'admin';
+export const sharingActive = () => sharingWanted() && nav.tracking && !!nav.pos && subscribed;
 
 export function initTraffic() {
   registerOverlay('traffic', 'Andra Ultranav-piloter', '', (v) => { viewOn = v; if (v) layer.addTo(map); else map.removeLayer(layer); ensureChannel(); draw(); });
@@ -33,6 +34,15 @@ export function initTraffic() {
 }
 
 // ---------- kanal ----------
+/** Mottagna positioner kommer från andra klienter: släpp bara igenom väl formade värden (skydd mot skript i HTML/stil) */
+const num = (v, lo, hi) => (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : null);
+function clean(p) {
+  if (!p || typeof p !== 'object' || typeof p.id !== 'string' || p.id.length > 64) return null;
+  const lat = num(p.lat, -90, 90), lon = num(p.lon, -180, 180);
+  if (lat == null || lon == null) return null;
+  return { id: p.id, lat, lon, alt: num(p.alt, -2000, 60000), gs: num(p.gs, 0, 1000), trk: num(p.trk, 0, 360), t: num(p.t, 0, 9e15),
+    call: typeof p.call === 'string' ? p.call.slice(0, 12) : '', sym: typeof p.sym === 'string' && Object.hasOwn(SYMBOLS, p.sym) ? p.sym : undefined };
+}
 async function ensureChannel() {
   const client = supa(), user = cloudStatus().user;
   const need = !!(client && user && (viewOn || sharingWanted()));
@@ -45,13 +55,14 @@ async function ensureChannel() {
     catch (e) { stat.err = 'setAuth: ' + (e?.message || e); }
     if (joinedAs !== user.id) return;
     channel = client.channel('traffic', { config: { private: true, broadcast: { self: false } } })
-      .on('broadcast', { event: 'pos' }, ({ payload: p }) => {
-        if (!p || p.id === user.id || typeof p.lat !== 'number') return;
+      .on('broadcast', { event: 'pos' }, ({ payload }) => {
+        const p = clean(payload);
+        if (!p || p.id === user.id) return;
         stat.recv++;
         others.set(p.id, { ...p, rx: Date.now() });
         draw(); emit();
       })
-      .on('broadcast', { event: 'bye' }, ({ payload: p }) => { if (p?.id) { others.delete(p.id); draw(); emit(); } })
+      .on('broadcast', { event: 'bye' }, ({ payload: p }) => { if (typeof p?.id === 'string') { others.delete(p.id); draw(); emit(); } })
       .subscribe((status, err) => {
         subscribed = status === 'SUBSCRIBED';
         stat.status = { SUBSCRIBED: 'ansluten', CHANNEL_ERROR: 'fel', TIMED_OUT: 'tidsgräns', CLOSED: 'stängd' }[status] || status;
@@ -137,7 +148,6 @@ function renderChip() {
   const err = stat.status === 'fel' || stat.status === 'tidsgräns';
   const [cls, icon, title, sub] = active ? ['on', '', 'Delar position', settings.shareCallsign ? `Andra ser dig som ${esc(settings.shareCallsign)}` : 'Andra piloter ser dig']
     : !wanted ? ['off', 'eyeOff', 'Delar inte position', 'Tryck för att dela med andra piloter']
-    : nav.simulating ? ['off', 'eyeOff', 'Delar inte position', 'Simulering delas aldrig']
     : !nav.tracking || !nav.pos ? ['wait', 'gps', 'Delning på', 'Väntar på GPS-position']
     : err ? ['err', 'alert', 'Delning på', 'Kunde inte ansluta — tryck för detaljer']
     : ['wait', 'sync', 'Delning på', 'Ansluter…'];
@@ -162,7 +172,8 @@ export function openShareDialog() {
     <div class="field"><span>Anropssignal eller registrering<small>Visas för andra, t.ex. SE-VXA</small></span>
       <input type="text" id="shCall" maxlength="12" autocapitalize="characters" value="${esc(settings.shareCallsign || '')}"></div>
     <div class="muted">Inte ett antikollisionssystem — bara piloter som delar syns.</div>
-    <div class="muted small" style="text-align:left;margin-top:6px">Status: ${esc(stat.status)} · skickade ${stat.sent} · mottagna ${stat.recv} · piloter på kartan ${others.size}${stat.err ? ' · fel: ' + esc(stat.err) : ''}${viewOn ? '' : ' · lagret Andra Ultranav-piloter är av'}</div>
+    ${stat.err ? `<div class="muted small" style="text-align:left;margin-top:6px">Kunde inte ansluta just nu. Kontrollera nätet och försök igen.</div>` : ''}
+    <div class="muted small" style="text-align:left;margin-top:6px;${isAdmin() ? '' : 'display:none'}">Status: ${esc(stat.status)} · skickade ${stat.sent} · mottagna ${stat.recv} · piloter på kartan ${others.size}${stat.err ? ' · fel: ' + esc(stat.err) : ''}${viewOn ? '' : ' · lagret Andra Ultranav-piloter är av'}</div>
     <div class="btnrow">${on
       ? `<button class="btn danger" id="shOff">${ic('close')}Sluta dela min position</button><button class="btn" id="shSave">${ic('check')}Spara</button>`
       : `<button class="btn primary" id="shOn">${ic('gps')}Ja, dela min position</button>`}</div>`);

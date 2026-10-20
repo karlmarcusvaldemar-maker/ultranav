@@ -10,10 +10,10 @@ import { setProfileOwn } from './profile.js';
 import { distNM, bearing, destPoint, crossTrack, norm360, fmtDeg, fmtHM, fmtUTC, toast, idb, download, esc, $, FT_PER_M, interp } from './util.js';
 
 export const nav = {
-  pos: null, tracking: false, follow: true, trackUp: false, activeLeg: 0, dto: null, simulating: false,
+  pos: null, tracking: false, follow: true, trackUp: false, activeLeg: 0, dto: null,
   aglFt: null, terrFt: null,
 };
-let watchId = null, last = null, wakeLock = null, simTimer = null;
+let watchId = null, last = null, wakeLock = null;
 const ownLayer = L.layerGroup();
 let ownMarker, vecLine, glideCircle, dtoLine;
 const vecTicks = []; // punkter på fartvektorn, en per valbar tid (VECTOR_MINS)
@@ -35,10 +35,9 @@ export async function initNav() {
 // ---------- GPS ----------
 export function startGps() {
   if (!('geolocation' in navigator)) { toast('Ingen GPS i den här webbläsaren'); return; }
-  stopSim();
   nav.tracking = true; nav.follow = true;
   watchId = navigator.geolocation.watchPosition(onFix, (e) => {
-    toast(e.code === 1 ? 'GPS nekad — tillåt plats för Safari i Inställningar › Integritet' : 'GPS-fel: ' + e.message, 5000);
+    toast(e.code === 1 ? 'GPS nekad — tillåt platstjänster för Safari i Inställningar › Integritet och säkerhet › Platstjänster' : 'GPS-fel: ' + e.message, 5000);
     if (e.code === 1) stopGps();
   }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   requestWake(); emit();
@@ -241,35 +240,3 @@ export function setTrackUp(v) {
   update(); emit();
 }
 
-export function renderLogTab(el) {
-  el.innerHTML = `<h3>Simulering</h3>
-    <div class="btnrow"><button class="btn ${nav.simulating ? 'primary' : ''}" id="simBtn">${nav.simulating ? ic('stop') + 'Stoppa simulering' : ic('play') + 'Simulera rutten'}</button></div>`;
-  $('#simBtn', el).onclick = () => { nav.simulating ? stopSim() : startSim(); renderLogTab(el); };
-}
-
-// ---------- simulering ----------
-export function startSim() {
-  const w = route.wps;
-  if (w.length < 2) { toast('Skapa en rutt med minst två punkter först'); return; }
-  stopGps();
-  nav.simulating = true; nav.tracking = true; nav.follow = true; nav.dto = null; nav.activeLeg = 0; nav.pos = null; last = null;
-  let leg = 0, f = 0, t = Date.now();
-  const legsArr = getLegs();
-  simTimer = setInterval(() => {
-    const L0 = legsArr[leg] || {};
-    const gs = isFinite(L0.gs) ? L0.gs : settings.tas;
-    const d = distNM(w[leg], w[leg + 1]);
-    f += (gs * 10 / 3600) / Math.max(d, 0.01); // 10× hastighet, 1 s steg
-    if (f >= 1) { f = 0; leg++; if (leg >= w.length - 1) { stopSim(); toast('Simulering klar'); return; } }
-    const pt = interp(w[leg], w[leg + 1], f);
-    t += 10000;
-    ingest({ lat: pt.lat, lon: pt.lon, t, altFt: w[leg + 1].alt, gsKt: gs, trk: bearing(w[leg], w[leg + 1]), acc: 5 });
-  }, 1000);
-  emit();
-}
-export function stopSim() {
-  if (simTimer) clearInterval(simTimer);
-  simTimer = null;
-  if (nav.simulating) { nav.simulating = false; nav.tracking = false; }
-  emit();
-}
