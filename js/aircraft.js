@@ -1,5 +1,5 @@
 // Symboler för luftfarkoster sedda uppifrån, nos uppåt (roteras efter färdriktningen).
-// Används för egen position och för andra Ultranav-piloter. logKt = starthastighet för loggning (standard 30 kt).
+// Används för egen position och för andra Ultranav-piloter.
 export const SYMBOLS = {
   experimental: { name: 'Experimental', vb: '0 0 40 40', body: `
     <path d="M20 12.2 L36.5 15.6 Q38 16 37.6 17.6 L37.2 19.4 L20 19.6 L2.8 19.4 L2.4 17.6 Q2 16 3.5 15.6 Z"/>
@@ -18,17 +18,17 @@ export const SYMBOLS = {
     <path d="M18.2 19 L9.5 15.6 M21.8 19 L30.5 15.6" fill="none" stroke-width=".9"/>` },
   jet: { name: 'Jetplan', vb: '0 0 56 56', body: `
     <path d="M28 4 L31 22 L50 30 L50 34 L31 30 L30 44 L36 48 L36 51 L28 49 L20 51 L20 48 L26 44 L25 30 L6 34 L6 30 L25 22 Z"/>` },
-  trike: { name: 'Trike', vb: '0 0 40 40', logKt: 25, body: `
+  trike: { name: 'Trike', vb: '0 0 40 40', body: `
     <path d="M20 5 L38 23.5 Q29 20.5 20 21 Q11 20.5 2 23.5 Z"/>
     <path d="M18.6 15.5 Q20 11.5 21.4 15.5 L21.6 27 Q20 29.5 18.4 27 Z"/>
     <circle cx="20" cy="12.6" r="1.3"/><circle cx="16.2" cy="27.2" r="1.5"/><circle cx="23.8" cy="27.2" r="1.5"/>
     <path d="M16 30.6 H24" stroke-width="1.6"/>` },
-  paraglider: { name: 'Skärmflyg', vb: '0 0 40 40', logKt: 12, body: `
+  paraglider: { name: 'Skärmflyg', vb: '0 0 40 40', body: `
     <path d="M8.5 17.5 L20 27 L31.5 17.5 M14 14.6 L20 27 L26 14.6" fill="none" stroke-width=".8"/>
     <path d="M3 14.5 Q20 5.5 37 14.5 L35.8 19 Q20 11 4.2 19 Z"/>
     <path d="M9 11.6 L9.8 16.4 M14.5 9.9 L15 14.6 M20 9.3 V14 M25.5 9.9 L25 14.6 M31 11.6 L30.2 16.4" fill="none" stroke-width=".8"/>
     <circle cx="20" cy="27.6" r="2.7"/>` },
-  balloon: { name: 'Luftballong', vb: '0 0 40 40', rotate: false, logKt: 5, body: `
+  balloon: { name: 'Luftballong', vb: '0 0 40 40', rotate: false, body: `
     <circle cx="20" cy="20" r="15"/>
     <path d="M20 5 V35 M5 20 H35 M9.4 9.4 L30.6 30.6 M30.6 9.4 L9.4 30.6" fill="none" stroke-width=".8"/>
     <circle cx="20" cy="20" r="3.4" fill="#17212c"/>` },

@@ -1,7 +1,7 @@
-// Loggning av flygningar. Över starthastigheten (30 kt, lägre för trike, skärm och ballong) frågar appen om
+// Loggning av flygningar. Över starthastigheten (fast 30 kt för alla symboler) frågar appen om
 // flygningen ska loggas, ritar ett snigelspår och frågar "Har du landat?" när man står still efter att ha varit i luften.
 // Efter landning visas en sammanfattning som sparas i loggboken (synkas med kontot). Sammanfattningen ligger kvar
-// (även efter omladdning) tills man sparar eller slänger. Med en bil som symbol ställs inga automatiska frågor.
+// (även efter omladdning) tills man sparar eller slänger. Med en bil som symbol loggas ingenting.
 import { map } from './map.js';
 import { nav, onNav, startGps } from './nav.js';
 import { settings, fmtDist, fmtAlt, spdOut, spdUnit } from './settings.js';
@@ -25,8 +25,8 @@ const listeners = new Set();
 export const onFlight = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((fn) => fn());
 const isCar = () => !!symbolOf(settings.ownSymbol).profile;
-/** Starthastighet för vald symbol (kt) */
-const airKt = () => symbolOf(settings.ownSymbol).logKt ?? 30;
+/** Starthastighet för loggning: fast 30 kt, går inte att ändra */
+const airKt = () => 30;
 export const flightActive = () => !!f;
 export const flightState = () => f && { ...f, pts: pts.length, dist: trackDist(pts) };
 
@@ -113,7 +113,7 @@ function askLanded() {
 
 // ---------- start och avslut ----------
 export function startFlight() {
-  if (f) return;
+  if (f || isCar()) return; // bilar loggas inte
   const p = nav.pos;
   const t0 = fastSince && p && p.t - fastSince < PRE_MS ? fastSince : null;
   f = { start: t0 ?? p?.t ?? Date.now(), takeoff: t0, landing: null, lastAir: t0, air: !!t0, belowSince: null };
@@ -217,6 +217,7 @@ export function renderFlightCard(el) {
       ${st.takeoff ? `<span>Start</span><b>${utc(st.takeoff)}</b>` : ''}
       <span>Sträcka</span><b>${fmtDist(st.dist)}</b></div>
     <div class="btnrow"><button class="btn primary" id="flEnd">${ic('check')}Avsluta flygning</button><button class="btn" id="flDrop">Avbryt loggning</button></div>`
+    : isCar() ? '<div class="muted">Med en bil som symbol loggas inga flygningar.</div>'
     : `<div class="btnrow"><button class="btn primary" id="flStart">${ic('play')}Starta loggning</button></div>`}`;
   $('#flStart', el)?.addEventListener('click', () => { startFlight(); renderFlightCard(el); });
   $('#flEnd', el)?.addEventListener('click', () => { if (!flightState()?.air || confirm('Du verkar vara i luften. Avsluta flygningen ändå?')) finishFlight(); });
