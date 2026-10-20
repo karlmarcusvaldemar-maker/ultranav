@@ -37,7 +37,7 @@ export function startGps() {
   if (!('geolocation' in navigator)) { toast('Ingen GPS i den här webbläsaren'); return; }
   nav.tracking = true; nav.follow = true;
   watchId = navigator.geolocation.watchPosition(onFix, (e) => {
-    toast(e.code === 1 ? 'GPS nekad — tillåt platstjänster för Safari i Inställningar › Integritet och säkerhet › Platstjänster' : 'GPS-fel: ' + e.message, 5000);
+    toast(e.code === 1 ? 'GPS nekad — tillåt platsåtkomst för ultranav.se i webbläsaren och för webbläsaren i enhetens inställningar' : 'GPS-fel: ' + e.message, 5000);
     if (e.code === 1) stopGps();
   }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   requestWake(); emit();

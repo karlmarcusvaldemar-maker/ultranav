@@ -589,7 +589,7 @@ if (!store.get('ulnav.welcomed', false)) {
    <li>Öppna <b>Meny › Inställningar</b> och ange flygplanets fart och förbrukning.</li>
    <li>Tryck på <b>Rutt</b> och sedan på kartan för att lägga ut brytpunkter. Tryck nära ett fält för att fästa vid det.</li>
    <li>Navloggen med vindkorrektion, bränsle, solnedgång och luftrum längs rutten finns under <b>Meny › Rutt</b>. Terrängprofilen öppnas med <b>Profil</b>.</li>
-   <li>Före start: <b>Spara rutten offline</b> under Inställningar. Lägg sedan till appen på hemskärmen via Safari › Dela › Lägg till på hemskärmen.</li>
+   <li>Före start: <b>Spara rutten offline</b> under Inställningar. Installera sedan appen via webbläsarens meny eller dela-knapp (<b>Lägg till på hemskärmen</b> eller <b>Installera app</b>) så startar den i helskärm och fungerar utan nät.</li>
    <li>I luften: <b>GPS</b>, sedan <b>Följ</b> och <b>Norr/Kurs</b> för norr upp eller kurs upp. <b>Närmast</b> visar närmaste fält för nödlandning.</li>
   </ol>
   ${note('warn', 'Hjälpmedel — ersätter inte officiell AIP, NOTAM eller briefing.')}`);
