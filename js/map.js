@@ -20,6 +20,8 @@ const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspa
   if (state.v < 3) { if (state.overlays.includes('fields')) state.overlays.push('userfields'); state.v = 3; store.set('ulnav.layers', state); }
   // Andra Ultranav-piloter (version 4) är påslaget från start — slås på en gång, därefter gäller användarens val
   if (state.v < 4) { if (!state.overlays.includes('traffic')) state.overlays.push('traffic'); state.v = 4; store.set('ulnav.layers', state); }
+  // Vindrutan (version 5) är påslagen från start — slås på en gång, därefter gäller användarens val
+  if (state.v < 5) { if (!state.overlays.includes('windarrow')) state.overlays.push('windarrow'); state.v = 5; store.set('ulnav.layers', state); }
 }
 const save = () => store.set('ulnav.layers', state);
 
@@ -232,7 +234,7 @@ export function registerCustomLayers(provider) { custom = provider; }
 
 // ---------- Lagerpanel ----------
 const BASE_ICON = { otm: 'mapTopo', vecLiberty: 'mapDetail', osm: 'mapRoad', kartverket: 'mapTopo', esri: 'satellite' };
-const OVERLAY_ORDER = ['airspace', 'fields', 'userfields', 'traffic', 'protected', 'wind', 'hillshade', 'metar', 'radar', 'clouds', 'drawings'];
+const OVERLAY_ORDER = ['airspace', 'fields', 'userfields', 'traffic', 'windarrow', 'protected', 'wind', 'hillshade', 'metar', 'radar', 'clouds', 'drawings'];
 
 export function renderLayerPanel() {
   const el = $('#layerPanel');
