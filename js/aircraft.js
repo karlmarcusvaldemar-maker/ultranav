@@ -1,7 +1,7 @@
 // Symboler för luftfarkoster sedda uppifrån, nos uppåt (roteras efter färdriktningen).
 // Används för egen position och för andra Ultranav-piloter.
 export const SYMBOLS = {
-  experimental: { name: 'Experimental', vb: '0 0 40 40', body: `
+  experimental: { name: 'Flygplan', vb: '0 0 40 40', body: `
     <path d="M20 12.2 L36.5 15.6 Q38 16 37.6 17.6 L37.2 19.4 L20 19.6 L2.8 19.4 L2.4 17.6 Q2 16 3.5 15.6 Z"/>
     <path d="M18.6 5.4 Q20 2.2 21.4 5.4 L22 27 L20.8 36 H19.2 L18 27 Z"/>
     <path d="M13.6 32 L26.4 32 Q27 32 27 32.8 L26.6 34.6 H13.4 L13 32.8 Q13 32 13.6 32 Z"/>
