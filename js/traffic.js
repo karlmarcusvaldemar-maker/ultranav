@@ -9,9 +9,9 @@ import { esc, toast, modal, $, distNM, bearing, fmtDeg } from './util.js';
 import { ic } from './icons.js';
 import { symbolSvg, SYMBOLS } from './aircraft.js';
 
-// Utan nya positioner bleknar symbolen efter 25 s och försvinner efter 5 min. Har piloten bytt app (iOS pausar då
-// webbappen helt) skickas en sista position märkt bg, och den ligger kvar längre så att piloten inte försvinner mitt i flygningen.
-const SEND_MS = 5000, STALE_MS = 25000, DROP_MS = 5 * 60000, BG_DROP_MS = 15 * 60000;
+// Utan nya positioner bleknar symbolen efter 25 s och försvinner efter 3 min. Har piloten bytt app (iOS pausar då
+// webbappen helt) skickas en sista position märkt bg, så att de andra ser varför den inte uppdateras.
+const SEND_MS = 5000, STALE_MS = 25000, DROP_MS = 3 * 60000;
 const others = new Map();   // id → senaste position
 const markers = new Map();  // id → Leaflet-markör
 let channel = null, subscribed = false, viewOn = false, lastSent = 0, joinedAs = null;
@@ -87,7 +87,7 @@ function maybeSend() {
   if (!sharingActive() || Date.now() - lastSent < SEND_MS) return;
   sendNow(false);
 }
-/** bg: appen går till bakgrunden — mottagarna behåller positionen längre */
+/** bg: appen går till bakgrunden — mottagarna visar att positionen inte uppdateras */
 function sendNow(bg) {
   if (!sharingActive()) return;
   const now = Date.now(), p = nav.pos;
@@ -104,7 +104,7 @@ function sendNow(bg) {
 
 function prune() {
   const now = Date.now();
-  for (const [id, o] of others) if (now - o.rx > (o.bg ? BG_DROP_MS : DROP_MS)) others.delete(id);
+  for (const [id, o] of others) if (now - o.rx > DROP_MS) others.delete(id);
 }
 
 // ---------- ritning ----------
