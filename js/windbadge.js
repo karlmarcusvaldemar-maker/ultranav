@@ -69,7 +69,7 @@ function render() {
   place();
   const w = wind();
   if (!w) {
-    el.className = 'empty';
+    el.className = 'wb-empty';
     el.innerHTML = `<span class="wbDial"></span><span class="wbTxt"><small>VIND</small><b>—</b></span>`;
     el.setAttribute('aria-label', 'Vind: ingen prognos ännu');
     return;

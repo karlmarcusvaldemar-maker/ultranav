@@ -9,7 +9,9 @@ import { esc, toast, modal, $, distNM, bearing, fmtDeg } from './util.js';
 import { ic } from './icons.js';
 import { symbolSvg, SYMBOLS } from './aircraft.js';
 
-const SEND_MS = 5000, STALE_MS = 25000, DROP_MS = 90000;
+// Utan nya positioner bleknar symbolen efter 25 s och försvinner efter 5 min. Har piloten bytt app (iOS pausar då
+// webbappen helt) skickas en sista position märkt bg, och den ligger kvar längre så att piloten inte försvinner mitt i flygningen.
+const SEND_MS = 5000, STALE_MS = 25000, DROP_MS = 5 * 60000, BG_DROP_MS = 15 * 60000;
 const others = new Map();   // id → senaste position
 const markers = new Map();  // id → Leaflet-markör
 let channel = null, subscribed = false, viewOn = false, lastSent = 0, joinedAs = null;
@@ -28,6 +30,9 @@ export function initTraffic() {
   registerOverlay('traffic', 'Andra Ultranav-piloter', '', (v) => { viewOn = v; if (v) layer.addTo(map); else map.removeLayer(layer); ensureChannel(); draw(); });
   onCloud(() => ensureChannel());
   onNav(() => { maybeSend(); renderChip(); });
+  // Byter man app hinner vi skicka en sista position innan webbappen pausas; tillbaka igen skickas en ny direkt
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sendNow(true); else { lastSent = 0; maybeSend(); } });
+  window.addEventListener('pagehide', () => sendNow(true));
   setInterval(() => { prune(); draw(); renderChip(); }, 5000);
   ensureChannel();
   renderChip();
@@ -41,7 +46,7 @@ function clean(p) {
   const lat = num(p.lat, -90, 90), lon = num(p.lon, -180, 180);
   if (lat == null || lon == null) return null;
   return { id: p.id, lat, lon, alt: num(p.alt, -2000, 60000), gs: num(p.gs, 0, 1000), trk: num(p.trk, 0, 360), t: num(p.t, 0, 9e15),
-    call: typeof p.call === 'string' ? p.call.slice(0, 12) : '', sym: typeof p.sym === 'string' && Object.hasOwn(SYMBOLS, p.sym) ? p.sym : undefined };
+    call: typeof p.call === 'string' ? p.call.slice(0, 12) : '', sym: typeof p.sym === 'string' && Object.hasOwn(SYMBOLS, p.sym) ? p.sym : undefined, bg: p.bg === true };
 }
 async function ensureChannel() {
   const client = supa(), user = cloudStatus().user;
@@ -79,25 +84,31 @@ function leave() {
 }
 
 function maybeSend() {
+  if (!sharingActive() || Date.now() - lastSent < SEND_MS) return;
+  sendNow(false);
+}
+/** bg: appen går till bakgrunden — mottagarna behåller positionen längre */
+function sendNow(bg) {
   if (!sharingActive()) return;
-  const now = Date.now();
-  if (now - lastSent < SEND_MS) return;
+  const now = Date.now(), p = nav.pos;
   lastSent = now;
-  const p = nav.pos;
   stat.sent++;
-  channel.send({ type: 'broadcast', event: 'pos', payload: {
-    id: joinedAs, call: (settings.shareCallsign || '').slice(0, 12), sym: settings.ownSymbol, lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5),
-    alt: p.altFt != null ? Math.round(p.altFt) : null, gs: p.gsKt != null ? Math.round(p.gsKt) : null,
-    trk: p.trk != null ? Math.round(p.trk) : null, t: now,
-  } });
+  try {
+    channel.send({ type: 'broadcast', event: 'pos', payload: {
+      id: joinedAs, call: (settings.shareCallsign || '').slice(0, 12), sym: settings.ownSymbol, lat: +p.lat.toFixed(5), lon: +p.lon.toFixed(5),
+      alt: p.altFt != null ? Math.round(p.altFt) : null, gs: p.gsKt != null ? Math.round(p.gsKt) : null,
+      trk: p.trk != null ? Math.round(p.trk) : null, t: now, ...(bg ? { bg: true } : {}),
+    } });
+  } catch { /* anslutningen kan redan vara stängd när appen pausas */ }
 }
 
 function prune() {
   const now = Date.now();
-  for (const [id, o] of others) if (now - o.rx > DROP_MS) others.delete(id);
+  for (const [id, o] of others) if (now - o.rx > (o.bg ? BG_DROP_MS : DROP_MS)) others.delete(id);
 }
 
 // ---------- ritning ----------
+const ago = (o) => { const s = Math.round((Date.now() - o.rx) / 1000); return s < 60 ? `${s} s` : `${Math.round(s / 60)} min`; };
 const planeSvg = (o, stale) => symbolSvg(o.sym, { fill: '#e8590c', stroke: '#fff', size: 34, rot: o.trk ?? 0, opacity: stale ? 0.45 : 1 });
 function label(o) {
   const own = nav.pos?.altFt, st = altUnit() === 'm' ? 30 : 100;
@@ -109,7 +120,7 @@ function draw() {
   const now = Date.now();
   for (const [id, m] of markers) if (!others.has(id)) { layer.removeLayer(m); markers.delete(id); }
   for (const [id, o] of others) {
-    const stale = now - o.rx > STALE_MS;
+    const stale = o.bg || now - o.rx > STALE_MS;
     const icon = L.divIcon({ className: 'traffic-ic', iconSize: [34, 34], iconAnchor: [17, 17], html: planeSvg(o, stale) });
     let m = markers.get(id);
     if (!m) {
@@ -118,16 +129,17 @@ function draw() {
       m.on('click', () => popup(id));
       markers.set(id, m);
     } else { m.setLatLng([o.lat, o.lon]); m.setIcon(icon); }
-    m.setTooltipContent(label(o) + (stale ? ' · ' + Math.round((now - o.rx) / 1000) + ' s' : ''));
+    m.setTooltipContent(label(o) + (o.bg ? ` · i bakgrunden ${ago(o)}` : stale ? ` · ${ago(o)}` : ''));
   }
 }
 function popup(id) {
   const o = others.get(id); if (!o) return;
-  const own = nav.pos, age = Math.round((Date.now() - o.rx) / 1000);
+  const own = nav.pos;
   L.popup().setLatLng([o.lat, o.lon]).setContent(`<h4 class="popinfo">${ic('plane', 18)} ${esc(o.call || 'Okänd pilot')}</h4>
     <div>${o.alt != null ? `${fmtAlt(o.alt)} MSL` : 'höjd okänd'}${o.gs != null ? ` · ${Math.round(spdOut(o.gs))} ${spdUnit()}` : ''}${o.trk != null ? ` · ${fmtDeg(o.trk)}°T` : ''}</div>
     ${own ? `<div>${fmtDist(distNM(own, o))} · ${fmtDeg(bearing(own, o) - settings.variation)}°M från dig</div>` : ''}
-    <div class="muted">Uppdaterad för ${age} s sedan · Ultranav-pilot som delar sin position</div>`).openOn(map);
+    <div class="muted">Uppdaterad för ${ago(o)} sedan · Ultranav-pilot som delar sin position</div>
+    ${o.bg ? '<div class="muted">Piloten har bytt till en annan app. Positionen uppdateras när Ultranav öppnas igen.</div>' : ''}`).openOn(map);
 }
 
 // ---------- tydlig status och val ----------
