@@ -1,5 +1,5 @@
 // Ultranav — huvudmodul
-import { settings, saveSettings, spdOut, spdIn, spdUnit, DEFAULT_TILES, onSettings, oaipKey, proxyUrl, distOut, distIn, distUnit, fmtDist, altOut, altIn, altUnit, fmtAlt, VECTOR_MINS } from './settings.js';
+import { settings, saveSettings, spdOut, spdIn, spdUnit, fmtWind, DEFAULT_TILES, onSettings, oaipKey, proxyUrl, distOut, distIn, distUnit, fmtDist, altOut, altIn, altUnit, fmtAlt, VECTOR_MINS } from './settings.js';
 import * as lib from './library.js';
 import { OPENAIP_KEY } from './config.js';
 import { APP_VERSION } from './version.js';
@@ -336,8 +336,8 @@ async function routeForecast(box) {
       const wa = windAt(fc, i, settings.cruiseAlt);
       const sun = sunInfo(t, fc.latitude, fc.longitude);
       return `<div class="metar" style="font-family:inherit;font-size:14px;white-space:normal"><div class="st"><span>${esc(name)}</span><span class="muted">${fmtUTC(t)}Z</span></div>
-        <div class="kv"><span>Vind 10 m</span><b>${fmtDeg(s.wdir)}° / ${Math.round(s.wspd)} kt${s.gust > s.wspd + 5 ? ' (byar ' + Math.round(s.gust) + ')' : ''}</b>
-        <span>Vind ${fmtAlt(settings.cruiseAlt, true)}</span><b>${fmtDeg(wa.dir)}° / ${Math.round(wa.spd)} kt</b>
+        <div class="kv"><span>Vind 10 m</span><b>${fmtDeg(s.wdir)}° / ${fmtWind(s.wspd)}${s.gust > s.wspd + 5 ? ' (byar ' + fmtWind(s.gust) + ')' : ''}</b>
+        <span>Vind ${fmtAlt(settings.cruiseAlt, true)}</span><b>${fmtDeg(wa.dir)}° / ${fmtWind(wa.spd)}</b>
         <span>Temp / dagg</span><b>${s.temp?.toFixed(0)}° / ${s.dew?.toFixed(0)}°</b>
         <span>Molnbas (uppskattad)</span><b>${s.baseFt != null ? '≈ ' + fmtAlt(s.baseFt, true) + ' AGL' : '—'}</b>
         <span>Låga moln</span><b>${s.low ?? '—'} %</b>
@@ -378,6 +378,9 @@ function renderSettingsTab(el) {
     <option value="m" ${s.altUnit === 'm' ? 'selected' : ''}>meter (m)</option></select></div>
   <div class="field"><span>Fart</span><select data-k="speedUnit"><option value="kt" ${s.speedUnit === 'kt' ? 'selected' : ''}>knop (kt)</option>
     <option value="kmh" ${s.speedUnit === 'kmh' ? 'selected' : ''}>km/h</option></select></div>
+  <div class="field"><span>Vindhastighet</span><select data-k="windUnit"><option value="kt" ${!['ms', 'kmh'].includes(s.windUnit) ? 'selected' : ''}>knop (kt)</option>
+    <option value="ms" ${s.windUnit === 'ms' ? 'selected' : ''}>meter per sekund (m/s)</option>
+    <option value="kmh" ${s.windUnit === 'kmh' ? 'selected' : ''}>km/h</option></select></div>
 
   <h3>Flygplan</h3>
   <div class="field"><span>Registrering</span><input type="text" data-k="aircraftReg" maxlength="12" autocapitalize="characters" placeholder="t.ex. SE-VXA" value="${esc(s.aircraftReg || '')}"></div>
@@ -452,7 +455,7 @@ function renderSettingsTab(el) {
     saveSettings({ [k]: v });
     if (k === 'theme') applyTheme();
     if (k === 'openaipKey') { resetOpenAip(); map.fire('moveend'); }
-    if (['tas', 'fuelBurn', 'variation', 'speedUnit', 'distUnit', 'altUnit', 'minClearance'].includes(k)) recompute();
+    if (['tas', 'fuelBurn', 'variation', 'speedUnit', 'windUnit', 'distUnit', 'altUnit', 'minClearance'].includes(k)) recompute();
     if (['speedUnit', 'distUnit', 'altUnit'].includes(k)) renderSettingsTab(el);
     updateInstruments();
   }));

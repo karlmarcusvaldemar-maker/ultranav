@@ -1,6 +1,6 @@
 // Ruttplanering och navlogg
 import { map } from './map.js';
-import { settings, spdOut, spdUnit, oaipKey, proxyUrl, distOut, distUnit, altOut, altIn, altUnit, fmtAlt } from './settings.js';
+import { settings, spdOut, spdUnit, windOut, windUnit, oaipKey, proxyUrl, distOut, distUnit, altOut, altIn, altUnit, fmtAlt } from './settings.js';
 import { distNM, bearing, interp, windTriangle, norm360, fmtDeg, fmtHM, fmtUTC, fmtLocal, esc, store, toast, debounce, download, $, note } from './util.js';
 import { ic } from './icons.js';
 import { fetchForecast, hourIndex, windAt } from './wx.js';
@@ -246,10 +246,10 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
   if (legs.length) {
     const u = spdUnit();
     h += `<h3>Navlogg <span class="muted">(TAS ${Math.round(spdOut(settings.tas))} ${u}, var ${settings.variation >= 0 ? settings.variation + '°E' : -settings.variation + '°W'})</span></h3>
-      <table class="navlog"><tr><th>Till</th><th>Höjd</th><th>MT</th><th>Vind</th><th>MH</th><th>${distUnit()}</th><th>GS</th><th>Tid</th><th>ETA</th></tr>`;
+      <table class="navlog"><tr><th>Till</th><th>Höjd</th><th>MT</th><th>Vind ${windUnit()}</th><th>MH</th><th>${distUnit()}</th><th>GS</th><th>Tid</th><th>ETA</th></tr>`;
     for (const l of legs) {
       h += `<tr class="${l.i === activeLeg ? 'active' : ''}"><td>${esc(l.to.name)}</td><td>${Math.round(altOut(l.to.alt))}${l.lowClear ? ' <span class="warnmark">' + ic('alert', 14) + '</span>' : ''}</td><td>${fmtDeg(l.mt)}</td>
-        <td>${l.wind ? fmtDeg(l.wind.dir) + '/' + Math.round(l.wind.spd) : '—'}</td><td><b>${fmtDeg(l.mh)}</b></td><td>${distOut(l.d).toFixed(1)}</td>
+        <td>${l.wind ? fmtDeg(l.wind.dir) + '/' + Math.round(windOut(l.wind.spd)) : '—'}</td><td><b>${fmtDeg(l.mh)}</b></td><td>${distOut(l.d).toFixed(1)}</td>
         <td>${isFinite(l.gs) ? Math.round(spdOut(l.gs)) : '—'}</td><td>${fmtHM(l.ete)}</td><td>${fmtUTC(l.eta)}</td></tr>`;
     }
     h += `<tr class="tot"><td>Totalt</td><td></td><td></td><td></td><td></td><td>${distOut(T.d).toFixed(1)}</td><td></td><td>${fmtHM(T.t)}</td><td>${fmtUTC(T.eta)}Z</td></tr></table>`;

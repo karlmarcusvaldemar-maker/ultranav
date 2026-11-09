@@ -31,11 +31,17 @@ export function hourIndex(fc, date) {
   return i;
 }
 
-/** Vind (från-riktning, kt) på given höjd ft MSL genom vektorinterpolation mellan tryckytor */
+/** Vind (från-riktning, kt) på given höjd ft MSL genom vektorinterpolation mellan tryckytor.
+ *  Tryckytor under marken (t.ex. 1000 hPa på ett högt beläget fält) är bara extrapolerade värden: de hoppas över,
+ *  och vinden på 10 m över marken används som lägsta nivå. */
 export function windAt(fc, i, altFt) {
   const h = fc.hourly, altM = altFt / FT_PER_M;
+  const ground = typeof fc.elevation === 'number' ? fc.elevation : null;
   const lv = LEVELS.map((l) => ({ z: h[`geopotential_height_${l}hPa`]?.[i], s: h[`wind_speed_${l}hPa`]?.[i], d: h[`wind_direction_${l}hPa`]?.[i], t: h[`temperature_${l}hPa`]?.[i] }))
-    .filter((x) => x.z != null && x.s != null && x.d != null).sort((a, b) => a.z - b.z);
+    .filter((x) => x.z != null && x.s != null && x.d != null && (ground == null || x.z > ground + 10));
+  if (ground != null && h.wind_speed_10m?.[i] != null && h.wind_direction_10m?.[i] != null)
+    lv.push({ z: ground + 10, s: h.wind_speed_10m[i], d: h.wind_direction_10m[i], t: h.temperature_2m?.[i] });
+  lv.sort((a, b) => a.z - b.z);
   if (!lv.length) return { dir: h.wind_direction_10m[i], spd: h.wind_speed_10m[i], temp: h.temperature_2m[i] };
   const uv = (x) => ({ u: -x.s * Math.sin(x.d * Math.PI / 180), v: -x.s * Math.cos(x.d * Math.PI / 180) });
   let a = lv[0], b = lv[0];

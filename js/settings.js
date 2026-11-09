@@ -17,6 +17,7 @@ export const DEFAULT_TILES = {
 
 const DEFAULTS = {
   speedUnit: 'kt',        // 'kt' | 'kmh'
+  windUnit: 'kt',         // vindhastighet: 'kt' | 'ms' | 'kmh'
   distUnit: 'nm',         // 'nm' | 'km'
   altUnit: 'ft',          // 'ft' | 'm'
   vectorMin: 10,          // fartvektorns längd i minuter framåt
@@ -73,6 +74,10 @@ export const proxyUrl = () => settings.corsProxy?.trim() || DEFAULT_PROXY;
 export const spdOut = (kt) => (settings.speedUnit === 'kmh' ? kt * 1.852 : kt);
 export const spdIn = (v) => (settings.speedUnit === 'kmh' ? v / 1.852 : v);
 export const spdUnit = () => (settings.speedUnit === 'kmh' ? 'km/h' : 'kt');
+// vind lagras i knop och visas i vald enhet
+export const windOut = (kt) => (settings.windUnit === 'ms' ? kt * 0.514444 : settings.windUnit === 'kmh' ? kt * 1.852 : kt);
+export const windUnit = () => ({ ms: 'm/s', kmh: 'km/h' }[settings.windUnit] || 'kt');
+export const fmtWind = (kt) => `${Math.round(windOut(kt))} ${windUnit()}`;
 
 /** Valbara längder på fartvektorn (minuter). Punkter sätts ut vid varje kortare tid längs linjen. */
 export const VECTOR_MINS = [2, 5, 10, 15, 20, 30, 45];
