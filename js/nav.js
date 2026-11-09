@@ -20,6 +20,9 @@ const vecTicks = []; // punkter på fartvektorn, en per valbar tid (VECTOR_MINS)
 const listeners = new Set();
 export const onNav = (fn) => listeners.add(fn);
 const emit = () => listeners.forEach((f) => f(nav));
+// Vindkälla för glidcirkeln (vindrutans prognos) — sätts av windbadge.js för att undvika ett cirkelberoende
+let glideWind = null;
+export const setGlideWind = (fn) => { glideWind = fn; };
 
 // Egen position: vald luftfarkost (Inställningar › Visning), standard lågvingat experimental
 const planeHtml = () => symbolSvg(settings.ownSymbol, { size: 40 });
@@ -191,8 +194,13 @@ function update() {
     vecTicks[i].setOpacity(show ? 1 : 0);
   });
   // glidräckvidd
+  // Radien är sträckan i stillastående luft. Under glidtiden (sträckan / bästa glidfart) driver luften
+  // med vinden, så cirkelns mitt flyttas medvind: du når längre medvind och kortare i motvind.
   if (nav.aglFt != null && nav.aglFt > 100) {
-    glideCircle.setLatLng(ll).setRadius(nav.aglFt * settings.glideRatio / FT_PER_M);
+    const stillM = nav.aglFt * settings.glideRatio / FT_PER_M;
+    const w = settings.glideSpeed > 0 ? glideWind?.(p.altFt ?? null, nav.terrFt) : null;
+    const c = w && w.spd > 0 ? destPoint(p, w.dir + 180, w.spd * (stillM / 1852) / settings.glideSpeed) : null;
+    glideCircle.setLatLng(c ? [c.lat, c.lon] : ll).setRadius(stillM);
     glideCircle.setStyle({ opacity: 0.9 });
   } else glideCircle.setStyle({ opacity: 0, fillOpacity: 0 });
   const tg = target();

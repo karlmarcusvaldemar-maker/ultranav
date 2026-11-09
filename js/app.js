@@ -223,7 +223,7 @@ function showNearest() {
   const list = nearestAirports(ref, 12);
   window.ulnav._near = list.map((x) => x.a);
   modal(`<h3>Närmaste fält ${nav.pos ? 'från din position' : '<span class="muted">(från kartans mitt — GPS av)</span>'}</h3>
-    ${nav.pos && nav.aglFt ? note('ok', `Glidräckvidd ≈ <b>${fmtDist(nav.aglFt * settings.glideRatio / 6076)}</b> (1:${settings.glideRatio}, ${fmtAlt(nav.aglFt)} AGL)`, 'triangle') : ''}
+    ${nav.pos && nav.aglFt ? note('ok', `Glidräckvidd ≈ <b>${fmtDist(nav.aglFt * settings.glideRatio / 6076)}</b> (1:${settings.glideRatio}, ${fmtAlt(nav.aglFt)} AGL, i vindstilla)`, 'triangle') : ''}
     ${list.length ? `<ul class="aplist">${list.map(({ a, d }, i) => apRow(a, d, bearing(ref, a), i, true)).join('')}</ul>` : '<div class="muted">Inga fält inlästa ännu.</div>'}`);
 }
 function apRow(a, d, brg, i, big) {
@@ -390,6 +390,7 @@ function renderSettingsTab(el) {
   ${num('taxiFuel', 'Taxi/start (l)', '', 0.5)}
   ${num('reserveMin', 'Reserv (min)', '', 5)}
   ${num('glideRatio', 'Glidtal 1:x', '', 0.5)}
+  ${num('glideSpeed', `Bästa glidfart (${u})`, 'Används för att räkna in vinden i glidcirkeln', 1, spdOut)}
 
   <h3>Planering</h3>
   ${num('cruiseAlt', `Standardhöjd (${altUnit()} MSL)`, '', s.altUnit === 'm' ? 50 : 100, altOut)}
@@ -447,7 +448,7 @@ function renderSettingsTab(el) {
   el.querySelectorAll('[data-k]').forEach((inp) => inp.addEventListener('change', () => {
     const k = inp.dataset.k;
     let v = inp.type === 'checkbox' ? inp.checked : inp.type === 'number' ? +inp.value : inp.value.trim();
-    if (k === 'tas') v = spdIn(v);
+    if (k === 'tas' || k === 'glideSpeed') v = spdIn(v);
     if (k === 'vectorMin') v = +v;
     if (k === 'aircraftReg') v = v.toUpperCase().slice(0, 12);
     if (k === 'cruiseAlt' || k === 'minClearance' || k === 'aglWarn') v = Math.max(0, Math.round(altIn(v)));

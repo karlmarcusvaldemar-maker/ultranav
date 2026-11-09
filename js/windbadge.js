@@ -2,9 +2,9 @@
 // Pilen visar vart vinden blåser och vrids med kartan. Under flygning visas mot- eller medvind längs din kurs.
 import { settings, onSettings, fmtAlt, fmtWind } from './settings.js';
 import { map, registerOverlay } from './map.js';
-import { nav, onNav } from './nav.js';
+import { nav, onNav, setGlideWind } from './nav.js';
 import { fetchForecast, hourIndex, windAt, surfaceWx } from './wx.js';
-import { distNM, fmtDeg, fmtUTC, fmtLocal, idb, modal, note, debounce } from './util.js';
+import { distNM, fmtDeg, fmtUTC, fmtLocal, idb, modal, note, debounce, FT_PER_M } from './util.js';
 
 let on = false, el = null, data = null, busy = false; // data: { fc, at, lat, lon }
 const REFRESH_MS = 60 * 60 * 1000, MOVE_NM = 25;
@@ -13,6 +13,7 @@ export async function initWindBadge() {
   data = (await idb.get('wind:fc').catch(() => null)) || null;
   registerOverlay('windarrow', 'Vind (prognos)', '', (v) => { on = v; render(); if (v) refresh(); });
   onNav(() => { render(); refresh(); });
+  setGlideWind(glideWind);
   map.on('rotate', render);
   onSettings((s, patch) => { if ('windUnit' in patch || 'altUnit' in patch) render(); });
   map.on('moveend', debounce(() => { if (!nav.tracking) { render(); refresh(); } }, 1500));
@@ -47,6 +48,18 @@ function wind() {
   let comp = null;
   if (gps && nav.pos.trk != null && nav.pos.gsKt > 20) comp = w.spd * Math.cos((w.dir - nav.pos.trk) * Math.PI / 180);
   return { ...w, altFt, i, comp };
+}
+
+/** Medelvind (vektor) mellan din höjd och marken, för glidcirkeln. Bara en färsk prognos (högst 12 h gammal) används. */
+function glideWind(altFt, terrFt) {
+  if (!data || altFt == null || Date.now() - data.at > 12 * 3600e3) return null;
+  const i = hourIndex(data.fc, new Date(Date.now() + 30 * 60000));
+  const groundFt = terrFt ?? (typeof data.fc.elevation === 'number' ? data.fc.elevation * FT_PER_M : null);
+  const top = windAt(data.fc, i, altFt), low = groundFt != null ? windAt(data.fc, i, groundFt + 33) : top;
+  if (top.dir == null || low.dir == null) return null;
+  const uv = (w) => [-w.spd * Math.sin(w.dir * Math.PI / 180), -w.spd * Math.cos(w.dir * Math.PI / 180)];
+  const [u1, v1] = uv(top), [u2, v2] = uv(low), u = (u1 + u2) / 2, v = (v1 + v2) / 2;
+  return { dir: (Math.atan2(-u, -v) * 180 / Math.PI + 360) % 360, spd: Math.hypot(u, v) };
 }
 
 // Under rutan för positionsdelning, som skapas senare och byter höjd med sin text

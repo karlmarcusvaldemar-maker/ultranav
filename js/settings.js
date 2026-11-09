@@ -27,6 +27,7 @@ const DEFAULTS = {
   reserveMin: 30,         // minuter
   taxiFuel: 1.5,          // l
   glideRatio: 10,         // glidtal 1:x
+  glideSpeed: 55,         // kt, bästa glidfart (för vindens påverkan på glidcirkeln)
   minClearance: 500,      // ft över terräng (planering)
   aircraftReg: '',        // flygplanets registrering, förifylls i loggboken
   aglWarn: 300,           // ft AGL: instrumentet AGL blir rött under denna höjd i fart (0 = av)
