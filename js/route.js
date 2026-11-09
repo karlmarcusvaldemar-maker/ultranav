@@ -260,7 +260,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
       <span>Taxi</span><b>${settings.taxiFuel.toFixed(1)} l</b>
       <span>Reserv ${settings.reserveMin} min</span><b>${T.reserve.toFixed(1)} l</b>
       <span>Minst ombord</span><b>${T.need.toFixed(1)} l</b>
-      <span>Användbart</span><b>${settings.fuelUsable} l (uthållighet ${fmtHM(T.endurance)})</b></div>`;
+      <span>Användbart</span><b>${settings.fuelUsable} l (max flygtid ${fmtHM(T.endurance)})</b></div>`;
     h += T.extra < 0 ? note('bad', `Bränslet räcker inte. Det saknas ${(-T.extra).toFixed(1)} l — planera tankstopp.`, 'fuel') : '';
 
     if (T.sun) {
