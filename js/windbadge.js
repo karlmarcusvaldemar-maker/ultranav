@@ -68,7 +68,11 @@ function place() {
   const chip = document.getElementById('shareChip');
   if (chip && chip !== watched && window.ResizeObserver) { watched = chip; new ResizeObserver(place).observe(chip); }
   if (!chip) setTimeout(place, 1000);
-  if (el) el.style.top = chip && !chip.hidden ? `${chip.offsetTop + chip.offsetHeight + 10}px` : '12px';
+  if (!el) return;
+  const shown = chip && !chip.hidden;
+  // telefon: bredvid delningsikonen; annars under delningsrutan
+  if (document.body.classList.contains('phone') && shown) { el.style.top = `${chip.offsetTop}px`; el.style.left = `${chip.offsetLeft + chip.offsetWidth + 8}px`; }
+  else { el.style.top = shown ? `${chip.offsetTop + chip.offsetHeight + 10}px` : '12px'; el.style.left = ''; }
 }
 
 function render() {

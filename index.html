@@ -22,15 +22,15 @@
   <header id="instruments">
     <button id="btnMenu" class="ibtn" aria-label="Meny"><i data-icon="menu" data-size="26"></i></button>
     <div class="inst"><span class="lbl">GS</span><span class="val" id="iGS">--</span><span class="unit" id="iGSu">kt</span></div>
-    <div class="inst"><span class="lbl">TRK</span><span class="val" id="iTRK">---</span><span class="unit">°</span></div>
+    <div class="inst i-trk"><span class="lbl">TRK</span><span class="val" id="iTRK">---</span><span class="unit">°</span></div>
     <div class="inst"><span class="lbl">ALT</span><span class="val" id="iALT">----</span><span class="unit" id="iALTu">ft</span></div>
     <div class="inst"><span class="lbl">AGL</span><span class="val" id="iAGL">----</span><span class="unit" id="iAGLu">ft</span></div>
     <div class="inst wide tappable" title="Välj aktiv sträcka"><span class="lbl">NÄSTA <i data-icon="chevronDown" data-size="12"></i></span><span class="val" id="iWP">—</span></div>
     <div class="inst"><span class="lbl">BRG</span><span class="val" id="iBRG">---</span><span class="unit">°</span></div>
     <div class="inst"><span class="lbl">DIST</span><span class="val" id="iDIST">--</span><span class="unit" id="iDISTu">NM</span></div>
     <div class="inst"><span class="lbl">ETE</span><span class="val" id="iETE">--:--</span></div>
-    <div class="inst"><span class="lbl">ETA</span><span class="val" id="iETA">--:--</span><span class="unit">Z</span></div>
-    <div class="inst"><span class="lbl">UTC</span><span class="val" id="iUTC">--:--</span></div>
+    <div class="inst i-eta"><span class="lbl">ETA</span><span class="val" id="iETA">--:--</span><span class="unit">Z</span></div>
+    <div class="inst i-utc"><span class="lbl">UTC</span><span class="val" id="iUTC">--:--</span></div>
   </header>
 
   <div id="mapwrap">
@@ -47,19 +47,24 @@
       </div>
       <div class="grp">
         <button id="btnEdit" title="Planera rutt"><i data-icon="route"></i><small>Rutt</small></button>
-        <button id="btnProfile" title="Terrängprofil längs rutten"><i data-icon="mountain"></i><small>Profil</small></button>
-        <button id="btnDraw" class="two" title="Rita och mät: avstånd, linjer, ytor och punkter"><i data-icon="drawMeasure"></i><small>Rita och<br>mät</small></button>
+        <button id="btnProfile" class="phone-more" title="Terrängprofil längs rutten"><i data-icon="mountain"></i><small>Profil</small></button>
+        <button id="btnDraw" class="two phone-more" title="Rita och mät: avstånd, linjer, ytor och punkter"><i data-icon="drawMeasure"></i><small>Rita och<br>mät</small></button>
       </div>
       <div class="grp">
-        <button id="btnLayers" title="Kartor och kartlager"><i data-icon="layers"></i><small>Kartor</small></button>
+        <button id="btnLayers" class="phone-more" title="Kartor och kartlager"><i data-icon="layers"></i><small>Kartor</small></button>
         <button id="btnNearest" title="Närmaste flygfält"><i data-icon="runway"></i><small>Närmast</small></button>
-        <button id="btnNotam" title="NOTAM på LFV:s drönarkarta — öppnas i ny flik"><i data-icon="alert"></i><small>NOTAM</small></button>
+        <button id="btnNotam" class="phone-more" title="NOTAM på LFV:s drönarkarta — öppnas i ny flik"><i data-icon="alert"></i><small>NOTAM</small></button>
       </div>
       <div class="grp zoom">
         <button id="btnZoomIn" title="Zooma in" aria-label="Zooma in"><i data-icon="plus" data-size="24"></i></button>
         <button id="btnZoomOut" title="Zooma ut" aria-label="Zooma ut"><i data-icon="minus" data-size="24"></i></button>
       </div>
+      <div class="grp hidegrp">
+        <button id="btnMore" title="Fler verktyg"><i data-icon="dots"></i><small>Mer</small></button>
+        <button id="btnHide" title="Dölj verktygen så att hela kartan syns"><i data-icon="chevronRight"></i><small>Dölj</small></button>
+      </div>
     </nav>
+    <button id="toolsTab" title="Dölj eller visa verktygen" aria-label="Dölj eller visa verktygen"><i data-icon="chevronLeft" data-size="22"></i></button>
 
     <!-- Lagerpanel -->
     <section id="layerPanel" class="popover hidden"></section>

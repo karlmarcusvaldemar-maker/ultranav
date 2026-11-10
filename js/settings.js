@@ -17,6 +17,8 @@ export const DEFAULT_TILES = {
 
 const DEFAULTS = {
   speedUnit: 'kt',        // 'kt' | 'kmh'
+  textScale: 1,           // textstorlek: 0.9 | 1 | 1.15 | 1.3 (allt utom kartan)
+  layout: 'auto',         // skärmlayout: 'auto' | 'tablet' | 'phone'
   windUnit: 'kt',         // vindhastighet: 'kt' | 'ms' | 'kmh'
   distUnit: 'nm',         // 'nm' | 'km'
   altUnit: 'ft',          // 'ft' | 'm'

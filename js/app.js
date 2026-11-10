@@ -41,6 +41,14 @@ function applyTheme() {
 applyTheme();
 applyIcons();
 
+// ---------- textstorlek och skärmlayout ----------
+function applyTextScale() { document.documentElement.style.setProperty('--ts', String(settings.textScale || 1)); }
+/** Telefonlayout: verktygen i en rad längst ner och mindre rutor. Automatiskt på små skärmar, eller valt under Inställningar. */
+const isPhone = () => settings.layout === 'phone' || (settings.layout !== 'tablet' && Math.min(innerWidth, innerHeight) < 500);
+function applyLayout() { document.body.classList.toggle('phone', isPhone()); map?.invalidateSize?.(); }
+applyTextScale();
+document.body.classList.toggle('phone', isPhone());
+
 // ---------- start ----------
 await lib.initLibrary(); // lokalt bibliotek (rutter, ritningar, kartmaterial, loggbok) före övriga moduler
 initMap();
@@ -123,6 +131,19 @@ fab('#btnNotam', () => window.open('https://dronechart.lfv.se/', '_blank', 'noop
 fab('#btnLayers', () => { const p = $('#layerPanel'); p.classList.toggle('hidden'); if (!p.classList.contains('hidden')) renderLayerPanel(); syncFab(); });
 fab('#btnZoomIn', () => map.zoomIn());
 fab('#btnZoomOut', () => map.zoomOut());
+// Dölj verktygen: knappraden, vindrutan och delningsrutan glider undan; fliken i kanten tar fram dem igen
+const setToolsHidden = (v) => { document.body.classList.toggle('tools-hidden', v); store.set('ulnav.toolsHidden', v); };
+setToolsHidden(store.get('ulnav.toolsHidden', false));
+fab('#btnHide', () => setToolsHidden(true));
+fab('#toolsTab', () => setToolsHidden(!document.body.classList.contains('tools-hidden')));
+// Telefon: verktyg som inte får plats i raden längst ner
+fab('#btnMore', () => {
+  const items = [['btnProfile', 'mountain', 'Terrängprofil'], ['btnDraw', 'drawMeasure', 'Rita och mät'], ['btnLayers', 'layers', 'Kartor och kartlager'],
+    ['btnNotam', 'alert', 'NOTAM'], ['btnHide', 'chevronRight', 'Dölj verktygen']];
+  modal(`<h3>Fler verktyg</h3><div class="morelist">${items.map(([id, i, t]) => `<button class="btn" data-more="${id}">${ic(i)}${t}</button>`).join('')}</div>`);
+  document.querySelectorAll('#modal [data-more]').forEach((b) => b.onclick = () => { $('#modal').classList.add('hidden'); $('#' + b.dataset.more).click(); });
+});
+window.addEventListener('resize', debounce(applyLayout, 200));
 fab('#btnMenu', () => toggleSide());
 fab('#btnCloseSide', () => toggleSide(false));
 fab('#modalClose', () => { if (!$('#modal').classList.contains('locked')) $('#modal').classList.add('hidden'); });
@@ -367,6 +388,12 @@ function renderSettingsTab(el) {
     <option value="night" ${s.theme === 'night' ? 'selected' : ''}>Natt (rött)</option></select></div>
   <div class="field" style="flex-direction:column;align-items:stretch"><span>Min symbol på kartan</span>
     <div class="symgrid">${Object.entries(SYMBOLS).map(([id, sy]) => `<button type="button" class="symbtn ${s.ownSymbol === id ? 'on' : ''}" data-sym="${id}" aria-pressed="${s.ownSymbol === id}">${symbolSvg(id, { size: 36 })}<span>${esc(sy.name)}</span></button>`).join('')}</div></div>
+  <div class="field"><span>Textstorlek</span><select data-k="textScale">
+    ${[[0.9, 'Liten'], [1, 'Normal'], [1.15, 'Stor'], [1.3, 'Extra stor']].map(([v, t]) => `<option value="${v}" ${(s.textScale || 1) === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+  <div class="field"><span>Skärmlayout<small>Telefon: verktygen i en rad längst ner och mindre rutor</small></span><select data-k="layout">
+    <option value="auto" ${!['tablet', 'phone'].includes(s.layout) ? 'selected' : ''}>Automatisk</option>
+    <option value="tablet" ${s.layout === 'tablet' ? 'selected' : ''}>Surfplatta</option>
+    <option value="phone" ${s.layout === 'phone' ? 'selected' : ''}>Telefon</option></select></div>
   <div class="field"><span>Terrängskuggning i vektorkarta</span><input type="checkbox" data-k="vectorHillshade" ${s.vectorHillshade ? 'checked' : ''}></div>
   <div class="field"><span>Linje framför flygplanet</span><select data-k="vectorMin">
     ${[...VECTOR_MINS].reverse().map((m) => `<option value="${m}" ${(s.vectorMin ?? 10) === m ? 'selected' : ''}>${m} min</option>`).join('')}</select></div>
@@ -449,12 +476,14 @@ function renderSettingsTab(el) {
     const k = inp.dataset.k;
     let v = inp.type === 'checkbox' ? inp.checked : inp.type === 'number' ? +inp.value : inp.value.trim();
     if (k === 'tas' || k === 'glideSpeed') v = spdIn(v);
-    if (k === 'vectorMin') v = +v;
+    if (k === 'vectorMin' || k === 'textScale') v = +v;
     if (k === 'aircraftReg') v = v.toUpperCase().slice(0, 12);
     if (k === 'cruiseAlt' || k === 'minClearance' || k === 'aglWarn') v = Math.max(0, Math.round(altIn(v)));
     if (k === 'arrivalRadius') v = distIn(v);
     saveSettings({ [k]: v });
     if (k === 'theme') applyTheme();
+    if (k === 'textScale') applyTextScale();
+    if (k === 'layout') applyLayout();
     if (k === 'openaipKey') { resetOpenAip(); map.fire('moveend'); }
     if (['tas', 'fuelBurn', 'variation', 'speedUnit', 'windUnit', 'distUnit', 'altUnit', 'minClearance'].includes(k)) recompute();
     if (['speedUnit', 'distUnit', 'altUnit'].includes(k)) renderSettingsTab(el);

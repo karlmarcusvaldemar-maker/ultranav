@@ -42,6 +42,8 @@ const P = {
   file: '<path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4"/>',
   dots: '<circle cx="5.5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="18.5" cy="12" r="1.2" fill="currentColor"/>',
   chevronDown: '<path d="M6 9l6 6 6-6"/>',
+  chevronLeft: '<path d="M15 6l-6 6 6 6"/>',
+  chevronRight: '<path d="M9 6l6 6-6 6"/>',
   arrowRight: '<path d="M4 12h15M13 6l6 6-6 6"/>',
   arrowUp: '<path d="M12 19V5M6 11l6-6 6 6"/>',
   arrowDown: '<path d="M12 5v14M6 13l6 6 6-6"/>',
