@@ -138,7 +138,7 @@ fab('#btnHide', () => setToolsHidden(true));
 fab('#toolsTab', () => setToolsHidden(!document.body.classList.contains('tools-hidden')));
 // Telefon: verktyg som inte får plats i raden längst ner
 fab('#btnMore', () => {
-  const items = [['btnProfile', 'mountain', 'Terrängprofil'], ['btnDraw', 'drawMeasure', 'Rita och mät'], ['btnLayers', 'layers', 'Kartor och kartlager'],
+  const items = [['btnProfile', 'mountain', 'Terrängprofil'], ['btnDraw', 'drawMeasure', 'Rita och mät'], ['btnNearest', 'runway', 'Närmaste fält'],
     ['btnNotam', 'alert', 'NOTAM'], ['btnHide', 'chevronRight', 'Dölj verktygen']];
   modal(`<h3>Fler verktyg</h3><div class="morelist">${items.map(([id, i, t]) => `<button class="btn" data-more="${id}">${ic(i)}${t}</button>`).join('')}</div>`);
   document.querySelectorAll('#modal [data-more]').forEach((b) => b.onclick = () => { $('#modal').classList.add('hidden'); $('#' + b.dataset.more).click(); });
