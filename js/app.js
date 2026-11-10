@@ -390,7 +390,7 @@ function renderSettingsTab(el) {
     <div class="symgrid">${Object.entries(SYMBOLS).map(([id, sy]) => `<button type="button" class="symbtn ${s.ownSymbol === id ? 'on' : ''}" data-sym="${id}" aria-pressed="${s.ownSymbol === id}">${symbolSvg(id, { size: 36 })}<span>${esc(sy.name)}</span></button>`).join('')}</div></div>
   <div class="field"><span>Textstorlek</span><select data-k="textScale">
     ${[[0.9, 'Liten'], [1, 'Normal'], [1.15, 'Stor'], [1.3, 'Extra stor']].map(([v, t]) => `<option value="${v}" ${(s.textScale || 1) === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-  <div class="field"><span>Skärmlayout<small>Telefon: verktygen i en rad längst ner och mindre rutor</small></span><select data-k="layout">
+  <div class="field"><span>Skärmlayout</span><select data-k="layout">
     <option value="auto" ${!['tablet', 'phone'].includes(s.layout) ? 'selected' : ''}>Automatisk</option>
     <option value="tablet" ${s.layout === 'tablet' ? 'selected' : ''}>Surfplatta</option>
     <option value="phone" ${s.layout === 'phone' ? 'selected' : ''}>Telefon</option></select></div>
