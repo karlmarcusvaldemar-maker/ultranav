@@ -37,7 +37,7 @@ const DEFAULTS = {
   cruiseAlt: 1500,        // ft MSL standard
   theme: 'dark',          // 'dark' | 'day' | 'night'
   openaipKey: '',
-  vectorHillshade: true,  // terrängskuggning i vektorkartor
+  vectorHillshade: true,  // ersatt av kartlagret Terrängskuggning; läses bara vid flytten (map.js, version 6)
   openaipAuth: 'query',
   openaipLimit: 50,       // sidstorlek som servern godtar (testas)
   openaipQuery: 'country',    // områdesfilter: 'pos' (dist i meter), 'poskm' eller 'bbox' — väljs av testknappen   // 'query' (apiKey i adressen, ingen CORS-förfrågan) eller 'header'

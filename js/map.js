@@ -1,7 +1,7 @@
 // Karta, baskartor, överlägg och lagerpanel
 import { settings, saveSettings, onSettings, oaipKey, proxyUrl } from './settings.js';
 import { store, esc, $, fetchX, toast } from './util.js';
-import { vectorLayer } from './vector.js';
+import { vectorLayer, setVectorShade } from './vector.js';
 import { hillshadeLayer } from './hillshade.js';
 import { ic } from './icons.js';
 
@@ -22,6 +22,8 @@ const state = store.get('ulnav.layers', { base: 'vecLiberty', overlays: ['airspa
   if (state.v < 4) { if (!state.overlays.includes('traffic')) state.overlays.push('traffic'); state.v = 4; store.set('ulnav.layers', state); }
   // Vindrutan (version 5) är påslagen från start — slås på en gång, därefter gäller användarens val
   if (state.v < 5) { if (!state.overlays.includes('windarrow')) state.overlays.push('windarrow'); state.v = 5; store.set('ulnav.layers', state); }
+  // Terrängskuggning (version 6): den tidigare inställningen för vektorkartan blir kartlagret — på om skuggningen var på
+  if (state.v < 6) { if (settings.vectorHillshade !== false && !state.overlays.includes('hillshade')) state.overlays.push('hillshade'); state.v = 6; store.set('ulnav.layers', state); }
 }
 const save = () => store.set('ulnav.layers', state);
 
@@ -45,11 +47,14 @@ export const OVERLAYS = {
   radar: { name: 'Nederbördsradar', opacity: 0.6, make: makeRadar },
   protected: { name: 'Skyddade områden Natur', opacity: 0.7, make: makeProtected },
   wind: { name: 'Vindkraftverk', opacity: 1, make: makeWind },
-  hillshade: { name: 'Terrängskuggning', opacity: 0.6, make: () => hillshadeLayer({ opacity: state.opacity.hillshade ?? 0.6 }) },
+  // I vektorkartan ritas skuggningen in i själva kartan (vector.js); på övriga baskartor läggs den ovanpå
+  hillshade: { name: 'Terrängskuggning', opacity: 0.6, make: () => (isVector() ? L.layerGroup() : hillshadeLayer({ opacity: state.opacity.hillshade ?? 0.6 })) },
   clouds: { name: 'Molnbild', opacity: 0.55, make: makeClouds },
 };
 
 let baseLayer;
+const isVector = () => state.base === 'vecLiberty';
+let shade = null; // om vektorkartan just nu är ritad med inbyggd skuggning
 const overlayLayers = {};  // id → aktivt lager
 const external = {};       // vektorlager som andra moduler registrerar
 
@@ -77,7 +82,7 @@ export function initMap() {
   setBase(state.base);
   for (const id of state.overlays) if (OVERLAYS[id]) enableOverlay(id, true);
   onSettings((s, patch) => {
-    if (patch.tiles || 'vectorHillshade' in patch) setBase(state.base);
+    if (patch.tiles) setBase(state.base);
     if ('openaipKey' in patch || patch.tiles) for (const id of Object.keys(OVERLAYS)) if (overlayLayers[id]) { enableOverlay(id, false); enableOverlay(id, true); }
   });
   return map;
@@ -93,9 +98,12 @@ export const overlaySources = async () => ({
 export function setBase(id) {
   if (!BASES[id]) id = 'vecLiberty';
   if (baseLayer) map.removeLayer(baseLayer);
+  state.base = id; save();
+  shade = state.overlays.includes('hillshade'); setVectorShade(shade);
   baseLayer = BASES[id].make().addTo(map);
   watchErrors(baseLayer, BASES[id].name);
-  state.base = id; save();
+  // skuggningen byter form med baskartan: inbyggd i vektorkartan, eget lager ovanpå de andra
+  if (overlayLayers.hillshade) { map.removeLayer(overlayLayers.hillshade); delete overlayLayers.hillshade; enableOverlay('hillshade', true); }
 }
 export const currentBase = () => state.base;
 
@@ -116,6 +124,11 @@ function watchErrors(layer, name) {
 
 function enableOverlay(id, on) {
   const def = OVERLAYS[id];
+  // Vektorkartan ritar om sig med eller utan inbyggd skuggning när lagret slås av eller på
+  if (id === 'hillshade' && baseLayer && isVector() && shade !== on) {
+    shade = on; setVectorShade(on);
+    map.removeLayer(baseLayer); baseLayer = BASES[state.base].make().addTo(map); watchErrors(baseLayer, BASES[state.base].name);
+  }
   if (on) {
     if (overlayLayers[id]) return;
     if (def.needsKey && !oaipKey()) { toast('Kartlagret är inte tillgängligt just nu'); return false; }
@@ -251,7 +264,7 @@ export function renderLayerPanel() {
     const raster = !!OVERLAYS[id];
     const op = Math.round((state.opacity[id] ?? OVERLAYS[id]?.opacity ?? 1) * 100);
     h += `<div class="lrow"><label><span>${esc(o.name)}</span><input type="checkbox" class="switch" value="${id}" ${on ? 'checked' : ''}></label>
-      ${raster && on ? `<input type="range" min="20" max="100" value="${op}" data-op="${id}" aria-label="Genomskinlighet ${esc(o.name)}">` : ''}</div>`;
+      ${raster && on && !(id === 'hillshade' && isVector()) ? `<input type="range" min="20" max="100" value="${op}" data-op="${id}" aria-label="Genomskinlighet ${esc(o.name)}">` : ''}</div>`;
   }
   if (custom) {
     h += '<h3>Eget kartmaterial</h3>';
