@@ -47,9 +47,13 @@ function defineLayer() {
   });
 }
 
+// Styrs av kartlagret Terrängskuggning (map.js): i vektorkartan ritas skuggningen in under texten
+let shadeOn = true;
+export const setVectorShade = (v) => { shadeOn = !!v; };
+
 /** Lägg till terrängskuggning från AWS Terrain Tiles (Terrarium) under första textlagret */
 function addHillshade(gl) {
-  if (!settings.vectorHillshade || gl.getSource('ulnav-dem')) return;
+  if (!shadeOn || gl.getSource('ulnav-dem')) return;
   gl.addSource('ulnav-dem', { type: 'raster-dem', tiles: [settings.tiles.terrain], encoding: 'terrarium', tileSize: 256, maxzoom: 14,
     attribution: 'Höjddata: AWS Terrain Tiles' });
   const firstSymbol = gl.getStyle().layers.find((l) => l.type === 'symbol')?.id;

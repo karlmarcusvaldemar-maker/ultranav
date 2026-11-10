@@ -394,7 +394,6 @@ function renderSettingsTab(el) {
     <option value="auto" ${!['tablet', 'phone'].includes(s.layout) ? 'selected' : ''}>Automatisk</option>
     <option value="tablet" ${s.layout === 'tablet' ? 'selected' : ''}>Surfplatta</option>
     <option value="phone" ${s.layout === 'phone' ? 'selected' : ''}>Telefon</option></select></div>
-  <div class="field"><span>Terrängskuggning i vektorkarta</span><input type="checkbox" data-k="vectorHillshade" ${s.vectorHillshade ? 'checked' : ''}></div>
   <div class="field"><span>Linje framför flygplanet</span><select data-k="vectorMin">
     ${[...VECTOR_MINS].reverse().map((m) => `<option value="${m}" ${(s.vectorMin ?? 10) === m ? 'selected' : ''}>${m} min</option>`).join('')}</select></div>
 
