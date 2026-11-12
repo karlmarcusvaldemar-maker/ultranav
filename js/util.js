@@ -154,6 +154,36 @@ export async function fetchX(url, { timeout = 20000, proxy = '', headers, as = '
   }
 }
 
+// ---------- kontroll av delat innehåll ----------
+// Innehåll från en delningslänk kommer från någon annan: släpp bara igenom väl formade värden, så att text
+// och siffror aldrig kan tolkas som HTML eller skript någonstans i appen.
+const fin = (v, lo, hi) => (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : null);
+const str = (v, n) => String(v ?? '').slice(0, n);
+const ll = (p) => (p && fin(p.lat, -90, 90) != null && fin(p.lon, -180, 180) != null ? { lat: p.lat, lon: p.lon } : null);
+export function cleanShared(kind, d) {
+  if (!d || typeof d !== 'object') return null;
+  if (kind === 'route') {
+    const wps = (Array.isArray(d.wps) ? d.wps : []).slice(0, 200).map((w) => {
+      const p = ll(w);
+      return p && { ...p, name: str(w.name, 40), alt: fin(w.alt, -2000, 60000) ?? 1500, elevFt: fin(w.elevFt, -2000, 30000) };
+    }).filter(Boolean);
+    return wps.length ? { wps } : null;
+  }
+  if (kind === 'drawing') {
+    const coords = (Array.isArray(d.coords) ? d.coords : []).slice(0, 5000).map(ll).filter(Boolean);
+    return coords.length && ['point', 'line', 'polygon'].includes(d.type) ? { type: d.type, coords, color: str(d.color, 20) } : null;
+  }
+  if (kind === 'layer') {
+    if (d.type === 'wms') return /^https:\/\//.test(d.url) ? { type: 'wms', url: str(d.url, 500), layers: str(d.layers, 300), format: str(d.format, 40) || 'image/png', version: str(d.version, 10) || '1.3.0', opacity: fin(d.opacity, 0, 1) ?? 0.8 } : null;
+    const g = d.geojson;
+    if (!g || !Array.isArray(g.features)) return null;
+    const features = g.features.filter((f) => f && typeof f === 'object' && f.geometry && typeof f.geometry.type === 'string' && Array.isArray(f.geometry.coordinates))
+      .map((f) => ({ type: 'Feature', geometry: { type: f.geometry.type, coordinates: f.geometry.coordinates }, properties: f.properties && typeof f.properties === 'object' ? f.properties : {} }));
+    return { type: 'geojson', geojson: { type: 'FeatureCollection', features }, color: str(d.color, 20) };
+  }
+  return d; // flygningar: siffrorna kontrolleras där de visas (logbook.js)
+}
+
 // ---------- UI ----------
 let toastT;
 export function toast(msg, ms = 3000) {

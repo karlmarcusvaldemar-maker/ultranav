@@ -9,7 +9,7 @@ import { initCustomLayers, addSharedLayer } from './customlayers.js';
 import { renderLogbook, showFlight } from './logbook.js';
 import { initFlight, renderFlightCard, onFlight, flightActive } from './flight.js';
 import { initLogin, setGateNote } from './login.js';
-import { $, $$, esc, toast, modal, note, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store } from './util.js';
+import { $, $$, esc, toast, modal, note, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store, cleanShared } from './util.js';
 import { initMap, map, renderLayerPanel, testCurrentBase } from './map.js';
 import { initAero, actions, airportHtml, mapInfoPopup, openAirport, airportNear } from './aero.js';
 import { initDraw, drawActive, drawTap, renderDrawTab, drawActions, onDrawings, openDrawBar, closeDrawBar, drawBarOpen, syncBar, readout } from './draw.js';
@@ -113,7 +113,15 @@ map.on('click', async (e) => {
 
 // ---------- snabbknappar ----------
 const fab = (id, fn) => $(id).addEventListener('click', fn);
-fab('#btnGps', () => (nav.tracking ? stopGps() : startGps()));
+fab('#btnGps', () => {
+  if (!nav.tracking) return startGps();
+  // Under flygning stoppar GPS-knappen även loggning och delning: fråga först
+  if (!flightActive() && !((nav.pos?.gsKt || 0) > 30)) return stopGps();
+  modal(`<h3>Stänga av GPS:en?</h3><p>Navigeringen${flightActive() ? ', loggningen av flygningen' : ''}${settings.shareTraffic ? ' och positionsdelningen' : ''} stannar.</p>
+    <div class="btnrow"><button class="btn danger" id="gpsOff">Stäng av GPS</button><button class="btn primary" id="gpsKeep">Behåll GPS</button></div>`);
+  $('#gpsOff').onclick = () => { $('#modal').classList.add('hidden'); stopGps(); };
+  $('#gpsKeep').onclick = () => $('#modal').classList.add('hidden');
+});
 fab('#btnFollow', () => setFollow(!nav.follow));
 fab('#btnOrient', () => {
   if (!map.setBearing) return toast('Rotation stöds inte');
@@ -214,6 +222,7 @@ onAirports(() => { if (currentTab === 'fields') renderTab(); });
 function setI(id, v, alert = false) { const e = $(id); e.textContent = v; e.parentElement.classList.toggle('alert', alert); }
 function updateInstruments() {
   const o = instrumentData();
+  $('#instruments').classList.toggle('stale', !!nav.stale);
   setI('#iGS', o.gs != null ? Math.round(spdOut(o.gs)) : '--');
   $('#iGSu').textContent = spdUnit();
   setI('#iTRK', o.trk != null ? fmtDeg(o.trk - settings.variation) : '---');
@@ -242,27 +251,29 @@ $('#iWP').parentElement.addEventListener('click', () => {
 function showNearest() {
   const ref = nav.pos || { lat: map.getCenter().lat, lon: map.getCenter().lng };
   const list = nearestAirports(ref, 12);
-  window.ulnav._near = list.map((x) => x.a);
+  near.M = list.map((x) => x.a);
   modal(`<h3>Närmaste fält ${nav.pos ? 'från din position' : '<span class="muted">(från kartans mitt — GPS av)</span>'}</h3>
     ${nav.pos && nav.aglFt ? note('ok', `Glidräckvidd ≈ <b>${fmtDist(nav.aglFt * settings.glideRatio / 6076)}</b> (1:${settings.glideRatio}, ${fmtAlt(nav.aglFt)} AGL, i vindstilla)`, 'triangle') : ''}
-    ${list.length ? `<ul class="aplist">${list.map(({ a, d }, i) => apRow(a, d, bearing(ref, a), i, true)).join('')}</ul>` : '<div class="muted">Inga fält inlästa ännu.</div>'}`);
+    ${list.length ? `<ul class="aplist">${list.map(({ a, d }, i) => apRow(a, d, bearing(ref, a), i, true, 'M')).join('')}</ul>` : '<div class="muted">Inga fält inlästa ännu.</div>'}`);
 }
-function apRow(a, d, brg, i, big) {
+// Närmast (M) och fliken Fält (T) har var sin lista, så att en uppdatering av den ena aldrig flyttar den andras knappar
+const near = { M: [], T: [] };
+function apRow(a, d, brg, i, big, k) {
   const r = longestRwy(a);
   return `<li><div class="info"><b>${a.ul ? '<span class="tag ul">UL</span>' : ''}${esc(a.name)}</b>
     <span>${esc(a.icao || '')} ${esc(a.type)}${r ? ` · ${esc(r.des)} ${r.lenM ? r.lenM + ' m' : ''} ${esc(r.surf)}` : ''}${a.freqs[0] ? ' · ' + esc(a.freqs[0].mhz) : ''}</span></div>
     <div class="dist">${distOut(d).toFixed(1)}<small>${distUnit()} · ${fmtDeg(brg - settings.variation)}°M</small></div>
-    <button class="btn small ${big ? 'primary' : ''}" onclick="window.ulnav.dtoNear(${i})" aria-label="Direkt till">${ic('arrowRight', 20)}</button>
-    <button class="btn small" onclick="window.ulnav.showNear(${i})" aria-label="Info">${ic('info', 20)}</button></li>`;
+    <button class="btn small ${big ? 'primary' : ''}" onclick="window.ulnav.dtoNear('${k}',${i})" aria-label="Direkt till">${ic('arrowRight', 20)}</button>
+    <button class="btn small" onclick="window.ulnav.showNear('${k}',${i})" aria-label="Info">${ic('info', 20)}</button></li>`;
 }
-window.ulnav.dtoNear = (i) => { const a = window.ulnav._near[i]; $('#modal').classList.add('hidden'); directTo({ lat: a.lat, lon: a.lon, name: a.icao || a.name }); };
-window.ulnav.showNear = (i) => {
-  const a = window.ulnav._near[i]; $('#modal').classList.add('hidden');
+window.ulnav.dtoNear = (k, i) => { const a = near[k]?.[i]; if (!a) return; $('#modal').classList.add('hidden'); directTo({ lat: a.lat, lon: a.lon, name: a.icao || a.name }); };
+window.ulnav.showNear = (k, i) => {
+  const a = near[k]?.[i]; if (!a) return; $('#modal').classList.add('hidden');
   if (window.innerWidth < 1000) toggleSide(false);
   map.setView([a.lat, a.lon], Math.max(map.getZoom(), 11));
   openAirport(a);
 };
-window.ulnav.addNear = (i) => { const a = window.ulnav._near[i]; addWaypoint({ lat: a.lat, lon: a.lon, name: a.icao || a.name, elevFt: a.elevFt }); toast('+ ' + (a.icao || a.name)); };
+window.ulnav.addNear = (i) => { const a = near.T[i]; if (!a) return; addWaypoint({ lat: a.lat, lon: a.lon, name: a.icao || a.name, elevFt: a.elevFt }); toast('+ ' + (a.icao || a.name)); };
 
 // ---------- flik: fält ----------
 let fieldQuery = '';
@@ -276,9 +287,9 @@ function renderFieldsTab(el) {
     const q = $('#fq', el).value;
     fieldQuery = q;
     const list = q.trim() ? searchAirports(q).map((a) => ({ a, d: distNM(ref, a) })) : nearestAirports(ref, 30);
-    window.ulnav._near = list.map((x) => x.a);
+    near.T = list.map((x) => x.a);
     $('#fres', el).innerHTML = `<h3>${q.trim() ? 'Sökresultat' : 'Närmast ' + (nav.pos ? 'din position' : 'kartans mitt')}</h3>
-      <ul class="aplist">${list.map(({ a, d }, i) => apRow(a, d, bearing(ref, a), i, false).replace('</li>', `<button class="btn small" onclick="window.ulnav.addNear(${i})">+</button></li>`)).join('') || '<li class="muted">Inga träffar</li>'}</ul>`;
+      <ul class="aplist">${list.map(({ a, d }, i) => apRow(a, d, bearing(ref, a), i, false, 'T').replace('</li>', `<button class="btn small" onclick="window.ulnav.addNear(${i})">+</button></li>`)).join('') || '<li class="muted">Inga träffar</li>'}</ul>`;
   };
   $('#fq', el).addEventListener('input', debounce(draw, 200));
   draw();
@@ -349,7 +360,7 @@ function renderWxTab(el) {
 async function routeForecast(box) {
   const w = route.wps, dep = depDate();
   const legs = getLegs();
-  const eta = legs.length ? legs[legs.length - 1].eta : dep;
+  const eta = (legs.length && legs[legs.length - 1].eta) || dep; // null när en sträcka inte går att flyga (för stark motvind)
   try {
     const [a, b] = await fetchForecast([w[0], w[w.length - 1]]);
     const row = (name, fc, t) => {
@@ -508,7 +519,13 @@ function renderSettingsTab(el) {
   $('#shareBtn', el).onclick = () => openShareDialog();
   el.querySelectorAll('[data-sym]').forEach((b) => b.onclick = () => { saveSettings({ ownSymbol: b.dataset.sym }); renderSettingsTab(el); toast(`Symbol: ${SYMBOLS[b.dataset.sym].name}`); });
   $('#forceUpd', el).onclick = async () => {
-    // Töm appens programcache (inte kartor eller dina data) och ladda om från servern
+    // Töm appens programcache (inte kartor eller dina data) och ladda om från servern.
+    // Utan nät skulle appen inte gå att starta igen — därför bara med fungerande nät och utan pågående flygning.
+    if (!navigator.onLine) return toast('Kräver internet — annars går appen inte att starta igen');
+    if (nav.tracking || flightActive()) return toast('Stäng av GPS:en och avsluta flygningen först');
+    if (!confirm('Ladda om appen från servern? Kartor och dina data finns kvar.')) return;
+    try { const r = await fetch('sw.js', { cache: 'no-store' }); if (!r.ok) throw new Error(); }
+    catch { return toast('Servern svarar inte — försök igen när du har bättre nät'); }
     const keys = await caches.keys();
     await Promise.all(keys.filter((k) => k.startsWith('ulnav-app')).map((k) => caches.delete(k)));
     const regs = await navigator.serviceWorker?.getRegistrations?.() || [];
@@ -585,9 +602,12 @@ function openTab(tab) {
       <div class="btnrow"><button class="btn primary" id="shImp">${ic('download')}Spara i min Ultranav</button></div>`);
     $('#shImp').onclick = async () => {
       const id = lib.newId();
-      if (it.kind === 'route') { await lib.put('route', { id, name: it.name, data: it.data }); setRoute({ name: it.name, ...it.data }); fitRoute(); }
-      else if (it.kind === 'drawing') { await lib.put('drawing', { id, name: it.name, data: it.data }); }
-      else if (it.kind === 'layer') await addSharedLayer(it.name, it.data);
+      const name = String(it.name ?? '').slice(0, 80);
+      const data = cleanShared(it.kind, it.data);
+      if (!data) { toast('Det delade innehållet kunde inte läsas'); return; }
+      if (it.kind === 'route') { await lib.put('route', { id, name, data }); setRoute({ name, ...data }); fitRoute(); }
+      else if (it.kind === 'drawing') { await lib.put('drawing', { id, name, data }); }
+      else if (it.kind === 'layer') await addSharedLayer(name, data);
       else if (it.kind === 'flight') { await lib.put('flight', { id, name: it.name, data: { ...it.data, imported: true } }); showFlight(id); } // räknas inte i egen flygtid
       $('#modal').classList.add('hidden'); setGateNote(''); toast(`${it.name} är sparad`);
     };

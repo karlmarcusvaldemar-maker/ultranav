@@ -203,7 +203,7 @@ function zoomTo(id) {
 }
 function manage(id) {
   const l = lib.get('layer', id); if (!l) return;
-  const n = l.data.type === 'geojson' ? `${l.data.geojson.features.length} objekt` : `WMS: ${esc(l.data.layers)}`;
+  const n = l.data.type === 'geojson' ? `${Number(l.data.geojson?.features?.length) || 0} objekt` : `WMS: ${esc(l.data.layers)}`;
   modal(`<h3>${esc(l.name)}</h3><div class="muted">${n}${l.data.localOnly ? ' · sparas bara på den här enheten (för stort för molnet)' : ''}${l.share ? ' · delad' : ''}</div>
     <div class="btnrow">
       ${l.data.type === 'geojson' ? `<button class="btn" id="clZoom">${ic('search')}Visa på kartan</button><button class="btn" id="clColor">${ic('edit')}Byt färg</button>` : ''}

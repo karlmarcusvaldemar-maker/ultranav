@@ -164,12 +164,16 @@ function computeLegs() {
     }
     const w = windTriangle(tc, tas, wind?.dir, wind?.spd);
     const gs = isFinite(w.gs) && w.gs > 5 ? w.gs : NaN;
-    const ete = d / (gs || tas);
+    // Med vind men utan fart framåt går sträckan inte att flyga: räkna inte som vindstilla
+    const noGs = !!wind && !isFinite(gs);
+    const ete = noGs ? Infinity : d / (gs || tas);
     const mt = norm360(tc - settings.variation), mh = norm360(w.th - settings.variation);
     cum += d; t += ete;
-    const terr = profile.filter((s) => s.leg === i).reduce((m, s) => Math.max(m, s.ft ?? 0), 0);
-    legs.push({ i, from: a, to: b, d, tc, mt, wind, wca: w.wca, th: w.th, mh, gs, ete, fuel: ete * settings.fuelBurn, cum, t,
-      eta: new Date(dep.getTime() + t * 3600e3), terr: profile.length ? terr : null,
+    const legS = profile.filter((s) => s.leg === i);
+    const terr = legS.reduce((m, s) => Math.max(m, s.ft ?? 0), 0);
+    const terrUnknown = legS.some((s) => s.ft == null); // ingen höjddata för delar av sträckan
+    legs.push({ i, from: a, to: b, d, tc, mt, wind, wca: w.wca, th: w.th, mh, gs, ete, fuel: ete * settings.fuelBurn, cum, t, noGs,
+      eta: isFinite(t) ? new Date(dep.getTime() + t * 3600e3) : null, terr: profile.length ? terr : null, terrUnknown,
       lowClear: profile.length ? b.alt - terr < settings.minClearance : false });
   }
 }
@@ -254,14 +258,18 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
     }
     h += `<tr class="tot"><td>Totalt</td><td></td><td></td><td></td><td></td><td>${distOut(T.d).toFixed(1)}</td><td></td><td>${fmtHM(T.t)}</td><td>${fmtUTC(T.eta)}Z</td></tr></table>`;
     if (!fc) h += '<div class="muted">Utan vind — prognosen kunde inte hämtas.</div>';
+    const blocked = legs.filter((l) => l.noGs);
+    if (blocked.length) h += note('bad', `Vinden är starkare än flygplanets fart på: ${blocked.map((l) => esc(l.to.name)).join(', ')}. Sträckan går inte att flyga med marschfarten ${Math.round(spdOut(settings.tas))} ${u}.`);
+    const lit = (v) => (isFinite(v) ? v.toFixed(1) + ' l' : '—');
 
     h += `<h3>Bränsle (liter)</h3><div class="kv">
-      <span>Färd</span><b>${T.trip.toFixed(1)} l</b>
+      <span>Färd</span><b>${lit(T.trip)}</b>
       <span>Taxi</span><b>${settings.taxiFuel.toFixed(1)} l</b>
-      <span>Reserv ${settings.reserveMin} min</span><b>${T.reserve.toFixed(1)} l</b>
-      <span>Minst ombord</span><b>${T.need.toFixed(1)} l</b>
+      <span>Reserv ${settings.reserveMin} min</span><b>${lit(T.reserve)}</b>
+      <span>Minst ombord</span><b>${lit(T.need)}</b>
       <span>Användbart</span><b>${settings.fuelUsable} l (max flygtid ${fmtHM(T.endurance)})</b></div>`;
-    h += T.extra < 0 ? note('bad', `Bränslet räcker inte. Det saknas ${(-T.extra).toFixed(1)} l — planera tankstopp.`, 'fuel') : '';
+    h += !isFinite(T.extra) ? note('bad', 'Bränslet kan inte beräknas — en sträcka har för stark motvind.', 'fuel')
+      : T.extra < 0 ? note('bad', `Bränslet räcker inte. Det saknas ${(-T.extra).toFixed(1)} l — planera tankstopp.`, 'fuel') : '';
 
     if (T.sun) {
       const s = T.sun;
@@ -270,6 +278,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
         <span>Civil skymning</span><b>${fmtUTC(s.civilDusk)}Z (${fmtLocal(s.civilDusk)} lokal)</b><span>Soluppgång</span><b>${fmtUTC(s.sunrise)}Z</b></div>
         ${late ? note('bad', 'Beräknad ankomst efter solnedgång.', 'moon') : ''}`;
     }
+    if (legs.some((l) => l.terrUnknown)) h += note('warn', `Terrängdata saknas för delar av rutten (${legs.filter((l) => l.terrUnknown).map((l) => esc(l.to.name)).join(', ')}) — terrängmarginalen kan inte kontrolleras där. Spara rutten offline med nät för att hämta höjddata.`);
     const low = legs.filter((l) => l.lowClear);
     if (low.length) h += note('warn', `Under ${fmtAlt(settings.minClearance)} terrängmarginal på: ${low.map((l) => `${esc(l.to.name)} (terräng ${fmtAlt(l.terr)})`).join(', ')}. Höjddata saknar master och byggnader.`);
 
@@ -289,7 +298,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
     <button class="btn" id="rRev">${ic('swap')}Vänd</button><button class="btn" id="rSave">${ic('save')}Spara</button>
     <button class="btn" id="rGpx">${ic('download')}Exportera GPX</button><label class="btn">${ic('upload')}Importera GPX<input type="file" id="rImp" accept=".gpx,application/gpx+xml,text/xml" hidden></label>
     <button class="btn danger" id="rClr">${ic('trash')}Rensa</button></div>`;
-  if (saved.length) h += '<h3>Sparade rutter</h3><ul class="aplist">' + saved.map((r) => `<li><div class="info"><b>${esc(r.name)}</b><span>${r.data.wps.length} punkter${r.share ? ' · delad' : ''}</span></div>
+  if (saved.length) h += '<h3>Sparade rutter</h3><ul class="aplist">' + saved.map((r) => `<li><div class="info"><b>${esc(r.name)}</b><span>${Number(r.data?.wps?.length) || 0} punkter${r.share ? ' · delad' : ''}</span></div>
     <button class="btn small" data-load="${r.id}">Öppna</button>
     <button class="btn small icon" data-share="${r.id}" aria-label="Dela">${ic('share')}</button>
     <button class="btn small icon danger" data-rm="${r.id}" aria-label="Ta bort">${ic('trash')}</button></li>`).join('') + '</ul>';
