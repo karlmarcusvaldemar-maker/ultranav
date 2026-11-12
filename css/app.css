@@ -841,7 +841,7 @@ body.night .rwywind tr.best td:first-child { color: #ff8a70; }
 .livedest h3 { margin-top: 0; }
 .livedest b.low { color: var(--warn); }
 
-/* ---------- vinter på startsidan (december–mars) ---------- */
+/* ---------- vinter på startsidan (november–april) ---------- */
 .scene .skis, .scene .icefisher, .scene .sled, .scene .snowfall { display: none; }
 .scene.winter .float, .scene.winter .rower, .scene.winter .ring, .scene.winter .ripple-static, .scene.winter .pier-ripple,
 .scene.winter .shimmer, .scene.winter .birds, .scene.winter .bear, .scene.winter .club-flower { display: none; }
@@ -872,7 +872,16 @@ body.night .rwywind tr.best td:first-child { color: #ff8a70; }
 .scene .icefisher .cap { fill: #b3261e; }
 /* skotern kör över isen på natten, med strålkastare */
 .scene.winter:not(.day) .sled { display: inline; animation: scSled 14s linear infinite; }
-.scene .sled-body { fill: #b3261e; } .scene .sled-ski { fill: none; stroke: #1b2633; stroke-width: 1.6; stroke-linecap: round; }
+.scene .sl-body { fill: #c62d24; } .scene .sl-stripe { fill: none; stroke: #f4f0e6; stroke-width: 1; stroke-linecap: round; }
+.scene .sl-track { fill: #1b2633; } .scene .sl-wheel { fill: #5d6b7a; }
+.scene .sl-ski, .scene .sl-strut { fill: none; stroke: #1b2633; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.scene .sl-glass { fill: #a9d4ee; opacity: .75; } .scene .sl-seat { fill: #11161d; }
+.scene .sl-rider { fill: #24364a; } .scene .sl-arm, .scene .sl-leg { fill: none; stroke: #24364a; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.scene .sl-helmet { fill: #f2b632; } .scene .sl-visor { fill: #11161d; }
+.scene .sl-tail { fill: #ff4a3d; }
+.scene .sl-spray { fill: none; stroke: #e8f0f7; stroke-width: 1.2; stroke-linecap: round; opacity: .7; }
+.scene.winter:not(.day) .sl-spray { animation: scSpray .5s ease-in-out infinite alternate; }
+@keyframes scSpray { from { opacity: .25; } to { opacity: .8; } }
 .scene .headlight { fill: #fff6c8; } .scene .beam { fill: #fff6c8; opacity: .18; }
 @keyframes scSled { 0% { transform: translateX(380px); opacity: 0; } 6% { opacity: 1; } 94% { opacity: 1; } 100% { transform: translateX(800px); opacity: 0; } }
 /* snöfall: två lager som faller i olika takt */

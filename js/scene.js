@@ -172,11 +172,22 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
     <circle class="head" cx="0" cy="-12.5" r="2.6"/><path class="cap" d="M-3 -13 Q0 -17.5 3 -13 Z"/><circle class="cap" cx="0" cy="-16.6" r="1.2"/>
     <path class="rodp" d="M2 -6 L11 -3"/><path class="fline" d="M11 -3 L12 3"/>
   </g>
-  <g class="sled"><g transform="translate(0 728)">
-    <path class="beam" d="M14 -2 L70 -12 L70 8 Z"/>
-    <path class="sled-body" d="M-10 0 H12 Q16 0 16 -3 L12 -5 H2 L-2 -9 H-6 L-8 -5 H-10 Z"/>
-    <path class="sled-ski" d="M-12 2 H14 Q18 2 18 0"/>
-    <circle class="headlight" cx="15" cy="-3" r="1.4"/>
+  <g class="sled"><g transform="translate(0 730) scale(1.15)">
+    <path class="beam" d="M23 -6 L90 -18 L90 8 Z"/>
+    <path class="sl-spray" d="M-17 0 q-5 -5 -11 -3 M-16 -2 q-4 -6 -9 -6 M-18 2 q-6 -2 -10 1"/>
+    <rect class="sl-track" x="-16" y="-3" width="21" height="5.5" rx="2.75"/>
+    <circle class="sl-wheel" cx="-13" cy="-0.2" r="1.6"/><circle class="sl-wheel" cx="-5.5" cy="-0.2" r="1.6"/><circle class="sl-wheel" cx="2" cy="-0.2" r="1.6"/>
+    <path class="sl-strut" d="M15 -3 L16 3"/>
+    <path class="sl-ski" d="M9 3.2 H23 Q27 3.2 27.5 0"/>
+    <path class="sl-body" d="M-16 -3 L-15 -8 H-1 L7 -11 L16 -10.5 L23 -6 L23.5 -2.5 L15 -2 L5 -3 Z"/>
+    <path class="sl-stripe" d="M-14 -5.2 H4 L14 -6.5 L21 -5"/>
+    <path class="sl-glass" d="M6 -11 L9 -16.5 L12.5 -16 L11 -10.8 Z"/>
+    <path class="sl-seat" d="M-15 -8 L-15 -10 Q-8 -11.5 -1 -10 L-1 -8 Z"/>
+    <path class="sl-rider" d="M-9 -10 L-5 -19.5 Q-2 -21 1 -19 L1 -10 Z"/>
+    <path class="sl-arm" d="M-1 -17.5 L6 -13.5 L9 -13"/>
+    <path class="sl-leg" d="M-8 -10 L-3 -6.5 L3 -6.5"/>
+    <circle class="sl-helmet" cx="-2" cy="-22.5" r="3"/><path class="sl-visor" d="M-0.5 -24 L1.8 -23.2 L1.6 -21.2 L-0.5 -21.6 Z"/>
+    <circle class="headlight" cx="22.5" cy="-6" r="1.5"/><rect class="sl-tail" x="-16.6" y="-7.4" width="1.6" height="2" rx=".5"/>
   </g></g>
   <!-- bryggan går från stranden en bit ut i sjön -->
   <path class="pier" d="M566 767 L577 767 L599 744 L589 744 Z"/>
