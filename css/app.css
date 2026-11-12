@@ -870,20 +870,30 @@ body.night .rwywind tr.best td:first-child { color: #ff8a70; }
 .scene.winter.day .icefisher { display: inline; }
 .scene .icehole { fill: #20384d; } .scene .stool { fill: none; stroke: #6c5a46; stroke-width: 1.2; stroke-linecap: round; }
 .scene .icefisher .cap { fill: #b3261e; }
-/* skotern kör över isen på natten, med strålkastare */
-.scene.winter:not(.day) .sled { display: inline; animation: scSled 14s linear infinite; }
+/* skotern: parkerad vid stugan, kör på dagen ut till isfiskaren, stannar en stund och kör hem */
+.scene.winter .sled { display: inline; transform: translate(532px, 783px) scaleX(-1); }
+.scene.winter.day .sled { animation: scSledTrip 8.5s ease-in-out both; }
+.scene.winter:not(.day) .sl-spray { display: none; }
+@keyframes scSledTrip {
+  0%, 8% { transform: translate(532px, 783px) scaleX(-1); }
+  9% { transform: translate(532px, 783px) scaleX(1); }
+  20% { transform: translate(538px, 748px) scaleX(1); }
+  32% { transform: translate(582px, 711px) scaleX(1); }
+  42%, 58% { transform: translate(660px, 718px) scaleX(1); }
+  60% { transform: translate(660px, 718px) scaleX(-1); }
+  70% { transform: translate(582px, 711px) scaleX(-1); }
+  82% { transform: translate(538px, 748px) scaleX(-1); }
+  92%, 100% { transform: translate(532px, 783px) scaleX(-1); }
+}
+/* skoterns färger */
 .scene .sl-body { fill: #c62d24; } .scene .sl-stripe { fill: none; stroke: #f4f0e6; stroke-width: 1; stroke-linecap: round; }
 .scene .sl-track { fill: #1b2633; } .scene .sl-wheel { fill: #5d6b7a; }
 .scene .sl-ski, .scene .sl-strut { fill: none; stroke: #1b2633; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .scene .sl-glass { fill: #a9d4ee; opacity: .75; } .scene .sl-seat { fill: #11161d; }
 .scene .sl-rider { fill: #24364a; } .scene .sl-arm, .scene .sl-leg { fill: none; stroke: #24364a; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .scene .sl-helmet { fill: #f2b632; } .scene .sl-visor { fill: #11161d; }
-.scene .sl-tail { fill: #ff4a3d; }
+.scene .sl-tail { fill: #ff4a3d; } .scene .headlight { fill: #fff6c8; }
 .scene .sl-spray { fill: none; stroke: #e8f0f7; stroke-width: 1.2; stroke-linecap: round; opacity: .7; }
-.scene.winter:not(.day) .sl-spray { animation: scSpray .5s ease-in-out infinite alternate; }
-@keyframes scSpray { from { opacity: .25; } to { opacity: .8; } }
-.scene .headlight { fill: #fff6c8; } .scene .beam { fill: #fff6c8; opacity: .18; }
-@keyframes scSled { 0% { transform: translateX(380px); opacity: 0; } 6% { opacity: 1; } 94% { opacity: 1; } 100% { transform: translateX(800px); opacity: 0; } }
 /* snöfall: två lager som faller i olika takt */
 .scene .flake { fill: #ffffff; opacity: .85; } .scene .flake.f1 { opacity: .6; } .scene .flake.f2 { opacity: .4; }
 .scene.winter .snowfall-a { animation: scSnow 18s linear infinite; }
@@ -891,3 +901,6 @@ body.night .rwywind tr.best td:first-child { color: #ff8a70; }
 @keyframes scSnow { from { transform: translate(0, -900px); } to { transform: translate(-60px, 900px); } }
 .scene.winter.day .flake { opacity: .9; }
 @media (prefers-reduced-motion: reduce) { .scene.winter .snowfall-b { display: none; } }
+/* på natten står skotern tom vid stugan — gubben är inne */
+.scene.winter:not(.day) .sl-rider, .scene.winter:not(.day) .sl-arm, .scene.winter:not(.day) .sl-leg,
+.scene.winter:not(.day) .sl-helmet, .scene.winter:not(.day) .sl-visor { display: none; }

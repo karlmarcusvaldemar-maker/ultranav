@@ -172,8 +172,8 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
     <circle class="head" cx="0" cy="-12.5" r="2.6"/><path class="cap" d="M-3 -13 Q0 -17.5 3 -13 Z"/><circle class="cap" cx="0" cy="-16.6" r="1.2"/>
     <path class="rodp" d="M2 -6 L11 -3"/><path class="fline" d="M11 -3 L12 3"/>
   </g>
-  <g class="sled"><g transform="translate(0 730) scale(1.15)">
-    <path class="beam" d="M23 -6 L90 -18 L90 8 Z"/>
+  <!-- skotern står vid stugan; på dagen kör gubben ut till isfiskaren och hem igen -->
+  <g class="sled"><g transform="scale(.5)">
     <path class="sl-spray" d="M-17 0 q-5 -5 -11 -3 M-16 -2 q-4 -6 -9 -6 M-18 2 q-6 -2 -10 1"/>
     <rect class="sl-track" x="-16" y="-3" width="21" height="5.5" rx="2.75"/>
     <circle class="sl-wheel" cx="-13" cy="-0.2" r="1.6"/><circle class="sl-wheel" cx="-5.5" cy="-0.2" r="1.6"/><circle class="sl-wheel" cx="2" cy="-0.2" r="1.6"/>
