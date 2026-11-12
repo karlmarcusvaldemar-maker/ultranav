@@ -7,11 +7,12 @@ import { route, onRouteChange, getLegs } from './route.js';
 import { airspacesAt, limitFt, asLabel, fmtLimit } from './openaip.js';
 import { elevationFt } from './terrain.js';
 import { setProfileOwn } from './profile.js';
-import { distNM, bearing, destPoint, crossTrack, norm360, fmtDeg, fmtHM, fmtUTC, toast, idb, download, esc, $, FT_PER_M, interp } from './util.js';
+import { distNM, bearing, destPoint, crossTrack, norm360, fmtDeg, fmtHM, fmtUTC, toast, idb, download, esc, $, FT_PER_M, interp, pad } from './util.js';
+import { raise, clear, clearExcept, unlockAudio } from './alerts.js';
 
 export const nav = {
   pos: null, tracking: false, follow: true, trackUp: false, activeLeg: 0, dto: null,
-  aglFt: null, terrFt: null,
+  aglFt: null, terrFt: null, stale: false,
 };
 let watchId = null, last = null, wakeLock = null;
 const ownLayer = L.layerGroup();
@@ -33,12 +34,26 @@ export async function initNav() {
   onSettings((s, patch) => { if ('ownSymbol' in patch && ownMarker) { ownMarker.setIcon(L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: planeHtml() })); update(); } if ('vectorMin' in patch && nav.pos) update(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && nav.tracking) requestWake(); });
   map.on('dragstart', () => { if (nav.follow && nav.tracking) { nav.follow = false; emit(); } });
+  setInterval(gpsWatchdog, 1000);
+}
+
+// GPS-vakt: kommer inga nya positioner fryser annars instrumenten på gamla värden som ser giltiga ut
+function gpsWatchdog() {
+  const age = nav.tracking && nav.pos ? Date.now() - nav.pos.rx : 0;
+  const stale = age > 6000;
+  if (stale !== nav.stale) { nav.stale = stale; ownMarker?.setOpacity(stale ? 0.4 : 1); emit(); }
+  if (stale) raise('gps-lost', `GPS-signal saknas sedan ${Math.floor(age / 60000)}:${pad(Math.floor(age / 1000) % 60)} — värdena är inte aktuella`);
+  else clear('gps-lost');
+  const acc = nav.tracking && nav.pos && !stale ? nav.pos.acc : null;
+  if (acc > 100) raise('gps-poor', `Osäker GPS-position (±${acc >= 1000 ? (acc / 1000).toFixed(1) + ' km' : Math.round(acc) + ' m'})`, { level: 'warn', sound: false });
+  else clear('gps-poor');
 }
 
 // ---------- GPS ----------
 export function startGps() {
   if (!('geolocation' in navigator)) { toast('Ingen GPS i den här webbläsaren'); return; }
   nav.tracking = true; nav.follow = true;
+  unlockAudio(); // ljud för varningar kräver en användargest på iOS
   watchId = navigator.geolocation.watchPosition(onFix, (e) => {
     toast(e.code === 1 ? 'GPS nekad — tillåt platsåtkomst för ultranav.se i webbläsaren och för webbläsaren i enhetens inställningar' : 'GPS-fel: ' + e.message, 5000);
     if (e.code === 1) stopGps();
@@ -47,7 +62,9 @@ export function startGps() {
 }
 export function stopGps() {
   if (watchId != null) navigator.geolocation.clearWatch(watchId);
-  watchId = null; nav.tracking = false; releaseWake(); emit();
+  watchId = null; nav.tracking = false; nav.stale = false; releaseWake();
+  clear('gps-lost'); clear('gps-poor'); clearExcept('as-', new Set());
+  emit();
 }
 
 async function requestWake() {
@@ -61,7 +78,7 @@ function onFix(p) {
   const fix = { lat: c.latitude, lon: c.longitude, t: p.timestamp, acc: c.accuracy,
     altFt: c.altitude != null ? c.altitude * FT_PER_M : null,
     gsKt: c.speed != null && c.speed >= 0 ? c.speed * 1.943844 : null,
-    trk: c.heading != null && !isNaN(c.heading) ? c.heading : null };
+    trk: c.heading != null && !isNaN(c.heading) ? c.heading : null, rx: Date.now() };
   ingest(fix);
 }
 
@@ -136,7 +153,6 @@ function sequence() {
 
 // ---------- varningar ----------
 let lastTerr = 0, lastAs = 0;
-const warned = new Map();
 async function terrainCheck(fix) {
   if (fix.t - lastTerr < 4000) return;
   lastTerr = fix.t;
@@ -148,22 +164,32 @@ function airspaceCheck(fix) {
   if (fix.t - lastAs < 8000 || !oaipKey()) return;
   lastAs = fix.t;
   const alt = fix.altFt;
-  const check = (p, ahead) => {
-    for (const a of airspacesAt(p.lat, p.lon)) {
-      if (![1, 2, 3, 4, 7, 13, 26, 36].includes(a.type)) continue;
-      const lo = limitFt(a.lowerLimit), up = limitFt(a.upperLimit);
-      const terr = nav.terrFt || 0;
-      const loF = lo.ft + (lo.agl ? terr : 0), upF = up.ft + (up.agl ? terr : 0);
-      if (alt != null && (alt < loF - 200 || alt > upF + 200)) continue;
-      const k = a._id + (ahead ? 'a' : 'i');
-      if (Date.now() - (warned.get(k) || 0) < 5 * 6e4) continue;
-      warned.set(k, Date.now());
-      toast(`${ahead ? 'Varning – om ca 2 min: ' : 'Varning – inne i '}${a.name} — ${asLabel(a)} ${fmtLimit(a.lowerLimit)}–${fmtLimit(a.upperLimit)}`, 7000);
-      return;
+  // Kontrollerade luftrum, restriktioner och zoner med krav på radio/transponder (TMZ, RMZ, TRA, TSA, TIZ, TIA)
+  const TYPES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 23, 24, 26, 36];
+  const hit = (p) => airspacesAt(p.lat, p.lon).filter((a) => {
+    if (!TYPES.includes(a.type)) return false;
+    const lo = limitFt(a.lowerLimit), up = limitFt(a.upperLimit);
+    const terr = nav.terrFt || 0;
+    const loF = lo.ft + (lo.agl ? terr : 0), upF = up.ft + (up.agl ? terr : 0);
+    return alt == null || (alt >= loF - 200 && alt <= upF + 200);
+  });
+  const keep = new Set(), inside = new Set();
+  for (const a of hit(fix)) {
+    inside.add(a._id); keep.add('as-i-' + a._id);
+    raise('as-i-' + a._id, `Inne i ${a.name} — ${asLabel(a)} ${fmtLimit(a.lowerLimit)}–${fmtLimit(a.upperLimit)}`);
+  }
+  // framåt längs kursen: flera punkter upp till 2 min, så att luftrum strax efter en sväng också fångas
+  if (fix.trk != null && fix.gsKt > 20) {
+    for (const min of [0.5, 1, 1.5, 2]) {
+      for (const a of hit(destPoint(fix, fix.trk, fix.gsKt * min / 60))) {
+        const id = 'as-a-' + a._id;
+        if (inside.has(a._id) || keep.has(id)) continue;
+        keep.add(id);
+        raise(id, `Om ca ${min < 1 ? '½' : min} min: ${a.name} — ${asLabel(a)} ${fmtLimit(a.lowerLimit)}–${fmtLimit(a.upperLimit)}`, { level: 'warn' });
+      }
     }
-  };
-  check(fix, false);
-  if (fix.trk != null && fix.gsKt > 20) check(destPoint(fix, fix.trk, fix.gsKt * 2 / 60), true);
+  }
+  clearExcept('as-', keep);
 }
 
 // ---------- ritning och instrument ----------

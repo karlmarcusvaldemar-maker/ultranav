@@ -807,3 +807,25 @@ body.phone #windBadge .wbDial svg { width: 24px; height: 24px; }
 body.phone #windBadge .wbTxt small { display: none; }
 body.phone #windBadge .wbTxt b { font-size: calc(15px * var(--ts, 1)); }
 body.phone #windBadge .wbTxt em { font-size: calc(11.5px * var(--ts, 1)); }
+
+/* ---------- varningsremsa (luftrum, GPS) och meddelanderutan högst upp, fritt från knapparna nertill ---------- */
+#alertBar { position: absolute; z-index: 1150; top: 10px; left: calc(384px + var(--safeL)); right: calc(100px + var(--safeR));
+  display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
+#alertBar[hidden] { display: none; }
+#alertBar .al { pointer-events: auto; display: flex; align-items: center; gap: 10px; width: 100%; max-width: 480px;
+  padding: 5px 5px 5px 12px; border-radius: 10px; box-shadow: var(--shadow); font-weight: 700; font-size: calc(13.5px * var(--ts, 1)); line-height: 1.25; }
+#alertBar .al.bad { background: #b3261e; color: #fff; }
+#alertBar .al.warn { background: #f2b632; color: #1b1300; }
+#alertBar .al.more { justify-content: center; background: var(--panel); color: var(--text); font-weight: 600; }
+#alertBar .al span { flex: 1; }
+#alertBar .al button { flex: none; min-width: 44px; min-height: 34px; border-radius: 8px; border: 0; font-weight: 700; font-size: calc(13px * var(--ts, 1));
+  background: rgba(0,0,0,.25); color: inherit; }
+body.night #alertBar .al.bad { background: #5a0d0a; color: #ff8a70; }
+body.night #alertBar .al.warn { background: #3a1a14; color: #ff8a70; }
+#toast { top: calc(12px + var(--alertH, 0px)); bottom: auto; left: calc(384px + var(--safeL)); right: calc(100px + var(--safeR));
+  transform: none; margin: 0 auto; width: fit-content; max-width: min(620px, calc(100% - 484px)); }
+body.phone #toast { top: calc(72px + var(--alertH, 0px)); bottom: auto; left: calc(8px + var(--safeL)); right: calc(8px + var(--safeR)); max-width: calc(100% - 16px); }
+body.phone #alertBar { top: 8px; left: calc(8px + var(--safeL)); right: calc(8px + var(--safeR)); }
+@media (max-width: 900px) { body:not(.phone) #alertBar, body:not(.phone) #toast { left: calc(12px + var(--safeL)); } body:not(.phone) #alertBar { top: 84px; } body:not(.phone) #toast { top: calc(84px + var(--alertH, 0px)); max-width: calc(100% - 120px); } }
+/* GPS-vakt: gamla värden bleknar */
+#instruments.stale .inst:not(.i-utc) .val { opacity: .35; text-decoration: line-through; }

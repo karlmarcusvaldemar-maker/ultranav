@@ -49,12 +49,18 @@ export function drawProfile() {
   }
 
   // terräng
-  g.beginPath(); g.moveTo(x(0), y(0));
-  for (const s of profile) g.lineTo(x(s.d), y(s.ft ?? 0));
-  g.lineTo(x(total), y(0)); g.closePath();
   const grad = g.createLinearGradient(0, y(maxT || 1), 0, y(0));
   grad.addColorStop(0, '#8a6a3b'); grad.addColorStop(1, '#4f7a3a');
-  g.fillStyle = grad; g.fill();
+  // sammanhängande bitar med känd höjd; luckor (ingen höjddata) ritas randiga, inte som havsnivå
+  let run = [];
+  const flush = () => {
+    if (run.length) { g.beginPath(); g.moveTo(x(run[0].d), y(0)); for (const s of run) g.lineTo(x(s.d), y(s.ft)); g.lineTo(x(run[run.length - 1].d), y(0)); g.closePath(); g.fillStyle = grad; g.fill(); }
+    run = [];
+  };
+  for (const s of profile) { if (s.ft == null) flush(); else run.push(s); }
+  flush();
+  g.fillStyle = 'rgba(150,150,150,.35)';
+  for (let k = 0; k < profile.length - 1; k++) if (profile[k].ft == null) g.fillRect(x(profile[k].d), T, Math.max(1, x(profile[k + 1].d) - x(profile[k].d)), H - T - B);
 
   // terrängmarginal-varningar
   g.fillStyle = 'rgba(255,60,50,.85)';
@@ -84,5 +90,5 @@ export function drawProfile() {
     g.strokeStyle = '#f2b632'; g.lineWidth = 2; g.beginPath(); g.moveTo(x(own.d), T); g.lineTo(x(own.d), H - B); g.stroke();
     if (own.altFt != null) { g.fillStyle = '#f2b632'; g.beginPath(); g.arc(x(own.d), y(own.altFt), 6, 0, 7); g.fill(); }
   }
-  $('#profileLegend').textContent = `Högsta terräng ${fmtAlt(maxT)} · marginal ${fmtAlt(settings.minClearance)} · ${fmtDist(total, 0)}`;
+  $('#profileLegend').textContent = `Högsta terräng ${fmtAlt(maxT)} · marginal ${fmtAlt(settings.minClearance)} · ${fmtDist(total, 0)}${profile.some((s) => s.ft == null) ? ' · terrängdata saknas för delar (grått)' : ''}`;
 }

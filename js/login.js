@@ -73,7 +73,9 @@ function openClubDialog() {
   g.appendChild(d);
 }
 
-const offlineAllowed = () => !navigator.onLine && store.get('ulnav.everLoggedIn', false);
+// Har man loggat in på enheten tidigare kommer man alltid in, även med svagt nät eller utgången inloggning
+// (annars kan inloggningsrutan täcka appen i luften). Synken återupptas när man loggar in igen under Konto.
+const offlineAllowed = () => store.get('ulnav.everLoggedIn', false);
 
 function update() {
   const st = cloudStatus(), g = $('#gate');

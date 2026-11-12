@@ -50,12 +50,13 @@ export async function elevationM(lat, lon, r = 0) {
 export const elevationFt = async (lat, lon, r = 0) => { const m = await elevationM(lat, lon, r); return m == null ? null : m * FT_PER_M; };
 
 /** Profil längs rutt: [{d (NM från start), lat, lon, ft, leg}] */
-export async function routeProfile(points, maxSamples = 360) {
+export async function routeProfile(points, maxSamples = 1500) {
   if (points.length < 2) return [];
   const legs = [];
   let total = 0;
   for (let i = 0; i < points.length - 1; i++) { const d = distNM(points[i], points[i + 1]); legs.push(d); total += d; }
-  const step = Math.max(0.25, total / maxSamples);
+  // ≈ 150 m mellan punkterna (minst) och högsta värdet inom ±150 m runt varje punkt: inga luckor längs linjen
+  const step = Math.max(0.08, total / maxSamples);
   const samples = [];
   let acc = 0;
   for (let i = 0; i < legs.length; i++) {
