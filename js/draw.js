@@ -80,6 +80,7 @@ export function closeDrawBar() {
   pts = []; barOpen = false; setMode(null, true);
 }
 export function setMode(m, force = false) {
+  if (!force && m && m === mode) return; // samma verktyg igen: behåll punkterna
   if (!force && mode && pts.length && mode !== 'measure' && mode !== m && !confirm('Avbryta pågående ritning?')) return;
   mode = m; pts = [];
   if (m && m !== 'route') map.doubleClickZoom.disable(); else map.doubleClickZoom.enable();

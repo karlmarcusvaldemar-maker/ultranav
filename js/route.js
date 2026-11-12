@@ -11,7 +11,8 @@ import { sunInfo } from './sun.js';
 import * as lib from './library.js';
 
 export const route = store.get('ulnav.route', { name: 'Ny rutt', wps: [], depTime: null });
-let fc = null, fcSig = '';            // vindprognos för sträckornas mittpunkter
+let fc = null, fcSig = '', fcGeo = '';  // vindprognos för sträckornas mittpunkter; fcGeo = geometrin den hämtades för
+const fcValid = () => !!fc && fcGeo === geoSig; // efter en ändring utan nät hör prognosen till andra sträckor
 export let profile = [];              // terrängsampel
 export let crossings = [];            // luftrum längs rutten
 let legs = [];
@@ -100,9 +101,10 @@ async function updateWind() {
   const s = sig();
   if (s === fcSig && fc) return;
   try {
+    const g = geoSig;
     const mids = route.wps.slice(1).map((w, i) => interp(route.wps[i], w, 0.5));
     fc = await fetchForecast(mids);
-    fcSig = s;
+    fcSig = s; fcGeo = g;
   } catch (e) { toast('Vindprognosen kunde inte hämtas'); }
 }
 async function updateProfile() {
@@ -158,7 +160,7 @@ function computeLegs() {
     const a = route.wps[i], b = route.wps[i + 1];
     const d = distNM(a, b), tc = bearing(a, b);
     let wind = null;
-    if (fc?.[i]?.hourly) {
+    if (fcValid() && fc[i]?.hourly) {
       const at = new Date(dep.getTime() + t * 3600e3);
       wind = windAt(fc[i], hourIndex(fc[i], at), b.alt);
     }
@@ -186,7 +188,9 @@ export function totals() {
   const last = route.wps[route.wps.length - 1];
   const eta = legs.length ? legs[legs.length - 1].eta : null;
   const sun = last ? sunInfo(eta || depDate(), last.lat, last.lon) : null;
-  return { d, t, trip, reserve, need, extra: settings.fuelUsable - need, endurance: settings.fuelUsable / settings.fuelBurn, eta, sun };
+  const first = route.wps[0];
+  const depSun = first ? sunInfo(depDate(), first.lat, first.lon) : null;
+  return { d, t, trip, reserve, need, extra: settings.fuelUsable - need, endurance: settings.fuelUsable / settings.fuelBurn, eta, sun, depSun };
 }
 
 // ---------- ritning ----------
@@ -240,6 +244,9 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
   const saved = lib.list('route').sort((a, b) => a.name.localeCompare(b.name, 'sv'));
   let h = `<div class="field"><span>Namn</span><input type="text" id="rName" value="${esc(route.name)}"></div>
     <div class="field"><span>Avgång <small>lokal tid — styr vindprognosen</small></span><input type="datetime-local" id="rDep" value="${depLocal}"></div>`;
+  // En sparad avgångstid som redan har passerat ger gårdagens vind och tider — säg det tydligt
+  if (route.depTime && Date.parse(route.depTime) < Date.now() - 15 * 6e4)
+    h += note('warn', `Avgångstiden har passerat — vind och tider räknas för den tiden. <button class="btn small" id="rDepNow">Räkna från nu</button>`);
   h += `<h3>Brytpunkter</h3>`;
   if (!route.wps.length) h += `<div class="empty">${ic('route', 34)}<b>Ingen rutt ännu</b><span>Tryck på <b>Rutt</b> till höger och sedan på kartan, eller lägg till fält från fliken <b>Fält</b>. Tryck nära ett fält eller en rapportpunkt för att fästa vid den.</span></div>`;
   h += '<ul class="wplist">' + route.wps.map((w, i) => `<li class="${i === activeLeg + 1 ? 'active' : ''}"><span class="num">${i + 1}</span>
@@ -257,7 +264,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
         <td>${isFinite(l.gs) ? Math.round(spdOut(l.gs)) : '—'}</td><td>${fmtHM(l.ete)}</td><td>${fmtUTC(l.eta)}</td></tr>`;
     }
     h += `<tr class="tot"><td>Totalt</td><td></td><td></td><td></td><td></td><td>${distOut(T.d).toFixed(1)}</td><td></td><td>${fmtHM(T.t)}</td><td>${fmtUTC(T.eta)}Z</td></tr></table>`;
-    if (!fc) h += '<div class="muted">Utan vind — prognosen kunde inte hämtas.</div>';
+    if (!fcValid()) h += `<div class="muted">Utan vind — ${fc ? 'rutten har ändrats sedan prognosen hämtades (kräver nät)' : 'prognosen kunde inte hämtas'}.</div>`;
     const blocked = legs.filter((l) => l.noGs);
     if (blocked.length) h += note('bad', `Vinden är starkare än flygplanets fart på: ${blocked.map((l) => esc(l.to.name)).join(', ')}. Sträckan går inte att flyga med marschfarten ${Math.round(spdOut(settings.tas))} ${u}.`);
     const lit = (v) => (isFinite(v) ? v.toFixed(1) + ' l' : '—');
@@ -273,10 +280,13 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
 
     if (T.sun) {
       const s = T.sun;
-      const late = T.eta && s.sunset && T.eta > s.sunset;
+      // mörkt = före soluppgång eller efter solnedgång samma dygn (UTC), eller polarnatt
+      const dark = (t, x) => !!t && (x.polar === 'night' || (x.polar !== 'day' && x.sunrise && x.sunset && (t < x.sunrise || t > x.sunset)));
+      const late = dark(T.eta, s), early = T.depSun && dark(depDate(), T.depSun);
       h += `<h3>Ljus vid destination</h3><div class="kv"><span>Solnedgång</span><b>${fmtUTC(s.sunset)}Z (${fmtLocal(s.sunset)} lokal)</b>
         <span>Civil skymning</span><b>${fmtUTC(s.civilDusk)}Z (${fmtLocal(s.civilDusk)} lokal)</b><span>Soluppgång</span><b>${fmtUTC(s.sunrise)}Z</b></div>
-        ${late ? note('bad', 'Beräknad ankomst efter solnedgång.', 'moon') : ''}`;
+        ${late ? note('bad', s.polar === 'night' ? 'Polarnatt vid destinationen — solen går inte upp.' : T.eta < s.sunrise ? 'Beräknad ankomst före soluppgång.' : 'Beräknad ankomst efter solnedgång.', 'moon') : ''}
+        ${early ? note('bad', 'Avgång före soluppgång eller efter solnedgång vid startplatsen.', 'moon') : ''}`;
     }
     if (legs.some((l) => l.terrUnknown)) h += note('warn', `Terrängdata saknas för delar av rutten (${legs.filter((l) => l.terrUnknown).map((l) => esc(l.to.name)).join(', ')}) — terrängmarginalen kan inte kontrolleras där. Spara rutten offline med nät för att hämta höjddata.`);
     const low = legs.filter((l) => l.lowClear);
@@ -306,6 +316,7 @@ export function renderRouteTab(el, { activeLeg = -1 } = {}) {
 
   $('#rName', el).onchange = (e) => { route.name = e.target.value; persist(); };
   $('#rDep', el).onchange = (e) => { route.depTime = e.target.value ? new Date(e.target.value).toISOString() : null; changed(); };
+  $('#rDepNow', el)?.addEventListener('click', (e) => { e.target.blur(); route.depTime = null; changed(); }); // blur: fliken ritas om
   el.querySelectorAll('[data-name]').forEach((i) => i.onchange = () => { route.wps[+i.dataset.name].name = i.value; changed(false); });
   el.querySelectorAll('[data-alt]').forEach((i) => i.onchange = () => { route.wps[+i.dataset.alt].alt = Math.max(0, Math.round(altIn(+i.value || 0))); changed(); });
   el.querySelectorAll('[data-up]').forEach((b) => b.onclick = () => moveWp(+b.dataset.up, -1));

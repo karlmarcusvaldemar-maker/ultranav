@@ -829,3 +829,7 @@ body.phone #alertBar { top: 8px; left: calc(8px + var(--safeL)); right: calc(8px
 @media (max-width: 900px) { body:not(.phone) #alertBar, body:not(.phone) #toast { left: calc(12px + var(--safeL)); } body:not(.phone) #alertBar { top: 84px; } body:not(.phone) #toast { top: calc(84px + var(--alertH, 0px)); max-width: calc(100% - 120px); } }
 /* GPS-vakt: gamla värden bleknar */
 #instruments.stale .inst:not(.i-utc) .val { opacity: .35; text-decoration: line-through; }
+
+/* vindrutan: gammal prognos eller från annan plats visas blekt */
+#windBadge.wb-old .wbDial, #windBadge.wb-old .wbTxt b { opacity: .45; }
+#windBadge.wb-old .wbTxt em { color: var(--warn); }

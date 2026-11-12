@@ -1,7 +1,7 @@
 // Moln: konto (Supabase Auth, e-post + lösenord), synk av biblioteket och delning med länk.
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { allItems, findAny, put, remove, setShare, onLibrary, get, clearLibrary } from './library.js';
-import { toast, debounce, store } from './util.js';
+import { toast, debounce, store, modal, $ } from './util.js';
 
 let client = null, shareClient = null;
 export let user = null;
@@ -105,6 +105,7 @@ export async function sync() {
   if (!client || !user || status.syncing || !navigator.onLine) return;
   status.syncing = true; status.error = null; emit();
   try {
+    if (!(await checkOwner())) return;
     // 1) metadata för allt i molnet
     const { data: rows, error } = await client.from('items').select('id,kind,name,updated_at,deleted,share_code,is_shared');
     if (error) throw error;
@@ -113,6 +114,9 @@ export async function sync() {
     const need = [];
     for (const r of rows) {
       const l = findAny(r.id), rt = ts(r.updated_at);
+      // delningsläget följer med till alla enheter (delning ändrar inte updated_at)
+      const rs = r.is_shared ? r.share_code : null;
+      if (l && !l.deleted && (l.share || null) !== rs) await setShare(r.kind, r.id, rs);
       if (l && rt <= l.updated) continue;
       if (r.deleted) { if (l && !l.deleted) await remove(r.kind, r.id, { source: 'remote', updated: rt }); }
       else need.push(r.id);
@@ -125,12 +129,30 @@ export async function sync() {
       }
     }
     // 3) skicka det som är nyare lokalt
-    const push = allItems().filter((l) => { if (l.data?.localOnly) return false; const r = remote.get(l.id); return !r ? !l.deleted : l.updated > ts(r.updated_at); });
-    for (let i = 0; i < push.length; i += 20) {
-      const batch = push.slice(i, i + 20).map((l) => ({ user_id: user.id, id: l.id, kind: l.kind, name: l.name || '', data: l.deleted ? {} : l.data,
-        deleted: !!l.deleted, updated_at: new Date(l.updated).toISOString() }));
+    const push = allItems().filter((l) => { if (l.data?.localOnly || failed.has(l.id + l.updated)) return false; const r = remote.get(l.id); return !r ? !l.deleted : l.updated > ts(r.updated_at); });
+    // Små paket (högst ≈ 4 MB). Går ett paket inte igenom provas objekten ett i taget, så att ett för stort
+    // objekt inte stoppar resten — det hoppas över tills det ändras igen.
+    const row = (l) => ({ user_id: user.id, id: l.id, kind: l.kind, name: l.name || '', data: l.deleted ? {} : l.data, deleted: !!l.deleted, updated_at: new Date(l.updated).toISOString() });
+    const batches = []; let cur = [], size = 0;
+    for (const l of push) {
+      const r = row(l), n = JSON.stringify(r.data).length * 2;
+      if (cur.length && (size + n > 4e6 || cur.length >= 20)) { batches.push(cur); cur = []; size = 0; }
+      cur.push(r); size += n;
+    }
+    if (cur.length) batches.push(cur);
+    for (const batch of batches) {
       const { error: e3 } = await client.from('items').upsert(batch, { onConflict: 'user_id,id' });
-      if (e3) throw e3;
+      if (!e3) continue;
+      if (batch.length === 1 && !/fetch|network|timeout/i.test(e3.message || '')) {
+        const l = findAny(batch[0].id); failed.add(batch[0].id + l?.updated);
+        toast(`”${batch[0].name || 'Ett objekt'}” kunde inte synkas (för stort?) — det finns kvar på den här enheten`, 6000);
+        continue;
+      }
+      if (batch.length === 1) throw e3;
+      for (const one of batch) {
+        const { error: e4 } = await client.from('items').upsert([one], { onConflict: 'user_id,id' });
+        if (e4) { const l = findAny(one.id); failed.add(one.id + l?.updated); toast(`”${one.name || 'Ett objekt'}” kunde inte synkas (för stort?) — det finns kvar på den här enheten`, 6000); }
+      }
     }
     status.last = Date.now(); store.set('ulnav.lastSync', status.last);
   } catch (e) {
@@ -139,6 +161,26 @@ export async function sync() {
   } finally {
     status.syncing = false; emit();
   }
+}
+
+const failed = new Set(); // id+ändringstid för objekt som servern har avvisat (prövas igen när objektet ändras)
+
+/** Biblioteket på enheten hör till ett konto. Loggar någon annan in frågar vi innan det blandas ihop. */
+async function checkOwner() {
+  const owner = store.get('ulnav.libOwner', null);
+  if (owner === user.id) return true;
+  const mine = allItems().filter((i) => !i.deleted && i.kind !== 'settings');
+  if (owner && mine.length) {
+    const keep = await new Promise((res) => {
+      modal(`<h3>Data från ett annat konto</h3><p>Det finns ${mine.length} ${mine.length === 1 ? 'sparat objekt' : 'sparade objekt'} (rutter, ritningar, kartor eller flygningar) på den här enheten från ett annat konto.</p>
+        <div class="btnrow"><button class="btn primary" id="ownClear">Ta bort från enheten</button><button class="btn" id="ownKeep">Spara i det här kontot</button></div>`, { lock: true });
+      $('#ownClear').onclick = () => { $('#modal').classList.add('hidden'); res(false); };
+      $('#ownKeep').onclick = () => { $('#modal').classList.add('hidden'); res(true); };
+    });
+    if (!keep) await clearLibrary();
+  }
+  store.set('ulnav.libOwner', user.id);
+  return true;
 }
 
 // ---------- delning ----------
@@ -150,10 +192,15 @@ export async function shareItem(kind, id) {
   if (!user) throw new Error('Logga in för att dela.');
   const item = get(kind, id);
   if (!item) throw new Error('Objektet finns inte.');
+  if (item.data?.localOnly) throw new Error('Det här är för stort för att sparas i molnet och kan därför inte delas.');
+  for (let n = 0; status.syncing && n < 40; n++) await new Promise((r) => setTimeout(r, 500)); // vänta in pågående synk
   await sync(); // se till att objektet finns i molnet
-  const c = item.share || code();
-  const { error } = await client.from('items').update({ share_code: c, is_shared: true }).eq('user_id', user.id).eq('id', id);
+  // Har objektet redan delats från en annan enhet återanvänds koden, så att länken som redan skickats fungerar
+  const { data: cur } = await client.from('items').select('share_code,is_shared').eq('user_id', user.id).eq('id', id).maybeSingle();
+  const c = item.share || (cur?.is_shared && cur.share_code) || code();
+  const { data: upd, error } = await client.from('items').update({ share_code: c, is_shared: true }).eq('user_id', user.id).eq('id', id).select('id');
   if (error) throw new Error(sv(error));
+  if (!upd?.length) throw new Error('Objektet har inte sparats i molnet än. Kontrollera nätet och försök igen.');
   await setShare(kind, id, c);
   return shareLink(c);
 }

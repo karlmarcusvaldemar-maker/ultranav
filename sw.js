@@ -11,13 +11,19 @@ const SHELL = [
   'icons/icon.svg', 'fonts/outfit-700.woff2', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 const TILE_HOSTS = /tile\.openstreetmap\.org|tile\.opentopomap\.org|arcgisonline\.com|newaydata\.com|tiles\.openaip\.net|elevation-tiles-prod|tilecache\.rainviewer\.com|tiles\.openfreemap\.org|cache\.kartverket\.no|geodata\.naturvardsverket\.se|lansstyrelsen\.se/;
-const MAX_TILES = 20000;
+const MAX_TILES = 20000, MAX_DATA = 300;
+// Flyg- och myndighetslager (luftrum, naturskydd, vindkraft) ändras: hämtas från nätet först, cachen bara som reserv
+const FRESH_HOSTS = /tiles\.openaip\.net|geodata\.naturvardsverket\.se|lansstyrelsen\.se/;
+// OpenFreeMaps vektorrutor har kartversionen i adressen: spara under en adress utan version, så att ett sparat
+// offlinepaket fungerar även när kartan har fått en ny version
+const tileKey = (u) => u.replace(/(tiles\.openfreemap\.org\/[^/]+)\/[^/]+\/(\d+\/\d+\/\d+\.pbf)/, '$1/_/$2');
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(APP).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => ![APP, TILES, DATA].includes(k)).map((k) => caches.delete(k))))
+    .then(() => Promise.all([caches.open(TILES).then((c) => trim(c, MAX_TILES, true)), caches.open(DATA).then((c) => trim(c, MAX_DATA, true))]))
     .then(() => self.clients.claim()));
 });
 
@@ -38,14 +44,25 @@ self.addEventListener('fetch', (e) => {
       .catch(() => caches.match(req)));
     return;
   }
-  if (TILE_HOSTS.test(url.hostname) && !/rainviewer\.com$/.test(url.hostname)) {
-    // kartbilder: cache först. Radarbilder sparas inte (de blir inaktuella).
+  if (FRESH_HOSTS.test(url.hostname)) {
     e.respondWith(caches.open(TILES).then(async (c) => {
-      const hit = await c.match(req);
+      try {
+        const r = await fetch(req);
+        if (r.ok || r.type === 'opaque') { c.put(req, r.clone()); trim(c, MAX_TILES); }
+        return r;
+      } catch (err) { return (await c.match(req)) || Response.error(); }
+    }));
+    return;
+  }
+  if (TILE_HOSTS.test(url.hostname) && !/rainviewer\.com$/.test(url.hostname)) {
+    // baskartor: cache först. Radarbilder sparas inte (de blir inaktuella).
+    const key = tileKey(req.url);
+    e.respondWith(caches.open(TILES).then(async (c) => {
+      const hit = await c.match(key);
       if (hit) return hit;
       try {
         const r = await fetch(req);
-        if (r.ok || r.type === 'opaque') { c.put(req, r.clone()); trim(c); }
+        if (r.ok || r.type === 'opaque') { c.put(key, r.clone()); trim(c, MAX_TILES); }
         return r;
       } catch (err) { return hit || Response.error(); }
     }));
@@ -53,16 +70,18 @@ self.addEventListener('fetch', (e) => {
   }
   if (/open-meteo\.com|aviationweather\.gov|ourairports-data/.test(url.href)) {
     // väder/data: nätverk först, cache som reserv offline
-    e.respondWith(fetch(req).then((r) => { if (r.ok) { const c = r.clone(); caches.open(DATA).then((ca) => ca.put(req, c)); } return r; })
+    e.respondWith(fetch(req).then((r) => { if (r.ok) { const c = r.clone(); caches.open(DATA).then((ca) => { ca.put(req, c); trim(ca, MAX_DATA); }); } return r; })
       .catch(() => caches.match(req)));
   }
 });
 
-let trimming = false, puts = 0;
-async function trim(c) {
-  if (trimming || ++puts % 200) return; trimming = true;
+// Rensa de äldsta posterna. Räknaren nollställs när servicearbetaren startas om, så rensningen körs också när den
+// aktiveras (force) och var 50:e sparning.
+const trimming = new Set(); let puts = 0; // en rensning åt gången per cache (nyckel: max)
+async function trim(c, max, force = false) {
+  if (trimming.has(max) || (!force && ++puts % 50)) return; trimming.add(max);
   try {
     const keys = await c.keys();
-    if (keys.length > MAX_TILES) for (const k of keys.slice(0, keys.length - MAX_TILES)) await c.delete(k);
-  } finally { trimming = false; }
+    if (keys.length > max) for (const k of keys.slice(0, keys.length - max)) await c.delete(k);
+  } finally { trimming.delete(max); }
 }

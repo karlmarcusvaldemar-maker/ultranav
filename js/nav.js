@@ -30,7 +30,15 @@ const planeHtml = () => symbolSvg(settings.ownSymbol, { size: 40 });
 
 export async function initNav() {
   ownLayer.addTo(map);
-  onRouteChange(() => { if (nav.pos) { pickLeg(); update(); } });
+  // Välj närmaste sträcka bara när geometrin ändras — namnbyte, sparning eller ny vindprognos ska inte flytta
+  // en sträcka som piloten har valt eller flugit fram till
+  let geo = '';
+  onRouteChange(() => {
+    const g = route.wps.map((w) => `${w.lat.toFixed(5)},${w.lon.toFixed(5)}`).join(';');
+    if (g !== geo) { const first = !geo; geo = g; if (!first && nav.dto?.routeIdx != null) nav.dto = null; if (nav.pos) pickLeg(); }
+    else nav.activeLeg = Math.max(0, Math.min(nav.activeLeg, route.wps.length - 2));
+    if (nav.pos) update();
+  });
   onSettings((s, patch) => { if ('ownSymbol' in patch && ownMarker) { ownMarker.setIcon(L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: planeHtml() })); update(); } if ('vectorMin' in patch && nav.pos) update(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && nav.tracking) requestWake(); });
   map.on('dragstart', () => { if (nav.follow && nav.tracking) { nav.follow = false; emit(); } });
@@ -116,7 +124,7 @@ export function directTo(p) {
   const from = nav.pos ? { lat: nav.pos.lat, lon: nav.pos.lon } : null;
   if (typeof p === 'number') { // index i rutten
     nav.dto = null; nav.activeLeg = Math.max(0, p - 1);
-    if (from && p > 0) nav.dto = { ...route.wps[p], from, routeIdx: p };
+    if (from && route.wps[p]) nav.dto = { ...route.wps[p], from, routeIdx: p }; // även första brytpunkten
   } else nav.dto = { lat: p.lat, lon: p.lon, name: p.name || 'Punkt', from: from || { lat: p.lat, lon: p.lon } };
   map.closePopup();
   toast('Direkt till ' + (nav.dto?.name || route.wps[p]?.name));
@@ -227,7 +235,7 @@ function update() {
     const w = settings.glideSpeed > 0 ? glideWind?.(p.altFt ?? null, nav.terrFt) : null;
     const c = w && w.spd > 0 ? destPoint(p, w.dir + 180, w.spd * (stillM / 1852) / settings.glideSpeed) : null;
     glideCircle.setLatLng(c ? [c.lat, c.lon] : ll).setRadius(stillM);
-    glideCircle.setStyle({ opacity: 0.9 });
+    glideCircle.setStyle({ opacity: 0.9, fillOpacity: 0.05 });
   } else glideCircle.setStyle({ opacity: 0, fillOpacity: 0 });
   const tg = target();
   dtoLine.setLatLngs(nav.dto ? [[nav.dto.from.lat, nav.dto.from.lon], [nav.dto.lat, nav.dto.lon]] : []);
