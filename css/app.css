@@ -810,15 +810,15 @@ body.phone #windBadge .wbTxt em { font-size: calc(11.5px * var(--ts, 1)); }
 
 /* ---------- varningsremsa (luftrum, GPS) och meddelanderutan högst upp, fritt från knapparna nertill ---------- */
 #alertBar { position: absolute; z-index: 1150; top: 10px; left: calc(384px + var(--safeL)); right: calc(100px + var(--safeR));
-  display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+  display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
 #alertBar[hidden] { display: none; }
-#alertBar .al { pointer-events: auto; display: flex; align-items: center; gap: 12px; width: 100%; max-width: 620px;
-  padding: 10px 10px 10px 16px; border-radius: 14px; box-shadow: var(--shadow); font-weight: 700; font-size: calc(16px * var(--ts, 1)); line-height: 1.3; }
+#alertBar .al { pointer-events: auto; display: flex; align-items: center; gap: 10px; width: 100%; max-width: 480px;
+  padding: 5px 5px 5px 12px; border-radius: 10px; box-shadow: var(--shadow); font-weight: 700; font-size: calc(13.5px * var(--ts, 1)); line-height: 1.25; }
 #alertBar .al.bad { background: #b3261e; color: #fff; }
 #alertBar .al.warn { background: #f2b632; color: #1b1300; }
 #alertBar .al.more { justify-content: center; background: var(--panel); color: var(--text); font-weight: 600; }
 #alertBar .al span { flex: 1; }
-#alertBar .al button { flex: none; min-width: 56px; min-height: 44px; border-radius: 10px; border: 0; font-weight: 700;
+#alertBar .al button { flex: none; min-width: 44px; min-height: 34px; border-radius: 8px; border: 0; font-weight: 700; font-size: calc(13px * var(--ts, 1));
   background: rgba(0,0,0,.25); color: inherit; }
 body.night #alertBar .al.bad { background: #5a0d0a; color: #ff8a70; }
 body.night #alertBar .al.warn { background: #3a1a14; color: #ff8a70; }
