@@ -74,7 +74,12 @@ export async function signIn(email, password) {
   if (error) throw new Error(sv(error));
 }
 // Utloggning: glöm också att enheten har varit inloggad, annars hålls inloggningsrutan borta (login.js)
-export async function signOut() { await client.auth.signOut().catch(() => {}); user = null; store.set('ulnav.everLoggedIn', false); emit(); }
+export async function signOut() {
+  await client.auth.signOut().catch(() => {});
+  // säkerhetsnät: ta bort sparad inloggning även om Supabase inte hann (t.ex. utan nät)
+  try { for (const k of Object.keys(localStorage)) if (k.startsWith('ulnav.auth')) localStorage.removeItem(k); } catch { /* ignoreras */ }
+  user = null; store.set('ulnav.everLoggedIn', false); emit();
+}
 export async function resetPassword(email) {
   const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: redirect() });
   if (error) throw new Error(sv(error));

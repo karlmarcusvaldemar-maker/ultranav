@@ -11,7 +11,7 @@ import { initFlight, renderFlightCard, onFlight, flightActive, flightTakeoff } f
 import { initLogin, setGateNote } from './login.js';
 import { $, $$, esc, toast, modal, note, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store, cleanShared } from './util.js';
 import { raise as raiseAlert, clear as clearAlert } from './alerts.js';
-import { initOneFingerZoom, lastZoomGesture } from './onefingerzoom.js';
+import { initOneFingerZoom, lastZoomGestureStart } from './onefingerzoom.js';
 import { initMap, map, renderLayerPanel, testCurrentBase } from './map.js';
 import { initAero, actions, airportHtml, mapInfoPopup, openAirport, airportNear } from './aero.js';
 import { initDraw, drawActive, drawTap, renderDrawTab, drawActions, onDrawings, openDrawBar, closeDrawBar, drawBarOpen, syncBar, readout } from './draw.js';
@@ -101,6 +101,7 @@ window.ulnav = { directTo, removeWp: (i) => { map.closePopup(); removeWp(i); }, 
 
 // ---------- kartinteraktion ----------
 map.on('click', async (e) => {
+  const tapAt = Date.now();
   if (fieldMoving()) { moveTap(e.latlng); return; }
   if (drawActive()) { drawTap(e.latlng); return; }
   if (editing) { handleEditTap(e.latlng); return; }
@@ -110,7 +111,7 @@ map.on('click', async (e) => {
   const ap = airportNear(e.latlng);
   if (ap) { openAirport(ap); return; }
   const el = await elevationFt(e.latlng.lat, e.latlng.lng).catch(() => null);
-  if (Date.now() - lastZoomGesture() < 1500) return; // trycket var början på en enhandszoom
+  if (lastZoomGestureStart() > tapAt) return; // trycket var första halvan av en enhandszoom
   mapInfoPopup(e.latlng, el);
 });
 initOneFingerZoom(map, { enabled: () => !editing && !drawActive() && !fieldMoving(), aroundCenter: () => nav.follow && nav.tracking });

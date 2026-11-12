@@ -83,7 +83,8 @@ function renderLoggedIn(el, st) {
   $('#accPwBtn', el).onclick = () => askNewPassword();
   $('#accOut', el).onclick = async () => {
     if (!confirm('Logga ut? Det som finns på den här enheten ligger kvar.')) return;
-    await signOut(); toast('Utloggad');
+    await signOut();
+    location.reload(); // börja om på startsidan: inget i minnet kan hålla kvar inloggningen
   };
 }
 

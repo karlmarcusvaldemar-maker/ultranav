@@ -2,9 +2,10 @@
 // Ett vanligt dubbeltryck utan att dra zoomar in ett steg, som förut. Avstängt när rutt läggs ut eller ritas
 // (där betyder två snabba tryck två punkter).
 
-let gestureAt = 0;
-/** Tid för senaste zoomgest — kartans tryck-hantering hoppar över info-rutan för det första trycket i gesten */
-export const lastZoomGesture = () => gestureAt;
+let gestureStart = 0;
+/** När den senaste zoomgesten började. Kartans tryck-hantering hoppar bara över info-rutan om en gest har
+ *  börjat efter trycket (dvs. trycket var första halvan av dubbeltrycket) — inte vanliga tryck efter en zoom. */
+export const lastZoomGestureStart = () => gestureStart;
 
 export function initOneFingerZoom(map, { enabled, aroundCenter }) {
   const el = map.getContainer();
@@ -13,12 +14,13 @@ export function initOneFingerZoom(map, { enabled, aroundCenter }) {
   const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
 
   el.addEventListener('touchstart', (e) => {
+    if (active && Date.now() - gestureStart > 10000) { map.options.zoomSnap = active.snap; map.dragging.enable(); active = null; }
     if (e.touches.length !== 1 || !enabled()) { lastTap = 0; if (active) end(e); return; }
     const t = e.touches[0], now = Date.now();
     if (now - lastTap < 320 && lastXY && Math.hypot(t.clientX - lastXY.x, t.clientY - lastXY.y) < 40) {
       const r = el.getBoundingClientRect();
       active = { y0: t.clientY, z0: map.getZoom(), pt: L.point(t.clientX - r.left, t.clientY - r.top), moved: false, snap: map.options.zoomSnap };
-      gestureAt = now; lastTap = 0;
+      gestureStart = now; lastTap = 0;
       map.closePopup();          // första trycket kan ha öppnat en info-ruta
       map.dragging.disable();
       map.options.zoomSnap = 0;  // mjuk zoom medan fingret drar
@@ -33,7 +35,6 @@ export function initOneFingerZoom(map, { enabled, aroundCenter }) {
     const dy = e.touches[0].clientY - active.y0;
     if (Math.abs(dy) > 6) active.moved = true;
     if (active.moved) {
-      gestureAt = Date.now();
       const z = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), active.z0 + dy / 110));
       if (aroundCenter()) map.setZoom(z, { animate: false }); // följer flygplanet: behåll det i bild
       else map.setZoomAround(active.pt, z, { animate: false });
@@ -52,7 +53,6 @@ export function initOneFingerZoom(map, { enabled, aroundCenter }) {
       const z = Math.round(map.getZoom() / a.snap) * a.snap; // landa på ett jämnt zoomsteg
       if (aroundCenter()) map.setZoom(z, { animate: false }); else map.setZoomAround(a.pt, z, { animate: false });
     }
-    gestureAt = Date.now();
     if (e?.cancelable) stop(e);
   }
   el.addEventListener('touchend', end, opts);
