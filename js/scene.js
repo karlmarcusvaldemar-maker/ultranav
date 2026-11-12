@@ -17,7 +17,8 @@ const SEA = `<g class="ac">
   <path class="ac-body" d="M17 4 H52 V7.5 H17 Z"/>
   <path class="ac-line" d="M44 10.5 H54 L57 14 H44 Z M64 7 V21"/>
   <path class="ac-line" d="M24 20 L22 27 M48 20 L50 27"/>
-  <path class="ac-body" d="M8 27 H58 Q65 27 66 31 H12 Q7 31 8 27 Z"/>
+  <path class="ac-body float" d="M8 27 H58 Q65 27 66 31 H12 Q7 31 8 27 Z"/>
+  <path class="ac-body skis" d="M12 28 H56 Q62 28 64 25 L65 26 Q63 30.5 56 30.5 H12 Z"/>
 </g>`;
 const HELI = `<g class="ac">
   <path class="ac-body" d="M24 14 Q24 2 40 2 L48 2 Q62 2 64 15 Q63 22 50 22 L32 22 Q24 22 24 14 Z"/>
@@ -52,6 +53,10 @@ const camper = (jacket, side) => side ? `
   <path class="stick" d="M1.5 -5 L3 2"/><ellipse class="sausage" cx="3.1" cy="2.6" rx=".8" ry="1.5"/>`;
 const house = (x, y, s = 1, lit = true) => `<g transform="translate(${x} ${y}) scale(${s})"><path class="hs" d="M0 0 V-10 L8 -17 L16 -10 V0 Z"/>${lit ? '<rect class="win" x="5" y="-8" width="3" height="3"/>' : ''}</g>`;
 
+const flakes = Array.from({ length: 90 }, (_, i) => {
+  const x = (i * 211) % 1700 - 50, y = (i * 389) % 900, r = i % 4 === 0 ? 2.2 : i % 3 === 0 ? 1.6 : 1.1;
+  return `<circle class="flake f${i % 3}" cx="${x}" cy="${y}" r="${r}"/>`;
+}).join('');
 const stars = Array.from({ length: 34 }, (_, i) => {
   const x = (i * 467) % 1600, y = 20 + ((i * 193) % 230), r = i % 5 === 0 ? 1.6 : 1;
   return `<circle class="star s${i % 3}" cx="${x}" cy="${y}" r="${r}"/>`;
@@ -159,6 +164,20 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
     <g class="rod"><path class="rodp" d="M2 -6 L18 -19"/><path class="fline" d="M18 -19 L21 1"/><circle class="bobber" cx="21" cy="1" r="1.3"/>
       <ellipse class="fring" cx="21" cy="2" rx="5" ry="1"/></g>
   </g></g></g></g>
+  <!-- vinter: isfiskare vid en vak på dagen, skoter med strålkastare över isen på natten -->
+  <g class="icefisher" transform="translate(690 716)">
+    <ellipse class="icehole" cx="12" cy="3" rx="5" ry="1.6"/>
+    <path class="stool" d="M-3 3 L3 -2 M3 3 L-3 -2 M-4 -2 H4"/>
+    <path class="person" d="M-3 -2 V-9 Q0 -11 3 -9 V-2 Z"/>
+    <circle class="head" cx="0" cy="-12.5" r="2.6"/><path class="cap" d="M-3 -13 Q0 -17.5 3 -13 Z"/><circle class="cap" cx="0" cy="-16.6" r="1.2"/>
+    <path class="rodp" d="M2 -6 L11 -3"/><path class="fline" d="M11 -3 L12 3"/>
+  </g>
+  <g class="sled"><g transform="translate(0 728)">
+    <path class="beam" d="M14 -2 L70 -12 L70 8 Z"/>
+    <path class="sled-body" d="M-10 0 H12 Q16 0 16 -3 L12 -5 H2 L-2 -9 H-6 L-8 -5 H-10 Z"/>
+    <path class="sled-ski" d="M-12 2 H14 Q18 2 18 0"/>
+    <circle class="headlight" cx="15" cy="-3" r="1.4"/>
+  </g></g>
   <!-- bryggan går från stranden en bit ut i sjön -->
   <path class="pier" d="M566 767 L577 767 L599 744 L589 744 Z"/>
   <path class="pier-post" d="M568 767 v4 M576 767 v4 M586 754 v6 M593 752 v6 M590 744 v6 M598 744 v6"/>
@@ -180,6 +199,9 @@ export const SCENE_SVG = `<svg class="scene" viewBox="0 0 1600 900" preserveAspe
       <circle class="mo-eye" cx="56" cy="5" r=".9"/>
     </g>
   </g></g></g>
+
+  <!-- vinter: snöfall framför landskapet -->
+  <g class="snowfall"><g class="snowfall-a">${flakes}</g><g class="snowfall-b">${flakes}</g></g>
 
   <!-- förgrund -->
   <path class="fg" d="M-800 900 L-800 780 C-200 800 0 770 160 790 C320 810 420 860 560 900 Z M1080 900 C1180 830 1340 790 1600 800 L2400 790 V900 Z"/>

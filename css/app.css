@@ -840,3 +840,45 @@ body.night .rwywind tr.best td:first-child { color: #ff8a70; }
 .livedest { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line-strong); }
 .livedest h3 { margin-top: 0; }
 .livedest b.low { color: var(--warn); }
+
+/* ---------- vinter på startsidan (december–mars) ---------- */
+.scene .skis, .scene .icefisher, .scene .sled, .scene .snowfall { display: none; }
+.scene.winter .float, .scene.winter .rower, .scene.winter .ring, .scene.winter .ripple-static, .scene.winter .pier-ripple,
+.scene.winter .shimmer, .scene.winter .birds, .scene.winter .bear, .scene.winter .club-flower { display: none; }
+.scene.winter .skis, .scene.winter .snowfall { display: inline; }
+.scene.winter .bob { animation: none; }
+/* natt: snöklätt i månsken */
+.scene.winter .m1 { fill: #4d637b; } .scene.winter .m2 { fill: #40566c; } .scene.winter .m3 { fill: #364b60; }
+.scene.winter .snow { stroke: #dfe8f1; opacity: 1; }
+.scene.winter .tr.far { fill: #25384c; } .scene.winter .tr { fill: #1f3044; }
+.scene.winter .vale { fill: #33475c; } .scene.winter .fg { fill: #2a3b4d; }
+.scene.winter .field.f1 { fill: #3a4f65; } .scene.winter .field.f2 { fill: #42586e; } .scene.winter .furrow { stroke: #4b6178; }
+.scene.winter .lake { fill: #5b7590; } .scene.winter .river { stroke: #5b7590; }
+.scene.winter .strip { stroke: #4b6178; }
+.scene.winter .cl { fill: #3a4f65; }
+/* dag: vit snö och blå is */
+.scene.winter.day .m1 { fill: #d3dde8; } .scene.winter.day .m2 { fill: #bfcbda; } .scene.winter.day .m3 { fill: #adbbcc; }
+.scene.winter.day .snow { stroke: #ffffff; }
+.scene.winter.day .tr.far { fill: #5b7591; } .scene.winter.day .tr { fill: #47617e; } .scene.winter.day .tr.near { fill: #2b3e54; }
+.scene.winter.day .vale { fill: #e4ebf3; } .scene.winter.day .fg { fill: #cdd8e5; }
+.scene.winter.day .field.f1 { fill: #e9eff6; } .scene.winter.day .field.f2 { fill: #dde6f0; } .scene.winter.day .furrow { stroke: #c6d2e0; }
+.scene.winter.day .lake { fill: #cfe2f0; } .scene.winter.day .river { stroke: #cfe2f0; }
+.scene.winter.day .strip { stroke: #f4f8fb; } .scene.winter.day .stripmk { stroke: #8ea2b6; }
+.scene.winter.day .cl { fill: #e6ecf2; }
+.scene.winter.day .hs { fill: #3a4a5c; }
+/* isfiskaren sitter vid vaken på dagen */
+.scene.winter.day .icefisher { display: inline; }
+.scene .icehole { fill: #20384d; } .scene .stool { fill: none; stroke: #6c5a46; stroke-width: 1.2; stroke-linecap: round; }
+.scene .icefisher .cap { fill: #b3261e; }
+/* skotern kör över isen på natten, med strålkastare */
+.scene.winter:not(.day) .sled { display: inline; animation: scSled 14s linear infinite; }
+.scene .sled-body { fill: #b3261e; } .scene .sled-ski { fill: none; stroke: #1b2633; stroke-width: 1.6; stroke-linecap: round; }
+.scene .headlight { fill: #fff6c8; } .scene .beam { fill: #fff6c8; opacity: .18; }
+@keyframes scSled { 0% { transform: translateX(380px); opacity: 0; } 6% { opacity: 1; } 94% { opacity: 1; } 100% { transform: translateX(800px); opacity: 0; } }
+/* snöfall: två lager som faller i olika takt */
+.scene .flake { fill: #ffffff; opacity: .85; } .scene .flake.f1 { opacity: .6; } .scene .flake.f2 { opacity: .4; }
+.scene.winter .snowfall-a { animation: scSnow 18s linear infinite; }
+.scene.winter .snowfall-b { animation: scSnow 18s linear infinite -9s; }
+@keyframes scSnow { from { transform: translate(0, -900px); } to { transform: translate(-60px, 900px); } }
+.scene.winter.day .flake { opacity: .9; }
+@media (prefers-reduced-motion: reduce) { .scene.winter .snowfall-b { display: none; } }
