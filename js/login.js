@@ -23,6 +23,8 @@ function build() {
     </div>`;
   fitScene(g.querySelector('svg'));
   if (gateNote) setGateNote(gateNote);
+  // Vinter på startsidan november–april (sommar resten av året): snö, istäckt sjö, isfiskare, skoter och sjöflygplanet på skidor
+  if ([10, 11, 0, 1, 2, 3].includes(new Date().getMonth())) g.querySelector('svg')?.classList.add('winter');
   dayCycle(g.querySelector('svg'));
   g.querySelector('.clublink')?.addEventListener('click', openClubDialog);
 }
