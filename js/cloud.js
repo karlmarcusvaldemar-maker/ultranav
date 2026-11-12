@@ -73,7 +73,8 @@ export async function signIn(email, password) {
   const { error } = await client.auth.signInWithPassword({ email, password });
   if (error) throw new Error(sv(error));
 }
-export async function signOut() { await client.auth.signOut(); user = null; emit(); }
+// Utloggning: glöm också att enheten har varit inloggad, annars hålls inloggningsrutan borta (login.js)
+export async function signOut() { await client.auth.signOut().catch(() => {}); user = null; store.set('ulnav.everLoggedIn', false); emit(); }
 export async function resetPassword(email) {
   const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: redirect() });
   if (error) throw new Error(sv(error));
