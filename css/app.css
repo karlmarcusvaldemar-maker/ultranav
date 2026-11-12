@@ -833,3 +833,17 @@ body.phone #alertBar { top: 8px; left: calc(8px + var(--safeL)); right: calc(8px
 /* vindrutan: gammal prognos eller från annan plats visas blekt */
 #windBadge.wb-old .wbDial, #windBadge.wb-old .wbTxt b { opacity: .45; }
 #windBadge.wb-old .wbTxt em { color: var(--warn); }
+
+/* sidavvikelse under NÄSTA */
+.inst .unit.xtk { font: 700 calc(12px * var(--ts, 1))/1.1 var(--mono); color: var(--accent); }
+.inst .unit.xtk.off { color: var(--warn); }
+.tag.glide { background: #1f7a3a; color: #fff; }
+body.night .tag.glide { background: #3a1a14; color: #ff8a70; }
+.aplist li.reach { box-shadow: inset 4px 0 0 #3cc463; }
+.rwywind td { padding: 2px 8px 2px 0; }
+.rwywind tr.best td:first-child { color: #1f7a3a; }
+body.night .rwywind tr.best td:first-child { color: #ff8a70; }
+.rwywind .tail { color: #b3261e; font-weight: 700; }
+.livedest { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line-strong); }
+.livedest h3 { margin-top: 0; }
+.livedest b.low { color: var(--warn); }

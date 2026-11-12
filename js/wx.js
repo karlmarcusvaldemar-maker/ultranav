@@ -78,7 +78,8 @@ export async function fetchMetarTaf(ids) {
   return ids.map((id) => {
     const ms = (m || []).filter((x) => x.icaoId === id).sort((a, b) => (b.obsTime || 0) - (a.obsTime || 0));
     const tf = (t || []).find((x) => x.icaoId === id);
-    return { id, name: ms[0]?.name || tf?.name || '', metar: ms[0]?.rawOb || null, cat: ms[0]?.fltCat || calcCat(ms[0]), taf: tf?.rawTAF || null, lat: ms[0]?.lat, lon: ms[0]?.lon };
+    return { id, name: ms[0]?.name || tf?.name || '', metar: ms[0]?.rawOb || null, cat: ms[0]?.fltCat || calcCat(ms[0]), taf: tf?.rawTAF || null, lat: ms[0]?.lat, lon: ms[0]?.lon,
+      wdir: typeof ms[0]?.wdir === 'number' ? ms[0].wdir : null, wspd: typeof ms[0]?.wspd === 'number' ? ms[0].wspd : null, wgst: typeof ms[0]?.wgst === 'number' ? ms[0].wgst : null };
   });
 }
 

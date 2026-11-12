@@ -7,9 +7,10 @@ import { initCloud, onCloud, cloudConfigured, cloudStatus, shareItem, unshareIte
 import { renderAccountTab, askNewPassword } from './account.js';
 import { initCustomLayers, addSharedLayer } from './customlayers.js';
 import { renderLogbook, showFlight } from './logbook.js';
-import { initFlight, renderFlightCard, onFlight, flightActive } from './flight.js';
+import { initFlight, renderFlightCard, onFlight, flightActive, flightTakeoff } from './flight.js';
 import { initLogin, setGateNote } from './login.js';
 import { $, $$, esc, toast, modal, note, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store, cleanShared } from './util.js';
+import { raise as raiseAlert, clear as clearAlert } from './alerts.js';
 import { initMap, map, renderLayerPanel, testCurrentBase } from './map.js';
 import { initAero, actions, airportHtml, mapInfoPopup, openAirport, airportNear } from './aero.js';
 import { initDraw, drawActive, drawTap, renderDrawTab, drawActions, onDrawings, openDrawBar, closeDrawBar, drawBarOpen, syncBar, readout } from './draw.js';
@@ -197,7 +198,7 @@ $$('.tabs button[data-tab]').forEach((b) => b.addEventListener('click', () => {
 function renderTab() {
   if ($('#side').classList.contains('hidden')) return;
   const el = $('#tab-' + currentTab);
-  if (currentTab === 'route') renderRouteTab(el, { activeLeg: nav.tracking ? nav.activeLeg : -1 });
+  if (currentTab === 'route') { renderRouteTab(el, { activeLeg: nav.tracking ? nav.activeLeg : -1 }); el.insertAdjacentHTML('afterbegin', liveDestHtml()); }
   if (currentTab === 'wx') renderWxTab(el);
   if (currentTab === 'fields') renderFieldsTab(el);
   if (currentTab === 'track') {
@@ -218,6 +219,44 @@ onRouteChange(() => {
 });
 onAirports(() => { if (currentTab === 'fields') renderTab(); });
 
+// ---------- live mot målet ----------
+// Kvar till rutten sista punkt: sträcka längs rutten, tid och ETA med aktuell GS, och bränsle vid landning
+// (antar fulla tankar vid start och planerad förbrukning). Under reserven varnar remsan.
+let gpsOnAt = null;
+onNav(() => { if (nav.tracking && !gpsOnAt) gpsOnAt = Date.now(); if (!nav.tracking) { gpsOnAt = null; clearAlert('fuel-low'); } });
+function liveDest() {
+  const w = route.wps, p = nav.pos;
+  if (!nav.tracking || !p || w.length < 2) return null;
+  let rest;
+  if (nav.dto) rest = distNM(p, nav.dto) + (nav.dto.routeIdx != null ? getLegs().slice(nav.dto.routeIdx).reduce((s, l) => s + l.d, 0) : 0);
+  else { const i = Math.min(nav.activeLeg, w.length - 2); rest = distNM(p, w[i + 1]) + getLegs().slice(i + 1).reduce((s, l) => s + l.d, 0); }
+  const to = nav.dto && nav.dto.routeIdx == null ? nav.dto.name : w[w.length - 1].name;
+  const gs = p.gsKt > 20 ? p.gsKt : null, h = gs ? rest / gs : null;
+  const since = flightTakeoff() ?? gpsOnAt ?? Date.now();
+  const used = (Date.now() - since) / 3600e3 * settings.fuelBurn;
+  const land = h != null ? settings.fuelUsable - used - h * settings.fuelBurn : null;
+  const reserve = settings.reserveMin / 60 * settings.fuelBurn;
+  return { to, rest, h, eta: h != null ? new Date(Date.now() + h * 3600e3) : null, land, low: land != null && land < reserve, reserve };
+}
+setInterval(() => {
+  const d = liveDest();
+  // rutan i fliken Rutt hålls aktuell
+  const tab = $('#tab-route');
+  if (currentTab === 'route' && !$('#side').classList.contains('hidden') && tab) { tab.querySelector('.livedest')?.remove(); tab.insertAdjacentHTML('afterbegin', liveDestHtml()); }
+  if (d?.low) raiseAlert('fuel-low', `Bränsle vid landning ≈ ${Math.max(0, d.land).toFixed(0)} l — under reserven (${d.reserve.toFixed(0)} l)`, { level: 'warn' });
+  else clearAlert('fuel-low');
+}, 5000);
+function liveDestHtml() {
+  const d = liveDest();
+  if (!d) return '';
+  return `<div class="livedest"><h3>Kvar till ${esc(d.to)}</h3><div class="kv">
+    <span>Sträcka</span><b>${fmtDist(d.rest)}</b>
+    <span>Tid</span><b>${d.h != null ? fmtHM(d.h) : '—'}</b>
+    <span>ETA</span><b>${d.eta ? fmtUTC(d.eta) + 'Z' : '—'}</b>
+    <span>Bränsle vid landning</span><b class="${d.low ? 'low' : ''}">${d.land != null ? '≈ ' + Math.max(0, d.land).toFixed(0) + ' l' : '—'}</b></div>
+    <div class="muted" style="font-size:12px">Bränslet räknas från fulla tankar (${settings.fuelUsable} l) och ${settings.fuelBurn} l/h sedan ${flightTakeoff() ? 'starten' : 'GPS:en slogs på'}.</div></div>`;
+}
+
 // ---------- instrumentlist ----------
 function setI(id, v, alert = false) { const e = $(id); e.textContent = v; e.parentElement.classList.toggle('alert', alert); }
 function updateInstruments() {
@@ -230,6 +269,10 @@ function updateInstruments() {
   setI('#iAGL', o.agl != null ? Math.round(altOut(o.agl)) : '----', o.agl != null && settings.aglWarn > 0 && o.agl < settings.aglWarn && (o.gs || 0) > 30);
   $('#iALTu').textContent = $('#iAGLu').textContent = altUnit(); $('#iDISTu').textContent = distUnit();
   setI('#iWP', o.wp ? (nav.dto ? 'D→ ' : '') + o.wp : '—');
+  // Sidavvikelse: pilen pekar mot kurslinjen (höger om linjen → ◀), orange över 0,5 NM
+  const x = o.xtk != null && nav.pos && Math.abs(o.xtk) >= 0.05 ? o.xtk : null;
+  $('#iXTK').textContent = x == null ? '' : `${x > 0 ? '◀ ' : ''}${distOut(Math.abs(x)).toFixed(1)} ${distUnit()}${x < 0 ? ' ▶' : ''}`;
+  $('#iXTK').classList.toggle('off', x != null && Math.abs(x) > 0.5);
   setI('#iBRG', o.brg != null ? fmtDeg(o.brg) : '---');
   setI('#iDIST', o.dist != null ? (distOut(o.dist) < 10 ? distOut(o.dist).toFixed(1) : Math.round(distOut(o.dist))) : '--');
   setI('#iETE', fmtHM(o.ete));
@@ -253,14 +296,15 @@ function showNearest() {
   const list = nearestAirports(ref, 12);
   near.M = list.map((x) => x.a);
   modal(`<h3>Närmaste fält ${nav.pos ? 'från din position' : '<span class="muted">(från kartans mitt — GPS av)</span>'}</h3>
-    ${nav.pos && nav.aglFt ? note('ok', `Glidräckvidd ≈ <b>${fmtDist(nav.aglFt * settings.glideRatio / 6076)}</b> (1:${settings.glideRatio}, ${fmtAlt(nav.aglFt)} AGL, i vindstilla)`, 'triangle') : ''}
+    ${nav.pos && nav.aglFt ? note('ok', `Glidräckvidd ≈ <b>${fmtDist(nav.aglFt * settings.glideRatio / 6076)}</b> (1:${settings.glideRatio}, ${fmtAlt(nav.aglFt)} AGL, i vindstilla)${nav.glide ? '. Fält märkta <b>Nås i glid</b> ligger inom glidcirkeln, med vinden inräknad.' : ''}`, 'triangle') : ''}
     ${list.length ? `<ul class="aplist">${list.map(({ a, d }, i) => apRow(a, d, bearing(ref, a), i, true, 'M')).join('')}</ul>` : '<div class="muted">Inga fält inlästa ännu.</div>'}`);
 }
 // Närmast (M) och fliken Fält (T) har var sin lista, så att en uppdatering av den ena aldrig flyttar den andras knappar
 const near = { M: [], T: [] };
 function apRow(a, d, brg, i, big, k) {
   const r = longestRwy(a);
-  return `<li><div class="info"><b>${a.ul ? '<span class="tag ul">UL</span>' : ''}${esc(a.name)}</b>
+  const reach = nav.glide && distNM(a, nav.glide) <= nav.glide.rNM; // inom glidcirkeln (med vind)
+  return `<li class="${reach ? 'reach' : ''}"><div class="info"><b>${a.ul ? '<span class="tag ul">UL</span>' : ''}${esc(a.name)}${reach ? ' <span class="tag glide">Nås i glid</span>' : ''}</b>
     <span>${esc(a.icao || '')} ${esc(a.type)}${r ? ` · ${esc(r.des)} ${r.lenM ? r.lenM + ' m' : ''} ${esc(r.surf)}` : ''}${a.freqs[0] ? ' · ' + esc(a.freqs[0].mhz) : ''}</span></div>
     <div class="dist">${distOut(d).toFixed(1)}<small>${distUnit()} · ${fmtDeg(brg - settings.variation)}°M</small></div>
     <button class="btn small ${big ? 'primary' : ''}" onclick="window.ulnav.dtoNear('${k}',${i})" aria-label="Direkt till">${ic('arrowRight', 20)}</button>

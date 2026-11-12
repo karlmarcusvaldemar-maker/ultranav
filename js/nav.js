@@ -13,6 +13,7 @@ import { raise, clear, clearExcept, unlockAudio } from './alerts.js';
 export const nav = {
   pos: null, tracking: false, follow: true, trackUp: false, activeLeg: 0, dto: null,
   aglFt: null, terrFt: null, stale: false,
+  glide: null, // { lat, lon, rNM } — glidcirkeln med vind, när den visas
 };
 let watchId = null, last = null, wakeLock = null;
 const ownLayer = L.layerGroup();
@@ -41,12 +42,18 @@ export async function initNav() {
   });
   onSettings((s, patch) => { if ('ownSymbol' in patch && ownMarker) { ownMarker.setIcon(L.divIcon({ className: 'own-ship', iconSize: [40, 40], iconAnchor: [20, 20], html: planeHtml() })); update(); } if ('vectorMin' in patch && nav.pos) update(); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && nav.tracking) requestWake(); });
-  map.on('dragstart', () => { if (nav.follow && nav.tracking) { nav.follow = false; emit(); } });
+  // Drar man i kartan släpper Följ. I luften slås den på igen efter 20 s utan att kartan rörts.
+  map.on('dragstart', () => { lastTouch = Date.now(); if (nav.follow && nav.tracking) { nav.follow = false; followOff = Date.now(); emit(); } });
+  map.on('drag zoomstart', () => { lastTouch = Date.now(); });
   setInterval(gpsWatchdog, 1000);
 }
 
 // GPS-vakt: kommer inga nya positioner fryser annars instrumenten på gamla värden som ser giltiga ut
+let followOff = null, lastTouch = 0;
 function gpsWatchdog() {
+  if (!nav.follow && followOff && nav.tracking && !nav.stale && (nav.pos?.gsKt || 0) > 30 && Date.now() - lastTouch > 20000) {
+    followOff = null; setFollow(true); toast('Följer igen');
+  }
   const age = nav.tracking && nav.pos ? Date.now() - nav.pos.rx : 0;
   const stale = age > 6000;
   if (stale !== nav.stale) { nav.stale = stale; ownMarker?.setOpacity(stale ? 0.4 : 1); emit(); }
@@ -235,8 +242,9 @@ function update() {
     const w = settings.glideSpeed > 0 ? glideWind?.(p.altFt ?? null, nav.terrFt) : null;
     const c = w && w.spd > 0 ? destPoint(p, w.dir + 180, w.spd * (stillM / 1852) / settings.glideSpeed) : null;
     glideCircle.setLatLng(c ? [c.lat, c.lon] : ll).setRadius(stillM);
+    nav.glide = { lat: c ? c.lat : p.lat, lon: c ? c.lon : p.lon, rNM: stillM / 1852 };
     glideCircle.setStyle({ opacity: 0.9, fillOpacity: 0.05 });
-  } else glideCircle.setStyle({ opacity: 0, fillOpacity: 0 });
+  } else { glideCircle.setStyle({ opacity: 0, fillOpacity: 0 }); nav.glide = null; }
   const tg = target();
   dtoLine.setLatLngs(nav.dto ? [[nav.dto.from.lat, nav.dto.from.lon], [nav.dto.lat, nav.dto.lon]] : []);
 
@@ -275,7 +283,7 @@ export function instrumentData() {
   return o;
 }
 
-export function setFollow(v) { nav.follow = v; if (v && nav.pos) update(); emit(); }
+export function setFollow(v) { followOff = null; nav.follow = v; if (v && nav.pos) update(); emit(); }
 export function setTrackUp(v) {
   nav.trackUp = v;
   if (!v && map.setBearing) map.setBearing(0);

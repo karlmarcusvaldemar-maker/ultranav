@@ -28,6 +28,8 @@ const isCar = () => !!symbolOf(settings.ownSymbol).profile;
 /** Starthastighet för loggning: fast 30 kt, går inte att ändra */
 const airKt = () => 30;
 export const flightActive = () => !!f;
+/** Starttid för pågående flygning (för bränsleberäkning i luften) */
+export const flightTakeoff = () => f?.takeoff ?? f?.start ?? null;
 export const flightState = () => f && { ...f, pts: pts.length, dist: trackDist(pts) };
 
 export async function initFlight() {
