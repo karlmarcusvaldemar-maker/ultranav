@@ -42,12 +42,17 @@ function wind() {
   if (!data) return null;
   const i = hourIndex(data.fc, new Date(Date.now() + 30 * 60000)); // närmaste hela timme
   const gps = nav.tracking && nav.pos;
+  // Gammal prognos (hämtad > 3 h sedan), slut på prognosen eller hämtad långt härifrån (> 40 NM): visas blekt med varför
+  const ageH = (Date.now() - data.at) / 3600e3, last = data.fc.hourly.time.length - 1;
+  const ended = i === last && Date.now() > Date.parse(data.fc.hourly.time[last] + 'Z') + 3600e3;
+  const far = distNM(here(), data) > 40;
+  const old = ended ? 'prognosen har tagit slut' : far ? 'prognos från annan plats' : ageH > 3 ? `prognos ${Math.round(ageH)} h gammal` : '';
   const altFt = gps && nav.pos.altFt != null ? nav.pos.altFt : settings.cruiseAlt;
   const w = windAt(data.fc, i, altFt);
   if (w.dir == null || w.spd == null) return null;
   let comp = null;
   if (gps && nav.pos.trk != null && nav.pos.gsKt > 20) comp = w.spd * Math.cos((w.dir - nav.pos.trk) * Math.PI / 180);
-  return { ...w, altFt, i, comp };
+  return { ...w, altFt, i, comp, old };
 }
 
 /** Medelvind (vektor) mellan din höjd och marken, för glidcirkeln. Bara en färsk prognos (högst 12 h gammal) används. */
@@ -96,10 +101,10 @@ function render() {
   const spd = fmtWind(w.spd);
   const comp = w.comp == null || Math.abs(w.comp) < 1 ? ''
     : `<em class="${w.comp > 0 ? 'head' : 'tail'}">${w.comp > 0 ? 'Motvind' : 'Medvind'} ${fmtWind(Math.abs(w.comp))}</em>`;
-  el.className = '';
+  el.className = w.old ? 'wb-old' : '';
   el.innerHTML = `<span class="wbDial"><svg viewBox="0 0 24 24" width="30" height="30" style="transform:rotate(${(w.dir + 180 + mb).toFixed(1)}deg)" aria-hidden="true">
     <path d="M12 3l5 8h-3.2v10h-3.6V11H7z" fill="currentColor"/></svg></span>
-    <span class="wbTxt"><small>VIND ${fmtAlt(w.altFt, true)}</small><b>${fmtDeg(w.dir)}° · ${spd}</b>${comp}</span>`;
+    <span class="wbTxt"><small>VIND ${fmtAlt(w.altFt, true)}</small><b>${fmtDeg(w.dir)}° · ${spd}</b>${w.old ? `<em>${w.old}</em>` : comp}</span>`;
   el.setAttribute('aria-label', `Vind från ${fmtDeg(w.dir)} grader, ${spd}`);
 }
 

@@ -559,7 +559,9 @@ lib.onLibrary((kind, source, item) => {
   if (kind === 'settings' && source === 'remote' && item.data) {
     applyingRemote = true;
     const { theme, shareTraffic, ...rest } = item.data;
-    try { saveSettings(rest); } finally { applyingRemote = false; }
+    // bara ändrade värden: annars laddas kartan om (tiles/openaipKey) varje gång en annan enhet synkar
+    const diff = Object.fromEntries(Object.entries(rest).filter(([k, v]) => JSON.stringify(v) !== JSON.stringify(settings[k])));
+    try { if (Object.keys(diff).length) saveSettings(diff); } finally { applyingRemote = false; }
     recompute(); updateInstruments();
   }
   if (source !== 'local' && !$('#side').classList.contains('hidden')) renderTab();

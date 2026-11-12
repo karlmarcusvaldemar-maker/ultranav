@@ -57,10 +57,12 @@ export async function downloadRoute(onProgress) {
     while (queue.length) {
       const u = queue.shift();
       try {
-        if (!(await cache.match(u))) {
+        // samma adress utan kartversion som servicearbetaren använder (sw.js), så att paketet överlever en ny kartversion
+        const key = u.replace(/(tiles\.openfreemap\.org\/[^/]+)\/[^/]+\/(\d+\/\d+\/\d+\.pbf)/, '$1/_/$2');
+        if (!(await cache.match(key))) {
           // Försök med CORS först; källor utan CORS-huvuden sparas som opaka svar
           const r = await fetch(u, { mode: 'cors' }).catch(() => fetch(u, { mode: 'no-cors' }));
-          if (r.ok || r.type === 'opaque') await cache.put(u, r); else fail++;
+          if (r.ok || r.type === 'opaque') await cache.put(key, r); else fail++;
         }
       } catch { fail++; }
       done++; onProgress?.(done, urls.length, fail);
