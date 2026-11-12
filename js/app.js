@@ -11,6 +11,7 @@ import { initFlight, renderFlightCard, onFlight, flightActive, flightTakeoff } f
 import { initLogin, setGateNote } from './login.js';
 import { $, $$, esc, toast, modal, note, fmtDeg, fmtHM, fmtUTC, distNM, bearing, debounce, store, cleanShared } from './util.js';
 import { raise as raiseAlert, clear as clearAlert } from './alerts.js';
+import { initOneFingerZoom, lastZoomGesture } from './onefingerzoom.js';
 import { initMap, map, renderLayerPanel, testCurrentBase } from './map.js';
 import { initAero, actions, airportHtml, mapInfoPopup, openAirport, airportNear } from './aero.js';
 import { initDraw, drawActive, drawTap, renderDrawTab, drawActions, onDrawings, openDrawBar, closeDrawBar, drawBarOpen, syncBar, readout } from './draw.js';
@@ -109,8 +110,10 @@ map.on('click', async (e) => {
   const ap = airportNear(e.latlng);
   if (ap) { openAirport(ap); return; }
   const el = await elevationFt(e.latlng.lat, e.latlng.lng).catch(() => null);
+  if (Date.now() - lastZoomGesture() < 1500) return; // trycket var början på en enhandszoom
   mapInfoPopup(e.latlng, el);
 });
+initOneFingerZoom(map, { enabled: () => !editing && !drawActive() && !fieldMoving(), aroundCenter: () => nav.follow && nav.tracking });
 
 // ---------- snabbknappar ----------
 const fab = (id, fn) => $(id).addEventListener('click', fn);
