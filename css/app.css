@@ -833,3 +833,10 @@ body.phone #alertBar { top: 8px; left: calc(8px + var(--safeL)); right: calc(8px
 /* vindrutan: gammal prognos eller från annan plats visas blekt */
 #windBadge.wb-old .wbDial, #windBadge.wb-old .wbTxt b { opacity: .45; }
 #windBadge.wb-old .wbTxt em { color: var(--warn); }
+.rwywind td { padding: 2px 8px 2px 0; }
+.rwywind tr.best td:first-child { color: #1f7a3a; }
+body.night .rwywind tr.best td:first-child { color: #ff8a70; }
+.rwywind .tail { color: #b3261e; font-weight: 700; }
+.livedest { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line-strong); }
+.livedest h3 { margin-top: 0; }
+.livedest b.low { color: var(--warn); }

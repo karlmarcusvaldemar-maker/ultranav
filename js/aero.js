@@ -118,6 +118,23 @@ function sunLine(a) {
   return `<div class="popinfo" style="margin-top:4px">${ic('sun', 16)} Upp ${f(s.sunrise)} · ned ${f(s.sunset)} · skymning ${f(s.civilDusk)}</div>`;
 }
 
+/** Mot- och sidvind per banände ur METAR. Banans nummer är magnetisk kurs, METAR-vinden är sann. */
+function rwyWind(a, r) {
+  if (r.wspd == null || r.wdir == null) return '';
+  const ends = [...new Set(a.rwys.flatMap((x) => String(x.des || '').split('/')).map((d) => d.trim()).filter((d) => /^\d{1,2}[LRC]?$/.test(d)))];
+  if (!ends.length) return '';
+  const wMag = r.wdir - settings.variation, spd = r.wspd, g = r.wgst;
+  const rows = ends.map((d) => {
+    const ang = (wMag - parseInt(d, 10) * 10) * Math.PI / 180;
+    return { d, head: spd * Math.cos(ang), cross: spd * Math.sin(ang) };
+  });
+  const best = rows.reduce((b, x) => (x.head > b.head ? x : b));
+  const kt = (v) => `${Math.round(Math.abs(v))} kt`;
+  return `<table class="rwywind" style="margin-top:6px">${rows.map((x) => `<tr class="${x === best && spd >= 3 ? 'best' : ''}"><td><b>Bana ${esc(x.d)}</b>${x === best && spd >= 3 ? ' ✓' : ''}</td>
+    <td>${x.head >= 0 ? 'motvind' : '<span class="tail">medvind</span>'} ${kt(x.head)}</td><td>sidvind ${kt(x.cross)}${Math.abs(x.cross) >= 1 ? (x.cross > 0 ? ' från höger' : ' från vänster') : ''}</td></tr>`).join('')}</table>
+    <div class="muted" style="font-size:12px">Ur METAR: ${r.wdir}° ${spd} kt${g ? ` (byar ${g})` : ''}${spd < 3 ? ' — svag vind' : ''}</div>`;
+}
+
 /** Visa fältinformation i popup och hämta METAR/TAF för fält med ICAO-kod */
 export function openAirport(a) {
   // DOM-innehåll (inte sträng) så att METAR som fylls i efteråt finns kvar när popupen ritas om
@@ -130,7 +147,7 @@ export function openAirport(a) {
     const el = box.querySelector('[id^="apwx-"]');
     if (!el) return;
     el.classList.remove('muted');
-    el.innerHTML = r && (r.metar || r.taf) ? metarHtml(r) : '<span class="muted">Ingen METAR/TAF för fältet</span>';
+    el.innerHTML = (r && (r.metar || r.taf) ? metarHtml(r) : '<span class="muted">Ingen METAR/TAF för fältet</span>') + (r ? rwyWind(a, r) : '');
     if (popup.isOpen()) popup.update(); // panorera om så att den större rutan syns helt
   }).catch(() => { const el = document.getElementById('apwx-' + a.icao); if (el) el.textContent = 'METAR kunde inte hämtas just nu'; });
 }
